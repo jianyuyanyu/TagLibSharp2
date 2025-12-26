@@ -176,6 +176,79 @@ public class OggVorbisFileTests
 		Assert.AreEqual ("Naïve", result.File.Artist);
 	}
 
+	[TestMethod]
+	public void Properties_ParsesSampleRateFromIdentificationHeader ()
+	{
+		// Default identification header has 44100 Hz
+		var data = BuildMinimalOggVorbisFile ("Test", "Artist");
+
+		var result = OggVorbisFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (44100, result.File!.Properties.SampleRate);
+	}
+
+	[TestMethod]
+	public void Properties_ParsesChannelsFromIdentificationHeader ()
+	{
+		// Default identification header has 2 channels
+		var data = BuildMinimalOggVorbisFile ("Test", "Artist");
+
+		var result = OggVorbisFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (2, result.File!.Properties.Channels);
+	}
+
+	[TestMethod]
+	public void Properties_ParsesBitrateFromIdentificationHeader ()
+	{
+		// Default identification header has 128000 nominal bitrate
+		var data = BuildMinimalOggVorbisFile ("Test", "Artist");
+
+		var result = OggVorbisFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (128, result.File!.Properties.Bitrate); // 128000 / 1000 = 128 kbps
+	}
+
+	[TestMethod]
+	public void Properties_CodecIsVorbis ()
+	{
+		var data = BuildMinimalOggVorbisFile ("Test", "Artist");
+
+		var result = OggVorbisFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Vorbis", result.File!.Properties.Codec);
+	}
+
+	[TestMethod]
+	public void Properties_BitsPerSampleIsZero ()
+	{
+		// Vorbis is a lossy codec, so bits per sample is 0
+		var data = BuildMinimalOggVorbisFile ("Test", "Artist");
+
+		var result = OggVorbisFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (0, result.File!.Properties.BitsPerSample);
+	}
+
+	[TestMethod]
+	public void Properties_CustomSampleRateAndChannels_ParsesCorrectly ()
+	{
+		// Build with custom sample rate (48000) and channels (1)
+		var data = BuildOggVorbisFileWithCustomProperties (48000, 1, 192000);
+
+		var result = OggVorbisFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (48000, result.File!.Properties.SampleRate);
+		Assert.AreEqual (1, result.File.Properties.Channels);
+		Assert.AreEqual (192, result.File.Properties.Bitrate);
+	}
+
 	#region Helper Methods
 
 	/// <summary>
@@ -489,6 +562,89 @@ public class OggVorbisFileTests
 
 		// Data
 		builder.Add (data);
+
+		return builder.ToBinaryData ().ToArray ();
+	}
+
+	static byte[] BuildOggVorbisFileWithCustomProperties (int sampleRate, int channels, int bitrateNominal)
+	{
+		using var builder = new BinaryDataBuilder ();
+
+		// Build custom identification packet
+		var identPacket = BuildVorbisIdentificationPacket (sampleRate, channels, bitrateNominal);
+
+		// Build comment header
+		var comment = new VorbisComment ("TagLibSharp2");
+		var commentData = comment.Render ();
+		var commentPacket = BuildVorbisCommentPacket (commentData.ToArray ());
+
+		// Build setup header (minimal)
+		var setupPacket = BuildVorbisSetupPacket ();
+
+		// Page 1: BOS with identification header
+		var page1 = BuildOggPage (
+			flags: OggPageFlags.BeginOfStream,
+			granulePosition: 0,
+			serialNumber: 1,
+			sequenceNumber: 0,
+			data: identPacket);
+		builder.Add (page1);
+
+		// Page 2: Comment header
+		var page2 = BuildOggPage (
+			flags: OggPageFlags.None,
+			granulePosition: 0,
+			serialNumber: 1,
+			sequenceNumber: 1,
+			data: commentPacket);
+		builder.Add (page2);
+
+		// Page 3: Setup header with EOS
+		var page3 = BuildOggPage (
+			flags: OggPageFlags.EndOfStream,
+			granulePosition: 0,
+			serialNumber: 1,
+			sequenceNumber: 2,
+			data: setupPacket);
+		builder.Add (page3);
+
+		return builder.ToBinaryData ().ToArray ();
+	}
+
+	static byte[] BuildVorbisIdentificationPacket (int sampleRate, int channels, int bitrateNominal)
+	{
+		using var builder = new BinaryDataBuilder ();
+
+		// Packet type 1 (identification)
+		builder.Add ((byte)1);
+
+		// "vorbis" magic
+		builder.Add (System.Text.Encoding.ASCII.GetBytes ("vorbis"));
+
+		// Vorbis version (0)
+		builder.Add (BitConverter.GetBytes (0U));
+
+		// Audio channels
+		builder.Add ((byte)channels);
+
+		// Sample rate
+		builder.Add (BitConverter.GetBytes ((uint)sampleRate));
+
+		// Bitrate maximum (0 = unset)
+		builder.Add (BitConverter.GetBytes (0));
+
+		// Bitrate nominal
+		builder.Add (BitConverter.GetBytes (bitrateNominal));
+
+		// Bitrate minimum (0 = unset)
+		builder.Add (BitConverter.GetBytes (0));
+
+		// Block sizes (encoded in 1 byte: log2 values)
+		// blocksize_0 = 256 (log2 = 8), blocksize_1 = 2048 (log2 = 11)
+		builder.Add ((byte)0xB8); // (11 << 4) | 8
+
+		// Framing bit
+		builder.Add ((byte)1);
 
 		return builder.ToBinaryData ().ToArray ();
 	}

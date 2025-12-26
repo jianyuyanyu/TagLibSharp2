@@ -34,6 +34,15 @@ public sealed class OggVorbisFile
 	public VorbisComment? VorbisComment { get; set; }
 
 	/// <summary>
+	/// Gets the audio properties (duration, bitrate, sample rate, etc.).
+	/// </summary>
+	/// <remarks>
+	/// Duration is calculated from the granule position of the last Ogg page.
+	/// If the file cannot be fully scanned, duration will be zero.
+	/// </remarks>
+	public AudioProperties Properties { get; private set; }
+
+	/// <summary>
 	/// Gets or sets the title tag.
 	/// </summary>
 	public string? Title {
@@ -89,8 +98,9 @@ public sealed class OggVorbisFile
 		set => EnsureVorbisComment ().Comment = value;
 	}
 
-	OggVorbisFile ()
+	OggVorbisFile (AudioProperties properties)
 	{
+		Properties = properties;
 	}
 
 	/// <summary>
@@ -137,15 +147,21 @@ public sealed class OggVorbisFile
 	/// <returns>A result indicating success or failure.</returns>
 	public static OggVorbisFileReadResult Read (ReadOnlySpan<byte> data)
 	{
-		var file = new OggVorbisFile ();
 		var offset = 0;
 		var pageCount = 0;
 		var foundIdentification = false;
 		var foundComment = false;
 
+		// Audio properties from identification header
+		var sampleRate = 0;
+		var channels = 0;
+		var bitrateNominal = 0;
+
 		// For packet reassembly across pages
 		var packetBuffer = new List<byte> ();
 		var currentPacketIndex = 0; // 0=ident, 1=comment, 2=setup
+
+		VorbisComment? vorbisComment = null;
 
 		// Read Ogg pages until we find the Vorbis comment header
 		while (offset < data.Length && pageCount < 50) { // Limit to prevent infinite loop
@@ -172,6 +188,9 @@ public sealed class OggVorbisFile
 				if (!IsVorbisIdentificationHeader (firstPacket))
 					return OggVorbisFileReadResult.Failure ("Not a Vorbis stream (expected identification header)");
 
+				// Parse identification header for audio properties
+				(sampleRate, channels, bitrateNominal) = ParseIdentificationHeader (firstPacket);
+
 				foundIdentification = true;
 				currentPacketIndex = 1; // Next packet will be comment
 
@@ -182,7 +201,7 @@ public sealed class OggVorbisFile
 						if (currentPacketIndex == 1) {
 							var commentResult = TryParseCommentPacket (pageResult.Segments[i]);
 							if (commentResult.IsSuccess) {
-								file.VorbisComment = commentResult.Tag;
+								vorbisComment = commentResult.Tag;
 								foundComment = true;
 							} else if (IsVorbisCommentHeader (pageResult.Segments[i])) {
 								// It's a comment header but parsing failed (e.g., invalid framing bit)
@@ -213,7 +232,7 @@ public sealed class OggVorbisFile
 								var packet = packetBuffer.ToArray ();
 								var commentResult = TryParseCommentPacket (packet);
 								if (commentResult.IsSuccess) {
-									file.VorbisComment = commentResult.Tag;
+									vorbisComment = commentResult.Tag;
 									foundComment = true;
 								} else if (IsVorbisCommentHeader (packet)) {
 									// It's a comment header but parsing failed
@@ -234,7 +253,7 @@ public sealed class OggVorbisFile
 						if (currentPacketIndex == 1) {
 							var commentResult = TryParseCommentPacket (pageResult.Segments[i]);
 							if (commentResult.IsSuccess) {
-								file.VorbisComment = commentResult.Tag;
+								vorbisComment = commentResult.Tag;
 								foundComment = true;
 							} else if (IsVorbisCommentHeader (pageResult.Segments[i])) {
 								// It's a comment header but parsing failed
@@ -258,6 +277,16 @@ public sealed class OggVorbisFile
 
 		if (!foundIdentification)
 			return OggVorbisFileReadResult.Failure ("No Vorbis identification header found");
+
+		// Find the last page to get total samples from granule position
+		var totalSamples = FindLastGranulePosition (data);
+
+		// Create audio properties
+		var properties = AudioProperties.FromVorbis (totalSamples, sampleRate, channels, bitrateNominal);
+
+		// Create the file and set properties
+		var file = new OggVorbisFile (properties);
+		file.VorbisComment = vorbisComment;
 
 		return OggVorbisFileReadResult.Success (file, offset);
 	}
@@ -406,6 +435,102 @@ public sealed class OggVorbisFile
 			data[1] == VorbisMagic[0] && data[2] == VorbisMagic[1] &&
 			data[3] == VorbisMagic[2] && data[4] == VorbisMagic[3] &&
 			data[5] == VorbisMagic[4] && data[6] == VorbisMagic[5];
+	}
+
+	/// <summary>
+	/// Parses the Vorbis identification header for audio properties.
+	/// </summary>
+	/// <remarks>
+	/// Identification header layout (after 7-byte common header):
+	/// <code>
+	/// Bytes 0-3:   vorbis_version (must be 0)
+	/// Byte 4:      audio_channels
+	/// Bytes 5-8:   audio_sample_rate (little-endian)
+	/// Bytes 9-12:  bitrate_maximum (little-endian, signed)
+	/// Bytes 13-16: bitrate_nominal (little-endian, signed)
+	/// Bytes 17-20: bitrate_minimum (little-endian, signed)
+	/// Byte 21:     blocksize_0 (4 bits) | blocksize_1 (4 bits)
+	/// Byte 22:     framing_flag (1 bit)
+	/// </code>
+	/// </remarks>
+	static (int sampleRate, int channels, int bitrateNominal) ParseIdentificationHeader (ReadOnlySpan<byte> data)
+	{
+		// Minimum size: 7 (common header) + 23 (identification data) = 30 bytes
+		if (data.Length < 30)
+			return (0, 0, 0);
+
+		// Skip common header (1 byte type + 6 bytes "vorbis")
+		var ident = data.Slice (MinVorbisHeaderSize);
+
+		// vorbis_version must be 0
+		var version = ident[0] | (ident[1] << 8) | (ident[2] << 16) | (ident[3] << 24);
+		if (version != 0)
+			return (0, 0, 0);
+
+		var channels = ident[4];
+		var sampleRate = ident[5] | (ident[6] << 8) | (ident[7] << 16) | (ident[8] << 24);
+
+		// Bitrate nominal (signed 32-bit little-endian) at offset 13-16 from ident start
+		var bitrateNominal = ident[13] | (ident[14] << 8) | (ident[15] << 16) | (ident[16] << 24);
+
+		return (sampleRate, channels, bitrateNominal);
+	}
+
+	/// <summary>
+	/// Finds the granule position from the last Ogg page to calculate total samples.
+	/// </summary>
+	/// <remarks>
+	/// Scans backwards from the end of the file to find the last valid Ogg page.
+	/// The granule position on this page represents the total number of audio samples.
+	/// </remarks>
+	static ulong FindLastGranulePosition (ReadOnlySpan<byte> data)
+	{
+		// Scan backwards from the end to find the last page
+		// Ogg pages start with "OggS" magic
+		// We look for the pattern and validate the page structure
+
+		// Start scanning from near the end (last 64KB should be enough)
+		var searchStart = Math.Max (0, data.Length - 65536);
+
+		ulong lastGranulePosition = 0;
+		var offset = searchStart;
+
+		while (offset < data.Length - 27) {
+			// Look for "OggS" magic
+			if (data[offset] == 'O' && data[offset + 1] == 'g' &&
+				data[offset + 2] == 'g' && data[offset + 3] == 'S') {
+
+				// Read granule position (8 bytes little-endian at offset 6)
+				var granule = (ulong)data[offset + 6] |
+					((ulong)data[offset + 7] << 8) |
+					((ulong)data[offset + 8] << 16) |
+					((ulong)data[offset + 9] << 24) |
+					((ulong)data[offset + 10] << 32) |
+					((ulong)data[offset + 11] << 40) |
+					((ulong)data[offset + 12] << 48) |
+					((ulong)data[offset + 13] << 56);
+
+				// Only update if this looks like a valid granule position
+				// (not -1 which is used for non-audio pages)
+				if (granule != 0xFFFFFFFFFFFFFFFF)
+					lastGranulePosition = granule;
+
+				// Skip to after this page header to find next page
+				var segmentCount = data[offset + 26];
+				if (offset + 27 + segmentCount < data.Length) {
+					var pageSize = 27 + segmentCount;
+					for (var i = 0; i < segmentCount && offset + 27 + i < data.Length; i++)
+						pageSize += data[offset + 27 + i];
+
+					offset += pageSize;
+					continue;
+				}
+			}
+
+			offset++;
+		}
+
+		return lastGranulePosition;
 	}
 
 	VorbisComment EnsureVorbisComment ()
