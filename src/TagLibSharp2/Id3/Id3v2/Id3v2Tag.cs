@@ -16,6 +16,7 @@ public sealed class Id3v2Tag : Tag
 
 	readonly List<TextFrame> _frames = new (16);
 	readonly List<PictureFrame> _pictures = new (2);
+	readonly List<CommentFrame> _comments = new (2);
 
 	/// <summary>
 	/// Gets the ID3v2 version (2, 3, or 4).
@@ -81,10 +82,14 @@ public sealed class Id3v2Tag : Tag
 
 	/// <inheritdoc/>
 	public override string? Comment {
-		// TODO: Implement COMM frame support
-		get => null;
-		set { }
+		get => GetComment ();
+		set => SetComment (value);
 	}
+
+	/// <summary>
+	/// Gets the list of comment frames in this tag.
+	/// </summary>
+	public IReadOnlyList<CommentFrame> Comments => _comments;
 
 	/// <inheritdoc/>
 	public override string? Genre {
@@ -237,6 +242,12 @@ public sealed class Id3v2Tag : Tag
 				if (pictureResult.IsSuccess)
 					tag._pictures.Add (pictureResult.Frame!);
 			}
+			// Handle comment frames (COMM)
+			else if (frameId == "COMM") {
+				var commentResult = CommentFrame.Read (frameContent, (Id3v2Version)header.MajorVersion);
+				if (commentResult.IsSuccess)
+					tag._comments.Add (commentResult.Frame!);
+			}
 
 			// Move to next frame
 			var totalFrameSize = FrameHeaderSize + frameSize;
@@ -351,7 +362,7 @@ public sealed class Id3v2Tag : Tag
 	public BinaryData Render (int paddingSize)
 	{
 		// Render all frames and calculate size in single pass
-		var frameDataList = new List<BinaryData> ((_frames.Count + _pictures.Count) * 2);
+		var frameDataList = new List<BinaryData> ((_frames.Count + _pictures.Count + _comments.Count) * 2);
 		var framesSize = 0;
 
 		for (var i = 0; i < _frames.Count; i++) {
@@ -366,6 +377,15 @@ public sealed class Id3v2Tag : Tag
 		for (var i = 0; i < _pictures.Count; i++) {
 			var content = _pictures[i].RenderContent ();
 			var frameHeader = RenderFrameHeader ("APIC", content.Length);
+			frameDataList.Add (frameHeader);
+			frameDataList.Add (content);
+			framesSize += frameHeader.Length + content.Length;
+		}
+
+		// Render comment frames
+		for (var i = 0; i < _comments.Count; i++) {
+			var content = _comments[i].RenderContent ();
+			var frameHeader = RenderFrameHeader ("COMM", content.Length);
 			frameDataList.Add (frameHeader);
 			frameDataList.Add (content);
 			framesSize += frameHeader.Length + content.Length;
@@ -416,6 +436,82 @@ public sealed class Id3v2Tag : Tag
 	{
 		_frames.Clear ();
 		_pictures.Clear ();
+		_comments.Clear ();
+	}
+
+	/// <summary>
+	/// Gets the first comment with an empty description, or the first comment if none have empty description.
+	/// </summary>
+	string? GetComment ()
+	{
+		if (_comments.Count == 0)
+			return null;
+
+		// Prefer comments with empty description (default comment)
+		for (var i = 0; i < _comments.Count; i++) {
+			if (string.IsNullOrEmpty (_comments[i].Description))
+				return _comments[i].Text;
+		}
+
+		// Fall back to first comment
+		return _comments[0].Text;
+	}
+
+	/// <summary>
+	/// Sets or creates a comment with an empty description.
+	/// </summary>
+	void SetComment (string? value)
+	{
+		// Remove existing comments with empty description
+		_comments.RemoveAll (c => string.IsNullOrEmpty (c.Description));
+
+		// Add new comment if value is not empty
+		if (!string.IsNullOrEmpty (value))
+			_comments.Add (new CommentFrame (value!));
+	}
+
+	/// <summary>
+	/// Adds a comment frame to the tag.
+	/// </summary>
+	/// <param name="comment">The comment frame to add.</param>
+	public void AddComment (CommentFrame comment)
+	{
+#if NETSTANDARD2_0 || NETSTANDARD2_1
+		if (comment is null)
+			throw new ArgumentNullException (nameof (comment));
+#else
+		ArgumentNullException.ThrowIfNull (comment);
+#endif
+		_comments.Add (comment);
+	}
+
+	/// <summary>
+	/// Removes all comments with the specified language and description.
+	/// </summary>
+	/// <param name="language">The language code to match (null matches any).</param>
+	/// <param name="description">The description to match (null matches any).</param>
+	public void RemoveComments (string? language = null, string? description = null)
+	{
+		_comments.RemoveAll (c =>
+			(language is null || c.Language == language) &&
+			(description is null || c.Description == description));
+	}
+
+	/// <summary>
+	/// Gets the first comment matching the specified criteria.
+	/// </summary>
+	/// <param name="language">The language code to match (null matches any).</param>
+	/// <param name="description">The description to match (null matches any).</param>
+	/// <returns>The comment frame, or null if not found.</returns>
+	public CommentFrame? GetCommentFrame (string? language = null, string? description = null)
+	{
+		for (var i = 0; i < _comments.Count; i++) {
+			var c = _comments[i];
+			if ((language is null || c.Language == language) &&
+				(description is null || c.Description == description))
+				return c;
+		}
+		return null;
 	}
 
 	static string GetFrameId (ReadOnlySpan<byte> data)
