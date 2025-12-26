@@ -46,4 +46,54 @@ public sealed class DefaultFileSystem : IFileSystem
 		return await File.ReadAllBytesAsync (path, cancellationToken).ConfigureAwait (false);
 #endif
 	}
+
+	/// <inheritdoc/>
+	public void WriteAllBytes (string path, ReadOnlySpan<byte> data)
+	{
+#if NETSTANDARD2_0
+		File.WriteAllBytes (path, data.ToArray ());
+#else
+		using var stream = new FileStream (path, FileMode.Create, FileAccess.Write, FileShare.None);
+		stream.Write (data);
+		stream.Flush ();
+#endif
+	}
+
+	/// <inheritdoc/>
+	public async Task WriteAllBytesAsync (string path, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
+	{
+#if NETSTANDARD2_0
+		using var stream = new FileStream (path, FileMode.Create, FileAccess.Write, FileShare.None);
+		await stream.WriteAsync (data.ToArray (), 0, data.Length, cancellationToken).ConfigureAwait (false);
+		await stream.FlushAsync (cancellationToken).ConfigureAwait (false);
+#else
+		await File.WriteAllBytesAsync (path, data.ToArray (), cancellationToken).ConfigureAwait (false);
+#endif
+	}
+
+	/// <inheritdoc/>
+	public void Delete (string path)
+	{
+		if (File.Exists (path))
+			File.Delete (path);
+	}
+
+	/// <inheritdoc/>
+	public void Move (string sourcePath, string destinationPath)
+	{
+		// Delete destination first if it exists (required on some platforms)
+		if (File.Exists (destinationPath))
+			File.Delete (destinationPath);
+
+		File.Move (sourcePath, destinationPath);
+	}
+
+	/// <inheritdoc/>
+	public string? GetDirectoryName (string path) => Path.GetDirectoryName (path);
+
+	/// <inheritdoc/>
+	public string GetFileName (string path) => Path.GetFileName (path);
+
+	/// <inheritdoc/>
+	public string CombinePath (string path1, string path2) => Path.Combine (path1, path2);
 }
