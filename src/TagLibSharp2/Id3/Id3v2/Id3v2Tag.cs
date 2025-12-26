@@ -195,8 +195,12 @@ public sealed class Id3v2Tag : Tag
 	/// <returns>The text value, or null if not found.</returns>
 	public string? GetTextFrame (string frameId)
 	{
-		var frame = _frames.FirstOrDefault (f => f.Id == frameId);
-		return frame?.Text;
+		// Use for loop instead of LINQ for better performance
+		for (var i = 0; i < _frames.Count; i++) {
+			if (_frames[i].Id == frameId)
+				return _frames[i].Text;
+		}
+		return null;
 	}
 
 	/// <summary>
@@ -245,7 +249,12 @@ public sealed class Id3v2Tag : Tag
 	/// <returns>The picture frame, or null if not found.</returns>
 	public PictureFrame? GetPicture (Core.PictureType pictureType)
 	{
-		return _pictures.FirstOrDefault (p => p.PictureType == pictureType);
+		// Use for loop instead of LINQ for better performance
+		for (var i = 0; i < _pictures.Count; i++) {
+			if (_pictures[i].PictureType == pictureType)
+				return _pictures[i];
+		}
+		return null;
 	}
 
 	/// <summary>
@@ -282,25 +291,27 @@ public sealed class Id3v2Tag : Tag
 	/// <returns>The rendered tag data.</returns>
 	public BinaryData Render (int paddingSize)
 	{
-		// Render all frames
-		var frameDataList = new List<BinaryData> ();
-		foreach (var frame in _frames) {
-			var content = frame.RenderContent ();
-			var frameHeader = RenderFrameHeader (frame.Id, content.Length);
+		// Render all frames and calculate size in single pass
+		var frameDataList = new List<BinaryData> ((_frames.Count + _pictures.Count) * 2);
+		var framesSize = 0;
+
+		for (var i = 0; i < _frames.Count; i++) {
+			var content = _frames[i].RenderContent ();
+			var frameHeader = RenderFrameHeader (_frames[i].Id, content.Length);
 			frameDataList.Add (frameHeader);
 			frameDataList.Add (content);
+			framesSize += frameHeader.Length + content.Length;
 		}
 
 		// Render picture frames
-		foreach (var picture in _pictures) {
-			var content = picture.RenderContent ();
+		for (var i = 0; i < _pictures.Count; i++) {
+			var content = _pictures[i].RenderContent ();
 			var frameHeader = RenderFrameHeader ("APIC", content.Length);
 			frameDataList.Add (frameHeader);
 			frameDataList.Add (content);
+			framesSize += frameHeader.Length + content.Length;
 		}
 
-		// Calculate total frame data size
-		var framesSize = frameDataList.Sum (d => d.Length);
 		var totalSize = framesSize + paddingSize;
 
 		// Render header

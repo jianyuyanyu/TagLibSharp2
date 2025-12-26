@@ -285,7 +285,13 @@ public sealed class VorbisComment : Tag
 		ArgumentNullException.ThrowIfNull (name);
 #endif
 		var upperName = name.ToUpperInvariant ();
-		return _fields.Where (f => f.Name == upperName).Select (f => f.Value).ToList ();
+		// Use for loop instead of LINQ for better performance
+		var result = new List<string> ();
+		for (var i = 0; i < _fields.Count; i++) {
+			if (_fields[i].Name == upperName)
+				result.Add (_fields[i].Value);
+		}
+		return result;
 	}
 
 	/// <summary>
