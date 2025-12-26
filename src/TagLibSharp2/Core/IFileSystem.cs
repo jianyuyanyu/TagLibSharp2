@@ -49,4 +49,14 @@ public interface IFileSystem
 	/// <exception cref="FileNotFoundException">The file was not found.</exception>
 	/// <exception cref="IOException">An I/O error occurred.</exception>
 	byte[] ReadAllBytes (string path);
+
+	/// <summary>
+	/// Asynchronously reads all bytes from a file.
+	/// </summary>
+	/// <param name="path">The file path to read.</param>
+	/// <param name="cancellationToken">A token to cancel the operation.</param>
+	/// <returns>A task containing the file contents as a byte array.</returns>
+	/// <exception cref="FileNotFoundException">The file was not found.</exception>
+	/// <exception cref="IOException">An I/O error occurred.</exception>
+	Task<byte[]> ReadAllBytesAsync (string path, CancellationToken cancellationToken = default);
 }

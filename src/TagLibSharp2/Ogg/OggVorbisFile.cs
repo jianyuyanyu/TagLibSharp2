@@ -110,6 +110,27 @@ public sealed class OggVorbisFile
 	}
 
 	/// <summary>
+	/// Asynchronously attempts to read an Ogg Vorbis file from a file path.
+	/// </summary>
+	/// <param name="path">The path to the Ogg Vorbis file.</param>
+	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
+	/// <param name="cancellationToken">A token to cancel the operation.</param>
+	/// <returns>A task containing a result indicating success or failure.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is null.</exception>
+	public static async Task<OggVorbisFileReadResult> ReadFromFileAsync (
+		string path,
+		IFileSystem? fileSystem = null,
+		CancellationToken cancellationToken = default)
+	{
+		var readResult = await FileHelper.SafeReadAllBytesAsync (path, fileSystem, cancellationToken)
+			.ConfigureAwait (false);
+		if (!readResult.IsSuccess)
+			return OggVorbisFileReadResult.Failure (readResult.Error!);
+
+		return Read (readResult.Data!);
+	}
+
+	/// <summary>
 	/// Attempts to read an Ogg Vorbis file from binary data.
 	/// </summary>
 	/// <param name="data">The file data.</param>

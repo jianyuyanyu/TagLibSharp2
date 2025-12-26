@@ -60,6 +60,12 @@ internal sealed class MockFileSystem : IFileSystem
 			throw new FileNotFoundException ("File not found", path);
 		return data;
 	}
+
+	public Task<byte[]> ReadAllBytesAsync (string path, CancellationToken cancellationToken = default)
+	{
+		cancellationToken.ThrowIfCancellationRequested ();
+		return Task.FromResult (ReadAllBytes (path));
+	}
 }
 
 [TestClass]
@@ -153,6 +159,61 @@ public sealed class FileHelperTests
 	public void SafeReadAllBytes_NullPath_ThrowsArgumentNullException ()
 	{
 		Assert.ThrowsExactly<ArgumentNullException> (() => FileHelper.SafeReadAllBytes (null!));
+	}
+
+	[TestMethod]
+	public async Task SafeReadAllBytesAsync_FileNotFound_ReturnsFailure ()
+	{
+		var fs = new MockFileSystem ();
+
+		var result = await FileHelper.SafeReadAllBytesAsync ("/nonexistent.txt", fs);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNotNull (result.Error);
+		StringAssert.Contains (result.Error, "File not found");
+	}
+
+	[TestMethod]
+	public async Task SafeReadAllBytesAsync_Success_ReturnsData ()
+	{
+		var fs = new MockFileSystem ();
+		var data = new byte[] { 0x66, 0x4C, 0x61, 0x43 }; // fLaC
+		fs.AddFile ("/test.flac", data);
+
+		var result = await FileHelper.SafeReadAllBytesAsync ("/test.flac", fs);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNull (result.Error);
+		CollectionAssert.AreEqual (data, result.Data);
+	}
+
+	[TestMethod]
+	public async Task SafeReadAllBytesAsync_AccessDenied_ReturnsFailure ()
+	{
+		var fs = new MockFileSystem ();
+		fs.AddFile ("/protected.txt", new byte[] { 1, 2, 3 });
+		fs.MarkInaccessible ("/protected.txt");
+
+		var result = await FileHelper.SafeReadAllBytesAsync ("/protected.txt", fs);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNotNull (result.Error);
+		StringAssert.Contains (result.Error, "Access denied");
+	}
+
+	[TestMethod]
+	public async Task SafeReadAllBytesAsync_Cancellation_ReturnsFailure ()
+	{
+		var fs = new MockFileSystem ();
+		fs.AddFile ("/test.txt", new byte[] { 1, 2, 3 });
+		var cts = new CancellationTokenSource ();
+		cts.Cancel ();
+
+		var result = await FileHelper.SafeReadAllBytesAsync ("/test.txt", fs, cts.Token);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNotNull (result.Error);
+		StringAssert.Contains (result.Error, "cancelled");
 	}
 }
 

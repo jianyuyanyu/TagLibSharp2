@@ -30,4 +30,18 @@ public sealed class DefaultFileSystem : IFileSystem
 
 	/// <inheritdoc/>
 	public byte[] ReadAllBytes (string path) => File.ReadAllBytes (path);
+
+	/// <inheritdoc/>
+	public async Task<byte[]> ReadAllBytesAsync (string path, CancellationToken cancellationToken = default)
+	{
+#if NETSTANDARD2_0
+		// File.ReadAllBytesAsync doesn't exist in netstandard2.0
+		using var stream = File.OpenRead (path);
+		var bytes = new byte[stream.Length];
+		await stream.ReadAsync (bytes, 0, bytes.Length, cancellationToken).ConfigureAwait (false);
+		return bytes;
+#else
+		return await File.ReadAllBytesAsync (path, cancellationToken).ConfigureAwait (false);
+#endif
+	}
 }

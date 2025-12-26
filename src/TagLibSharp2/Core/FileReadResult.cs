@@ -107,4 +107,40 @@ public static class FileHelper
 			return FileReadResult.Failure ($"Access denied: {ex.Message}");
 		}
 	}
+
+	/// <summary>
+	/// Asynchronously reads all bytes from a file with consistent error handling.
+	/// </summary>
+	/// <param name="path">The file path to read.</param>
+	/// <param name="fileSystem">The file system to use (defaults to real file system).</param>
+	/// <param name="cancellationToken">A token to cancel the operation.</param>
+	/// <returns>A task containing the file data or an error message.</returns>
+	public static async Task<FileReadResult> SafeReadAllBytesAsync (
+		string path,
+		IFileSystem? fileSystem = null,
+		CancellationToken cancellationToken = default)
+	{
+#if NETSTANDARD2_0 || NETSTANDARD2_1
+		if (path is null)
+			throw new ArgumentNullException (nameof (path));
+#else
+		ArgumentNullException.ThrowIfNull (path);
+#endif
+
+		var fs = fileSystem ?? DefaultFileSystem.Instance;
+
+		if (!fs.FileExists (path))
+			return FileReadResult.Failure ($"File not found: {path}");
+
+		try {
+			var data = await fs.ReadAllBytesAsync (path, cancellationToken).ConfigureAwait (false);
+			return FileReadResult.Success (data);
+		} catch (IOException ex) {
+			return FileReadResult.Failure ($"Failed to read file: {ex.Message}");
+		} catch (UnauthorizedAccessException ex) {
+			return FileReadResult.Failure ($"Access denied: {ex.Message}");
+		} catch (OperationCanceledException) {
+			return FileReadResult.Failure ("Operation was cancelled");
+		}
+	}
 }
