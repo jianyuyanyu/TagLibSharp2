@@ -330,21 +330,13 @@ public sealed class Id3v2Tag : Tag
 		builder.Add (idBytes.AsSpan ().Slice (0, 4));
 
 		// Size (syncsafe for v2.4, big-endian for v2.3)
-		if (Version == 4) {
-			builder.Add ((byte)((contentSize >> 21) & 0x7F));
-			builder.Add ((byte)((contentSize >> 14) & 0x7F));
-			builder.Add ((byte)((contentSize >> 7) & 0x7F));
-			builder.Add ((byte)(contentSize & 0x7F));
-		} else {
-			builder.Add ((byte)((contentSize >> 24) & 0xFF));
-			builder.Add ((byte)((contentSize >> 16) & 0xFF));
-			builder.Add ((byte)((contentSize >> 8) & 0xFF));
-			builder.Add ((byte)(contentSize & 0xFF));
-		}
+		if (Version == 4)
+			builder.AddSyncSafeUInt32 ((uint)contentSize);
+		else
+			builder.AddUInt32BE ((uint)contentSize);
 
 		// Flags (2 bytes, zeros)
-		builder.Add (0);
-		builder.Add (0);
+		builder.AddUInt16BE (0);
 
 		return builder.ToBinaryData ();
 	}
@@ -374,17 +366,19 @@ public sealed class Id3v2Tag : Tag
 	static int GetFrameSize (ReadOnlySpan<byte> data, byte version)
 	{
 		if (version == 4) {
-			// Syncsafe integer
+			// Syncsafe integer (7 bits per byte, max 28 bits = 268MB)
 			return ((data[0] & 0x7F) << 21) |
 				   ((data[1] & 0x7F) << 14) |
 				   ((data[2] & 0x7F) << 7) |
 				   (data[3] & 0x7F);
 		} else {
-			// Big-endian
-			return (data[0] << 24) |
-				   (data[1] << 16) |
-				   (data[2] << 8) |
-				   data[3];
+			// Big-endian 32-bit unsigned, cast to uint to avoid overflow when MSB >= 0x80.
+			// Values > int.MaxValue are unrealistic for frame sizes and will fail
+			// bounds checking in the caller, so we safely cast back to int.
+			return (int)(((uint)data[0] << 24) |
+						 ((uint)data[1] << 16) |
+						 ((uint)data[2] << 8) |
+						 (uint)data[3]);
 		}
 	}
 }

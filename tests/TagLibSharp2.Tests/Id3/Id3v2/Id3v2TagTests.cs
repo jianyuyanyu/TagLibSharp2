@@ -332,6 +332,131 @@ public class Id3v2TagTests
 
 	#endregion
 
+	#region Frame Size Edge Cases
+
+	[TestMethod]
+	public void Read_V23_FrameSizeWithHighByte0x80_DoesNotOverflow ()
+	{
+		// This test specifically verifies the fix for integer overflow bug.
+		// When data[0] = 0x80, the expression (data[0] << 24) produces -2147483648
+		// (negative) instead of 2147483648 (positive) due to signed integer promotion.
+		// The size 0x80000005 = 2147483653 bytes, which exceeds available data.
+		// With the bug: Frame size becomes negative → comparison logic breaks
+		// With the fix: Frame size is positive but exceeds remaining → parsing stops gracefully
+
+		var tagSize = (uint)20; // Small tag
+		var header = CreateMinimalTag (version: 3, size: tagSize);
+		var frame = new byte[20];
+
+		// Frame ID "TIT2"
+		frame[0] = (byte)'T';
+		frame[1] = (byte)'I';
+		frame[2] = (byte)'T';
+		frame[3] = (byte)'2';
+
+		// Frame size with MSB set: 0x80 0x00 0x00 0x05 = 2,147,483,653 bytes
+		// This would be -2,147,483,643 with the bug (signed overflow)
+		frame[4] = 0x80;  // High byte >= 0x80 triggers the overflow bug
+		frame[5] = 0x00;
+		frame[6] = 0x00;
+		frame[7] = 0x05;
+
+		// Flags
+		frame[8] = 0x00;
+		frame[9] = 0x00;
+
+		// Frame content (won't be reached due to size overflow)
+		frame[10] = 0x00;
+		frame[11] = (byte)'X';
+
+		var data = new byte[header.Length + frame.Length];
+		Array.Copy (header, data, header.Length);
+		Array.Copy (frame, 0, data, header.Length, frame.Length);
+
+		var result = Id3v2Tag.Read (data);
+
+		// The frame size (2GB+) exceeds remaining data, so parsing stops gracefully.
+		// Key assertion: Should succeed with no frames parsed, NOT crash or throw.
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsEmpty (result.Tag!.Frames);
+	}
+
+	[TestMethod]
+	public void Read_V23_FrameSizeWithHighByte0xFF_DoesNotOverflow ()
+	{
+		// Test with highest possible byte value (0xFF) to ensure no overflow
+		var tagSize = (uint)20;
+		var header = CreateMinimalTag (version: 3, size: tagSize);
+		var frame = new byte[20];
+
+		frame[0] = (byte)'T';
+		frame[1] = (byte)'I';
+		frame[2] = (byte)'T';
+		frame[3] = (byte)'2';
+
+		// Frame size: 0xFF 0xFF 0xFF 0x05 = 4,294,967,045 (max with 0xFF high byte)
+		// Without fix: This becomes -251 (negative) due to overflow
+		frame[4] = 0xFF;
+		frame[5] = 0xFF;
+		frame[6] = 0xFF;
+		frame[7] = 0x05;
+
+		frame[8] = 0x00;
+		frame[9] = 0x00;
+		frame[10] = 0x00;
+		frame[11] = (byte)'X';
+
+		var data = new byte[header.Length + frame.Length];
+		Array.Copy (header, data, header.Length);
+		Array.Copy (frame, 0, data, header.Length, frame.Length);
+
+		var result = Id3v2Tag.Read (data);
+
+		// Should not crash; frame size exceeds data, so no frames parsed
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsEmpty (result.Tag!.Frames);
+	}
+
+	[TestMethod]
+	public void Read_V23_NormalFrameSize_ParsesCorrectly ()
+	{
+		// Baseline test: Normal frame size should still work
+		var header = CreateMinimalTag (version: 3, size: 20);
+		var frame = new byte[20];
+
+		frame[0] = (byte)'T';
+		frame[1] = (byte)'I';
+		frame[2] = (byte)'T';
+		frame[3] = (byte)'2';
+
+		// Frame size: 0x00 0x00 0x00 0x05 = 5 bytes (normal)
+		frame[4] = 0x00;
+		frame[5] = 0x00;
+		frame[6] = 0x00;
+		frame[7] = 0x05;
+
+		frame[8] = 0x00;
+		frame[9] = 0x00;
+
+		// Frame content: encoding (Latin-1) + "Test"
+		frame[10] = 0x00;
+		frame[11] = (byte)'T';
+		frame[12] = (byte)'e';
+		frame[13] = (byte)'s';
+		frame[14] = (byte)'t';
+
+		var data = new byte[header.Length + frame.Length];
+		Array.Copy (header, data, header.Length);
+		Array.Copy (frame, 0, data, header.Length, frame.Length);
+
+		var result = Id3v2Tag.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Test", result.Tag!.Title);
+	}
+
+	#endregion
+
 	#region Helper Methods
 
 	static byte[] CreateMinimalTag (byte version, uint size)

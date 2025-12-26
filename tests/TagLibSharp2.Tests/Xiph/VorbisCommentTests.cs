@@ -156,6 +156,29 @@ public class VorbisCommentTests
 	}
 
 	[TestMethod]
+	public void GetValue_NonExistentField_ReturnsNull ()
+	{
+		// This test verifies that GetValue returns null for non-existent fields
+		// rather than relying on struct default behavior (which can be confusing)
+		var comment = new VorbisComment ();
+		comment.AddField ("TITLE", "Test");
+
+		var result = comment.GetValue ("NONEXISTENT");
+
+		Assert.IsNull (result);
+	}
+
+	[TestMethod]
+	public void GetValue_EmptyFields_ReturnsNull ()
+	{
+		var comment = new VorbisComment ();
+
+		var result = comment.GetValue ("TITLE");
+
+		Assert.IsNull (result);
+	}
+
+	[TestMethod]
 	public void SetValue_ReplacesExisting ()
 	{
 		var comment = new VorbisComment ();

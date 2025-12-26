@@ -260,7 +260,14 @@ public sealed class VorbisComment : Tag
 		ArgumentNullException.ThrowIfNull (name);
 #endif
 		var upperName = name.ToUpperInvariant ();
-		return _fields.FirstOrDefault (f => f.Name == upperName).Value;
+		// Use explicit check instead of relying on struct default behavior.
+		// When no match is found, FirstOrDefault returns default(VorbisCommentField)
+		// which has null properties - but we make this explicit for clarity.
+		for (var i = 0; i < _fields.Count; i++) {
+			if (_fields[i].Name == upperName)
+				return _fields[i].Value;
+		}
+		return null;
 	}
 
 	/// <summary>
