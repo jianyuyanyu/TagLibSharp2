@@ -30,10 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Track number support (v1.1)
 - ID3v2 tag support (versions 2.3 and 2.4)
   - Header parsing with flags and syncsafe sizes
-  - Text frames (TIT2, TPE1, TALB, TYER, TDRC, TCON, TRCK)
+  - Text frames (TIT2, TPE1, TALB, TYER, TDRC, TCON, TRCK, TPE2, TPOS, TCOM, TBPM)
   - Picture frames (APIC) with description and multiple picture types
   - Multiple text encodings (Latin-1, UTF-8, UTF-16 BE/LE)
   - Tag rendering with proper padding management
+  - Extended header support (v2.3 and v2.4)
+  - AlbumArtist, DiscNumber, Composer, and BeatsPerMinute properties
 
 #### Xiph Format Support
 - FLAC file container
@@ -52,10 +54,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CRC-32 validation
   - Vorbis comment extraction from packets
 
+#### File I/O
+- `IFileSystem` abstraction for testability
+- `DefaultFileSystem` singleton for real file operations
+- `FileHelper.SafeReadAllBytes` with consistent error handling
+- `FileHelper.SafeReadAllBytesAsync` with cancellation support
+- `FlacFile.ReadFromFileAsync` and `OggVorbisFile.ReadFromFileAsync`
+
 #### Project Infrastructure
 - GitHub Actions CI workflow for cross-platform builds (Ubuntu, Windows, macOS)
 - Dependabot configuration for automated dependency updates
-- Comprehensive test suite (600+ tests)
+- Comprehensive test suite (630+ tests)
 - Clean-room implementation (no TagLib# code)
 
 ### Changed

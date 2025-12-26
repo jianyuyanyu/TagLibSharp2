@@ -28,36 +28,42 @@ dotnet build
 ## Quick Start
 
 ```csharp
-using TagLibSharp2.Id3;
+using TagLibSharp2.Id3.Id3v2;
 using TagLibSharp2.Xiph;
+using TagLibSharp2.Ogg;
 
 // Read ID3v2 tags from MP3 files
 var mp3Data = File.ReadAllBytes("song.mp3");
-var id3Result = Id3v2Tag.TryRead(mp3Data);
+var id3Result = Id3v2Tag.Read(mp3Data);
 if (id3Result.IsSuccess)
 {
-    var tag = id3Result.Value;
+    var tag = id3Result.Tag!;
     Console.WriteLine($"Title: {tag.Title}");
     Console.WriteLine($"Artist: {tag.Artist}");
     Console.WriteLine($"Album: {tag.Album}");
 }
 
-// Read FLAC metadata
-var flacData = File.ReadAllBytes("song.flac");
-var flacResult = FlacFile.TryRead(flacData);
+// Read FLAC metadata (sync)
+var flacResult = FlacFile.ReadFromFile("song.flac");
 if (flacResult.IsSuccess)
 {
-    var flac = flacResult.Value;
+    var flac = flacResult.File!;
     Console.WriteLine($"Title: {flac.Title}");
     Console.WriteLine($"Artist: {flac.Artist}");
 }
 
+// Read FLAC metadata (async)
+var flacAsync = await FlacFile.ReadFromFileAsync("song.flac");
+if (flacAsync.IsSuccess)
+{
+    Console.WriteLine($"Title: {flacAsync.File!.Title}");
+}
+
 // Read Ogg Vorbis comments
-var oggData = File.ReadAllBytes("song.ogg");
-var oggResult = OggVorbisFile.TryRead(oggData);
+var oggResult = OggVorbisFile.ReadFromFile("song.ogg");
 if (oggResult.IsSuccess)
 {
-    var ogg = oggResult.Value;
+    var ogg = oggResult.File!;
     Console.WriteLine($"Title: {ogg.Title}");
 }
 ```
@@ -87,15 +93,21 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 ### Phase 2: ID3 Support ✅
 - [x] ID3v1/v1.1 reading and writing (id3.org specification)
 - [x] ID3v2.3/2.4 reading and writing (id3.org specification)
-  - [x] Text frames (TIT2, TPE1, TALB, TYER, TDRC, TCON, TRCK)
+  - [x] Text frames (TIT2, TPE1, TALB, TYER, TDRC, TCON, TRCK, TPE2, TPOS, TCOM, TBPM)
   - [x] Picture frames (APIC) with multiple picture types
   - [x] Syncsafe integer handling, multiple text encodings
+  - [x] Extended header support
 
 ### Phase 3: Xiph Formats ✅
 - [x] Vorbis Comments (xiph.org specification)
 - [x] FLAC metadata blocks (xiph.org specification)
   - [x] StreamInfo, VorbisComment, Picture block support
 - [x] Ogg container support with CRC validation
+
+### Phase 4: I/O Abstraction ✅
+- [x] File system abstraction for testability
+- [x] Async file I/O support with cancellation
+- [x] Extended metadata: Composer, BPM, AlbumArtist, DiscNumber
 
 ### Future
 - [ ] File write operations (in-memory rendering complete)
