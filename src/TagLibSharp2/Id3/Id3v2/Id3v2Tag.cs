@@ -168,6 +168,60 @@ public sealed class Id3v2Tag : Tag
 		set => SetTextFrame ("TBPM", value?.ToString (System.Globalization.CultureInfo.InvariantCulture));
 	}
 
+	/// <inheritdoc/>
+	public override string? ReplayGainTrackGain {
+		get => GetUserText ("REPLAYGAIN_TRACK_GAIN");
+		set => SetUserText ("REPLAYGAIN_TRACK_GAIN", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ReplayGainTrackPeak {
+		get => GetUserText ("REPLAYGAIN_TRACK_PEAK");
+		set => SetUserText ("REPLAYGAIN_TRACK_PEAK", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ReplayGainAlbumGain {
+		get => GetUserText ("REPLAYGAIN_ALBUM_GAIN");
+		set => SetUserText ("REPLAYGAIN_ALBUM_GAIN", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ReplayGainAlbumPeak {
+		get => GetUserText ("REPLAYGAIN_ALBUM_PEAK");
+		set => SetUserText ("REPLAYGAIN_ALBUM_PEAK", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzTrackId {
+		get => GetUserText ("MUSICBRAINZ_TRACKID");
+		set => SetUserText ("MUSICBRAINZ_TRACKID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzReleaseId {
+		get => GetUserText ("MUSICBRAINZ_ALBUMID");
+		set => SetUserText ("MUSICBRAINZ_ALBUMID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzArtistId {
+		get => GetUserText ("MUSICBRAINZ_ARTISTID");
+		set => SetUserText ("MUSICBRAINZ_ARTISTID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzReleaseGroupId {
+		get => GetUserText ("MUSICBRAINZ_RELEASEGROUPID");
+		set => SetUserText ("MUSICBRAINZ_RELEASEGROUPID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzAlbumArtistId {
+		get => GetUserText ("MUSICBRAINZ_ALBUMARTISTID");
+		set => SetUserText ("MUSICBRAINZ_ALBUMARTISTID", value);
+	}
+
 	/// <summary>
 	/// Initializes a new instance of the <see cref="Id3v2Tag"/> class.
 	/// </summary>
