@@ -489,6 +489,136 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.AreEqual (4u, result.Tag.TotalDiscs);
 	}
 
+	// Multi-Value Tests
+
+	[TestMethod]
+	public void Artists_SingleValue_ReturnsOneElement ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24) { Artist = "The Beatles" };
+
+		var artists = tag.Artists;
+
+		Assert.HasCount (1, artists);
+		Assert.AreEqual ("The Beatles", artists[0]);
+	}
+
+	[TestMethod]
+	public void Artists_NullSeparated_ReturnsMultipleElements ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		var artistValues = new List<string> { "John Lennon", "Paul McCartney" };
+		tag.SetTextFrameValues ("TPE1", artistValues);
+
+		var artists = tag.Artists;
+
+		Assert.HasCount (2, artists);
+		Assert.AreEqual ("John Lennon", artists[0]);
+		Assert.AreEqual ("Paul McCartney", artists[1]);
+	}
+
+	[TestMethod]
+	public void Artists_SlashSeparated_ReturnsMultipleElements ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24) { Artist = "Daft Punk / The Weeknd" };
+
+		var artists = tag.Artists;
+
+		Assert.HasCount (2, artists);
+		Assert.AreEqual ("Daft Punk", artists[0]);
+		Assert.AreEqual ("The Weeknd", artists[1]);
+	}
+
+	[TestMethod]
+	public void GetTextFrameValues_EmptyFrame_ReturnsEmptyList ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		var artists = tag.GetTextFrameValues ("TPE1");
+
+		Assert.IsEmpty (artists);
+	}
+
+	[TestMethod]
+	public void SetTextFrameValues_Null_RemovesFrame ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24) { Artist = "Test Artist" };
+
+		tag.SetTextFrameValues ("TPE1", null);
+
+		Assert.IsNull (tag.Artist);
+		Assert.IsEmpty (tag.Artists);
+	}
+
+	[TestMethod]
+	public void SetTextFrameValues_Empty_RemovesFrame ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24) { Artist = "Test Artist" };
+
+		tag.SetTextFrameValues ("TPE1", Array.Empty<string> ());
+
+		Assert.IsNull (tag.Artist);
+	}
+
+	[TestMethod]
+	public void Genres_MultiValue_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		var genreValues = new List<string> { "Rock", "Pop", "Electronic" };
+		tag.SetTextFrameValues ("TCON", genreValues);
+
+		var genres = tag.Genres;
+
+		Assert.HasCount (3, genres);
+		Assert.AreEqual ("Rock", genres[0]);
+		Assert.AreEqual ("Pop", genres[1]);
+		Assert.AreEqual ("Electronic", genres[2]);
+	}
+
+	[TestMethod]
+	public void Composers_MultiValue_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		var composerValues = new List<string> { "Lennon", "McCartney" };
+		tag.SetTextFrameValues ("TCOM", composerValues);
+
+		var composers = tag.Composers;
+
+		Assert.HasCount (2, composers);
+		Assert.AreEqual ("Lennon", composers[0]);
+		Assert.AreEqual ("McCartney", composers[1]);
+	}
+
+	[TestMethod]
+	public void AlbumArtists_MultiValue_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		var albumArtistValues = new List<string> { "Various Artists", "Compilation" };
+		tag.SetTextFrameValues ("TPE2", albumArtistValues);
+
+		var albumArtists = tag.AlbumArtists;
+
+		Assert.HasCount (2, albumArtists);
+		Assert.AreEqual ("Various Artists", albumArtists[0]);
+		Assert.AreEqual ("Compilation", albumArtists[1]);
+	}
+
+	[TestMethod]
+	public void MultiValue_SlashSeparated_RoundTrip_PreservesValues ()
+	{
+		// Use slash-separated values for round-trip as it's more widely compatible
+		var original = new Id3v2Tag (Id3v2Version.V24) { Artist = "Artist One / Artist Two / Artist Three" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		var artists = result.Tag!.Artists;
+		Assert.HasCount (3, artists);
+		Assert.AreEqual ("Artist One", artists[0]);
+		Assert.AreEqual ("Artist Two", artists[1]);
+		Assert.AreEqual ("Artist Three", artists[2]);
+	}
+
 	// Helper Methods
 
 	static byte[] CreateTagWithTextFrame (string frameId, string text, byte version)

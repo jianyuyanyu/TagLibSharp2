@@ -501,6 +501,113 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <summary>
+	/// Gets all values from a text frame (multi-value support).
+	/// </summary>
+	/// <param name="frameId">The frame ID (e.g., TPE1 for artists).</param>
+	/// <returns>A list of values, split by null characters (v2.4) or "/" (v2.3).</returns>
+	/// <remarks>
+	/// ID3v2.4 uses null characters as value separators. ID3v2.3 has no official
+	/// separator, but "/" is commonly used. This method handles both.
+	/// </remarks>
+	public IReadOnlyList<string> GetTextFrameValues (string frameId)
+	{
+		var text = GetTextFrame (frameId);
+		if (string.IsNullOrEmpty (text))
+			return Array.Empty<string> ();
+
+		// ID3v2.4 uses null as separator
+#if NETSTANDARD2_0
+		if (text!.IndexOf ('\0') >= 0) {
+#else
+		if (text!.Contains ('\0', StringComparison.Ordinal)) {
+#endif
+			var parts = text.Split ('\0');
+			var result = new List<string> (parts.Length);
+			for (var i = 0; i < parts.Length; i++) {
+				var trimmed = parts[i].Trim ();
+				if (!string.IsNullOrEmpty (trimmed))
+					result.Add (trimmed);
+			}
+			return result;
+		}
+
+		// ID3v2.3 commonly uses "/" as separator (not official but widely used)
+		// Only split if there are multiple values indicated by "/"
+#if NETSTANDARD2_0
+		if (text.IndexOf ('/') >= 0) {
+#else
+		if (text.Contains ('/', StringComparison.Ordinal)) {
+#endif
+			var parts = text.Split ('/');
+			var result = new List<string> (parts.Length);
+			for (var i = 0; i < parts.Length; i++) {
+				var trimmed = parts[i].Trim ();
+				if (!string.IsNullOrEmpty (trimmed))
+					result.Add (trimmed);
+			}
+			return result;
+		}
+
+		// Single value
+		return new List<string> { text };
+	}
+
+	/// <summary>
+	/// Sets a text frame with multiple values.
+	/// </summary>
+	/// <param name="frameId">The frame ID.</param>
+	/// <param name="values">The values to set.</param>
+	/// <remarks>
+	/// Values are joined with null characters for ID3v2.4 compatibility.
+	/// </remarks>
+	public void SetTextFrameValues (string frameId, IEnumerable<string>? values)
+	{
+		if (values is null) {
+			SetTextFrame (frameId, null);
+			return;
+		}
+
+		var list = new List<string> ();
+		foreach (var v in values) {
+			if (!string.IsNullOrEmpty (v))
+				list.Add (v);
+		}
+
+		if (list.Count == 0) {
+			SetTextFrame (frameId, null);
+			return;
+		}
+
+		// Join with null for ID3v2.4 multi-value support
+		var joined = string.Join ("\0", list);
+		SetTextFrame (frameId, joined);
+	}
+
+	/// <summary>
+	/// Gets all artist names (multi-value support).
+	/// </summary>
+	/// <remarks>
+	/// Many songs have multiple artists. This property returns all of them.
+	/// For a single concatenated string, use <see cref="Artist"/>.
+	/// </remarks>
+	public IReadOnlyList<string> Artists => GetTextFrameValues ("TPE1");
+
+	/// <summary>
+	/// Gets all genre names (multi-value support).
+	/// </summary>
+	public IReadOnlyList<string> Genres => GetTextFrameValues ("TCON");
+
+	/// <summary>
+	/// Gets all composer names (multi-value support).
+	/// </summary>
+	public IReadOnlyList<string> Composers => GetTextFrameValues ("TCOM");
+
+	/// <summary>
+	/// Gets all album artist names (multi-value support).
+	/// </summary>
+	public IReadOnlyList<string> AlbumArtists => GetTextFrameValues ("TPE2");
+
+	/// <summary>
 	/// Sets or creates a text frame.
 	/// </summary>
 	/// <param name="frameId">The frame ID.</param>
