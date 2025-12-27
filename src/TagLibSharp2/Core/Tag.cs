@@ -128,7 +128,26 @@ public abstract class Tag
 	/// </remarks>
 	public virtual string? Lyrics { get => null; set { } }
 
-	#region ReplayGain
+	/// <summary>
+	/// Gets or sets the ISRC (International Standard Recording Code).
+	/// </summary>
+	/// <remarks>
+	/// A 12-character alphanumeric code that uniquely identifies sound recordings.
+	/// Format: CC-XXX-YY-NNNNN (country, registrant, year, designation).
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Isrc { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the publisher or record label.
+	/// </summary>
+	/// <remarks>
+	/// The name of the record label or publisher of this recording.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Publisher { get => null; set { } }
+
+	// ReplayGain properties
 
 	/// <summary>
 	/// Gets or sets the ReplayGain track gain value (e.g., "-6.50 dB").
@@ -166,9 +185,7 @@ public abstract class Tag
 	/// </remarks>
 	public virtual string? ReplayGainAlbumPeak { get => null; set { } }
 
-	#endregion
-
-	#region MusicBrainz IDs
+	// MusicBrainz IDs
 
 	/// <summary>
 	/// Gets or sets the MusicBrainz Track ID (Recording MBID).
@@ -214,8 +231,6 @@ public abstract class Tag
 	/// Not all tag formats support this field. Default implementation returns null.
 	/// </remarks>
 	public virtual string? MusicBrainzAlbumArtistId { get => null; set { } }
-
-	#endregion
 
 	/// <summary>
 	/// Gets a value indicating whether all standard fields are empty or null.

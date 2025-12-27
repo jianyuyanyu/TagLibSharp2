@@ -204,6 +204,18 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? Isrc {
+		get => GetTextFrame ("TSRC");
+		set => SetTextFrame ("TSRC", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Publisher {
+		get => GetTextFrame ("TPUB");
+		set => SetTextFrame ("TPUB", value);
+	}
+
+	/// <inheritdoc/>
 	public override uint? TotalTracks {
 		get {
 			var trackStr = GetTextFrame ("TRCK");

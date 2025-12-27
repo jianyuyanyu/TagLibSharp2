@@ -7,14 +7,14 @@ namespace TagLibSharp2.Tests.Xiph;
 
 /// <summary>
 /// Tests for extended metadata properties in VorbisComment: Conductor, Copyright,
-/// Compilation, and Lyrics.
+/// Compilation, ISRC, Publisher, and Lyrics.
 /// </summary>
 [TestClass]
 [TestCategory ("Unit")]
 [TestCategory ("Xiph")]
 public class VorbisCommentExtendedMetadataTests
 {
-	#region Conductor Tests
+	// Conductor Tests
 
 	[TestMethod]
 	public void Conductor_GetSet_Works ()
@@ -51,9 +51,7 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual ("Sir Simon Rattle", result.Tag!.Conductor);
 	}
 
-	#endregion
-
-	#region Copyright Tests
+	// Copyright Tests
 
 	[TestMethod]
 	public void Copyright_GetSet_Works ()
@@ -90,9 +88,7 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual ("2025 Independent", result.Tag!.Copyright);
 	}
 
-	#endregion
-
-	#region Compilation Tests
+	// Compilation Tests
 
 	[TestMethod]
 	public void IsCompilation_GetSet_Works ()
@@ -129,9 +125,81 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.IsTrue (result.Tag!.IsCompilation);
 	}
 
-	#endregion
+	// ISRC Tests
 
-	#region Lyrics Tests
+	[TestMethod]
+	public void Isrc_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.Isrc = "USRC17607839";
+
+		Assert.AreEqual ("USRC17607839", comment.Isrc);
+		Assert.AreEqual ("USRC17607839", comment.GetValue ("ISRC"));
+	}
+
+	[TestMethod]
+	public void Isrc_SetNull_ClearsField ()
+	{
+		var comment = new VorbisComment ("test");
+		comment.Isrc = "USRC17607839";
+
+		comment.Isrc = null;
+
+		Assert.IsNull (comment.Isrc);
+		Assert.IsNull (comment.GetValue ("ISRC"));
+	}
+
+	[TestMethod]
+	public void Isrc_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { Isrc = "GBAYE0000351" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("GBAYE0000351", result.Tag!.Isrc);
+	}
+
+	// Publisher Tests
+
+	[TestMethod]
+	public void Publisher_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.Publisher = "Sub Pop Records";
+
+		Assert.AreEqual ("Sub Pop Records", comment.Publisher);
+		Assert.AreEqual ("Sub Pop Records", comment.GetValue ("LABEL"));
+	}
+
+	[TestMethod]
+	public void Publisher_SetNull_ClearsField ()
+	{
+		var comment = new VorbisComment ("test");
+		comment.Publisher = "Sub Pop Records";
+
+		comment.Publisher = null;
+
+		Assert.IsNull (comment.Publisher);
+		Assert.IsNull (comment.GetValue ("LABEL"));
+	}
+
+	[TestMethod]
+	public void Publisher_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { Publisher = "4AD Records" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("4AD Records", result.Tag!.Publisher);
+	}
+
+	// Lyrics Tests
 
 	[TestMethod]
 	public void Lyrics_GetSet_Works ()
@@ -184,9 +252,7 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual ("日本語の歌詞\n中文歌词\nКириллица", result.Tag!.Lyrics);
 	}
 
-	#endregion
-
-	#region TotalTracks Tests (Already Implemented)
+	// TotalTracks Tests
 
 	[TestMethod]
 	public void TotalTracks_GetSet_Works ()
@@ -209,9 +275,7 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual (12u, comment.TotalTracks);
 	}
 
-	#endregion
-
-	#region TotalDiscs Tests (Already Implemented)
+	// TotalDiscs Tests
 
 	[TestMethod]
 	public void TotalDiscs_GetSet_Works ()
@@ -223,6 +287,4 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual (3u, comment.TotalDiscs);
 		Assert.AreEqual ("3", comment.GetValue ("TOTALDISCS"));
 	}
-
-	#endregion
 }

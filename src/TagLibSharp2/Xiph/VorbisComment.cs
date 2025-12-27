@@ -184,6 +184,18 @@ public sealed class VorbisComment : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? Isrc {
+		get => GetValue ("ISRC");
+		set => SetValue ("ISRC", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Publisher {
+		get => GetValue ("LABEL");
+		set => SetValue ("LABEL", value);
+	}
+
+	/// <inheritdoc/>
 	public override string? Lyrics {
 		get => GetValue ("LYRICS");
 		set => SetValue ("LYRICS", value);

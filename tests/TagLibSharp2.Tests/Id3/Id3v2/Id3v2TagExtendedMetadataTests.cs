@@ -7,7 +7,7 @@ namespace TagLibSharp2.Tests.Id3.Id3v2;
 
 /// <summary>
 /// Tests for extended metadata properties: Conductor, Copyright, Compilation,
-/// Lyrics, TotalTracks, TotalDiscs, and UFID frames.
+/// ISRC, Publisher, Lyrics, TotalTracks, TotalDiscs, and UFID frames.
 /// </summary>
 [TestClass]
 [TestCategory ("Unit")]
@@ -15,7 +15,7 @@ namespace TagLibSharp2.Tests.Id3.Id3v2;
 [TestCategory ("Id3v2")]
 public class Id3v2TagExtendedMetadataTests
 {
-	#region Conductor (TPE3) Tests
+	// Conductor (TPE3) Tests
 
 	[TestMethod]
 	public void Conductor_GetSet_Works ()
@@ -63,9 +63,7 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.AreEqual ("Sir Simon Rattle", result.Tag!.Conductor);
 	}
 
-	#endregion
-
-	#region Copyright (TCOP) Tests
+	// Copyright (TCOP) Tests
 
 	[TestMethod]
 	public void Copyright_GetSet_Works ()
@@ -113,9 +111,7 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.AreEqual ("2025 Independent", result.Tag!.Copyright);
 	}
 
-	#endregion
-
-	#region Compilation (TCMP) Tests
+	// Compilation (TCMP) Tests
 
 	[TestMethod]
 	public void IsCompilation_GetSet_Works ()
@@ -174,9 +170,103 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.IsTrue (result.Tag!.IsCompilation);
 	}
 
-	#endregion
+	// ISRC (TSRC) Tests
 
-	#region TotalTracks Tests
+	[TestMethod]
+	public void Isrc_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.Isrc = "USRC17607839";
+
+		Assert.AreEqual ("USRC17607839", tag.Isrc);
+		Assert.AreEqual ("USRC17607839", tag.GetTextFrame ("TSRC"));
+	}
+
+	[TestMethod]
+	public void Isrc_SetNull_ClearsField ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.Isrc = "USRC17607839";
+
+		tag.Isrc = null;
+
+		Assert.IsNull (tag.Isrc);
+		Assert.IsNull (tag.GetTextFrame ("TSRC"));
+	}
+
+	[TestMethod]
+	public void Isrc_FromFile_ParsesCorrectly ()
+	{
+		var data = CreateTagWithTextFrame ("TSRC", "GBAYE0000351", version: 4);
+
+		var result = Id3v2Tag.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("GBAYE0000351", result.Tag!.Isrc);
+	}
+
+	[TestMethod]
+	public void Isrc_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { Isrc = "BRBMG0300729" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("BRBMG0300729", result.Tag!.Isrc);
+	}
+
+	// Publisher (TPUB) Tests
+
+	[TestMethod]
+	public void Publisher_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.Publisher = "Atlantic Records";
+
+		Assert.AreEqual ("Atlantic Records", tag.Publisher);
+		Assert.AreEqual ("Atlantic Records", tag.GetTextFrame ("TPUB"));
+	}
+
+	[TestMethod]
+	public void Publisher_SetNull_ClearsField ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.Publisher = "Atlantic Records";
+
+		tag.Publisher = null;
+
+		Assert.IsNull (tag.Publisher);
+		Assert.IsNull (tag.GetTextFrame ("TPUB"));
+	}
+
+	[TestMethod]
+	public void Publisher_FromFile_ParsesCorrectly ()
+	{
+		var data = CreateTagWithTextFrame ("TPUB", "Sub Pop Records", version: 4);
+
+		var result = Id3v2Tag.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Sub Pop Records", result.Tag!.Publisher);
+	}
+
+	[TestMethod]
+	public void Publisher_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { Publisher = "4AD Records" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("4AD Records", result.Tag!.Publisher);
+	}
+
+	// TotalTracks Tests
 
 	[TestMethod]
 	public void TotalTracks_GetFromSlashFormat_Works ()
@@ -241,9 +331,7 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.AreEqual (14u, result.Tag.TotalTracks);
 	}
 
-	#endregion
-
-	#region TotalDiscs Tests
+	// TotalDiscs Tests
 
 	[TestMethod]
 	public void TotalDiscs_GetFromSlashFormat_Works ()
@@ -307,9 +395,7 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.AreEqual (4u, result.Tag.TotalDiscs);
 	}
 
-	#endregion
-
-	#region Helper Methods
+	// Helper Methods
 
 	static byte[] CreateTagWithTextFrame (string frameId, string text, byte version)
 	{
@@ -378,6 +464,4 @@ public class Id3v2TagExtendedMetadataTests
 
 		return data;
 	}
-
-	#endregion
 }
