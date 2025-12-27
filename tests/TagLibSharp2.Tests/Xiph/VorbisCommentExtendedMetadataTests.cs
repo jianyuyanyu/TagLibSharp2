@@ -199,6 +199,100 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual ("4AD Records", result.Tag!.Publisher);
 	}
 
+	// Sort Tags Tests
+
+	[TestMethod]
+	public void AlbumSort_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.AlbumSort = "White Album, The";
+
+		Assert.AreEqual ("White Album, The", comment.AlbumSort);
+		Assert.AreEqual ("White Album, The", comment.GetValue ("ALBUMSORT"));
+	}
+
+	[TestMethod]
+	public void AlbumSort_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { AlbumSort = "Abbey Road" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Abbey Road", result.Tag!.AlbumSort);
+	}
+
+	[TestMethod]
+	public void ArtistSort_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.ArtistSort = "Beatles, The";
+
+		Assert.AreEqual ("Beatles, The", comment.ArtistSort);
+		Assert.AreEqual ("Beatles, The", comment.GetValue ("ARTISTSORT"));
+	}
+
+	[TestMethod]
+	public void ArtistSort_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { ArtistSort = "Radiohead" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Radiohead", result.Tag!.ArtistSort);
+	}
+
+	[TestMethod]
+	public void TitleSort_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.TitleSort = "Love Is All You Need";
+
+		Assert.AreEqual ("Love Is All You Need", comment.TitleSort);
+		Assert.AreEqual ("Love Is All You Need", comment.GetValue ("TITLESORT"));
+	}
+
+	[TestMethod]
+	public void TitleSort_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { TitleSort = "Yesterday" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Yesterday", result.Tag!.TitleSort);
+	}
+
+	[TestMethod]
+	public void AlbumArtistSort_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.AlbumArtistSort = "Various";
+
+		Assert.AreEqual ("Various", comment.AlbumArtistSort);
+		Assert.AreEqual ("Various", comment.GetValue ("ALBUMARTISTSORT"));
+	}
+
+	[TestMethod]
+	public void AlbumArtistSort_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { AlbumArtistSort = "Compilation Artists" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Compilation Artists", result.Tag!.AlbumArtistSort);
+	}
+
 	// Lyrics Tests
 
 	[TestMethod]

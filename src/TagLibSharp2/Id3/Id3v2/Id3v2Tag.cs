@@ -216,6 +216,30 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? AlbumSort {
+		get => GetTextFrame ("TSOA");
+		set => SetTextFrame ("TSOA", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ArtistSort {
+		get => GetTextFrame ("TSOP");
+		set => SetTextFrame ("TSOP", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? TitleSort {
+		get => GetTextFrame ("TSOT");
+		set => SetTextFrame ("TSOT", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AlbumArtistSort {
+		get => GetTextFrame ("TSO2");
+		set => SetTextFrame ("TSO2", value);
+	}
+
+	/// <inheritdoc/>
 	public override uint? TotalTracks {
 		get {
 			var trackStr = GetTextFrame ("TRCK");

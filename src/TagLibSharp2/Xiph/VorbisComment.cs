@@ -196,6 +196,30 @@ public sealed class VorbisComment : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? AlbumSort {
+		get => GetValue ("ALBUMSORT");
+		set => SetValue ("ALBUMSORT", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ArtistSort {
+		get => GetValue ("ARTISTSORT");
+		set => SetValue ("ARTISTSORT", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? TitleSort {
+		get => GetValue ("TITLESORT");
+		set => SetValue ("TITLESORT", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AlbumArtistSort {
+		get => GetValue ("ALBUMARTISTSORT");
+		set => SetValue ("ALBUMARTISTSORT", value);
+	}
+
+	/// <inheritdoc/>
 	public override string? Lyrics {
 		get => GetValue ("LYRICS");
 		set => SetValue ("LYRICS", value);

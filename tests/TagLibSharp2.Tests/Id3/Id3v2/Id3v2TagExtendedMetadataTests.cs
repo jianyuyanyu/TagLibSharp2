@@ -266,6 +266,100 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.AreEqual ("4AD Records", result.Tag!.Publisher);
 	}
 
+	// Sort Tags Tests
+
+	[TestMethod]
+	public void AlbumSort_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.AlbumSort = "White Album, The";
+
+		Assert.AreEqual ("White Album, The", tag.AlbumSort);
+		Assert.AreEqual ("White Album, The", tag.GetTextFrame ("TSOA"));
+	}
+
+	[TestMethod]
+	public void AlbumSort_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { AlbumSort = "Abbey Road" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Abbey Road", result.Tag!.AlbumSort);
+	}
+
+	[TestMethod]
+	public void ArtistSort_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.ArtistSort = "Beatles, The";
+
+		Assert.AreEqual ("Beatles, The", tag.ArtistSort);
+		Assert.AreEqual ("Beatles, The", tag.GetTextFrame ("TSOP"));
+	}
+
+	[TestMethod]
+	public void ArtistSort_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { ArtistSort = "Radiohead" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Radiohead", result.Tag!.ArtistSort);
+	}
+
+	[TestMethod]
+	public void TitleSort_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.TitleSort = "Love Is All You Need";
+
+		Assert.AreEqual ("Love Is All You Need", tag.TitleSort);
+		Assert.AreEqual ("Love Is All You Need", tag.GetTextFrame ("TSOT"));
+	}
+
+	[TestMethod]
+	public void TitleSort_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { TitleSort = "Yesterday" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Yesterday", result.Tag!.TitleSort);
+	}
+
+	[TestMethod]
+	public void AlbumArtistSort_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.AlbumArtistSort = "Various";
+
+		Assert.AreEqual ("Various", tag.AlbumArtistSort);
+		Assert.AreEqual ("Various", tag.GetTextFrame ("TSO2"));
+	}
+
+	[TestMethod]
+	public void AlbumArtistSort_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { AlbumArtistSort = "Compilation Artists" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Compilation Artists", result.Tag!.AlbumArtistSort);
+	}
+
 	// TotalTracks Tests
 
 	[TestMethod]

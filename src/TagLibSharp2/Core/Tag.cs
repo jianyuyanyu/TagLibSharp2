@@ -147,6 +147,47 @@ public abstract class Tag
 	/// </remarks>
 	public virtual string? Publisher { get => null; set { } }
 
+	// Sort Order properties
+
+	/// <summary>
+	/// Gets or sets the sort order for the album title.
+	/// </summary>
+	/// <remarks>
+	/// Used for sorting when the display name should differ from the sort name.
+	/// For example, "The White Album" might sort as "White Album, The".
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? AlbumSort { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the sort order for the artist name.
+	/// </summary>
+	/// <remarks>
+	/// Used for sorting when the display name should differ from the sort name.
+	/// For example, "The Beatles" might sort as "Beatles, The".
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? ArtistSort { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the sort order for the title.
+	/// </summary>
+	/// <remarks>
+	/// Used for sorting when the display name should differ from the sort name.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? TitleSort { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the sort order for the album artist name.
+	/// </summary>
+	/// <remarks>
+	/// Used for sorting when the display name should differ from the sort name.
+	/// For example, "Various Artists" compilations might sort under a specific letter.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? AlbumArtistSort { get => null; set { } }
+
 	// ReplayGain properties
 
 	/// <summary>
