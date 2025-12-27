@@ -160,7 +160,34 @@ public sealed class VorbisComment : Tag
 		set => SetValue ("BPM", value?.ToString (System.Globalization.CultureInfo.InvariantCulture));
 	}
 
-	#region ReplayGain
+	/// <inheritdoc/>
+	public override string? Conductor {
+		get => GetValue ("CONDUCTOR");
+		set => SetValue ("CONDUCTOR", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Copyright {
+		get => GetValue ("COPYRIGHT");
+		set => SetValue ("COPYRIGHT", value);
+	}
+
+	/// <inheritdoc/>
+	public override bool IsCompilation {
+		get => GetValue ("COMPILATION") == "1";
+		set {
+			if (value)
+				SetValue ("COMPILATION", "1");
+			else
+				SetValue ("COMPILATION", null);
+		}
+	}
+
+	/// <inheritdoc/>
+	public override string? Lyrics {
+		get => GetValue ("LYRICS");
+		set => SetValue ("LYRICS", value);
+	}
 
 	/// <inheritdoc/>
 	public override string? ReplayGainTrackGain {
@@ -185,10 +212,6 @@ public sealed class VorbisComment : Tag
 		get => GetValue ("REPLAYGAIN_ALBUM_PEAK");
 		set => SetValue ("REPLAYGAIN_ALBUM_PEAK", value);
 	}
-
-	#endregion
-
-	#region MusicBrainz IDs
 
 	/// <inheritdoc/>
 	public override string? MusicBrainzTrackId {
@@ -220,15 +243,13 @@ public sealed class VorbisComment : Tag
 		set => SetValue ("MUSICBRAINZ_ALBUMARTISTID", value);
 	}
 
-	#endregion
-
 	/// <summary>
 	/// Gets or sets the total number of tracks on the album.
 	/// </summary>
 	/// <remarks>
 	/// Also reads from TRACKNUMBER field if in "5/12" format.
 	/// </remarks>
-	public uint? TotalTracks {
+	public override uint? TotalTracks {
 		get {
 			// First check TOTALTRACKS field
 			var totalTracksValue = GetValue ("TOTALTRACKS");
@@ -259,7 +280,7 @@ public sealed class VorbisComment : Tag
 	/// <summary>
 	/// Gets or sets the total number of discs.
 	/// </summary>
-	public uint? TotalDiscs {
+	public override uint? TotalDiscs {
 		get {
 			var value = GetValue ("TOTALDISCS");
 			return !string.IsNullOrEmpty (value) && uint.TryParse (value, out var total) ? total : null;

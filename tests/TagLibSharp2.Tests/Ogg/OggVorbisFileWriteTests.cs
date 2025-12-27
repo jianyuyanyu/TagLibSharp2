@@ -69,7 +69,7 @@ public sealed class OggVorbisFileWriteTests
 		packet[6] = (byte)'s';
 		// Version = 0 (bytes 7-10, already 0)
 		packet[11] = 2; // Stereo
-		// Sample rate = 44100 = 0xAC44
+						// Sample rate = 44100 = 0xAC44
 		packet[12] = 0x44;
 		packet[13] = 0xAC;
 		packet[14] = 0x00;

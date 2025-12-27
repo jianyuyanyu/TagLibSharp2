@@ -76,6 +76,58 @@ public abstract class Tag
 	/// </remarks>
 	public virtual uint? BeatsPerMinute { get => null; set { } }
 
+	/// <summary>
+	/// Gets or sets the conductor or director.
+	/// </summary>
+	/// <remarks>
+	/// For classical music, this is typically the orchestra conductor.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Conductor { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the copyright information.
+	/// </summary>
+	/// <remarks>
+	/// Typically in the format "YYYY Label Name" (e.g., "2024 Acme Records").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Copyright { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets whether this track is part of a compilation album.
+	/// </summary>
+	/// <remarks>
+	/// Used by music players to group various artist albums.
+	/// Not all tag formats support this field. Default implementation returns false.
+	/// </remarks>
+	public virtual bool IsCompilation { get => false; set { } }
+
+	/// <summary>
+	/// Gets or sets the total number of tracks on the album/disc.
+	/// </summary>
+	/// <remarks>
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual uint? TotalTracks { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the total number of discs in the set.
+	/// </summary>
+	/// <remarks>
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual uint? TotalDiscs { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the lyrics or text content.
+	/// </summary>
+	/// <remarks>
+	/// For song lyrics, poems, or other text content associated with the media.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Lyrics { get => null; set { } }
+
 	#region ReplayGain
 
 	/// <summary>

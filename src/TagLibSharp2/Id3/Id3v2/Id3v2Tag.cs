@@ -18,6 +18,8 @@ public sealed class Id3v2Tag : Tag
 	readonly List<PictureFrame> _pictures = new (2);
 	readonly List<CommentFrame> _comments = new (2);
 	readonly List<UserTextFrame> _userTextFrames = new (8);
+	readonly List<LyricsFrame> _lyricsFrames = new (2);
+	readonly List<UniqueFileIdFrame> _uniqueFileIdFrames = new (2);
 
 	/// <summary>
 	/// Gets the ID3v2 version (2, 3, or 4).
@@ -97,6 +99,16 @@ public sealed class Id3v2Tag : Tag
 	/// </summary>
 	public IReadOnlyList<UserTextFrame> UserTextFrames => _userTextFrames;
 
+	/// <summary>
+	/// Gets the list of lyrics frames (USLT) in this tag.
+	/// </summary>
+	public IReadOnlyList<LyricsFrame> LyricsFrames => _lyricsFrames;
+
+	/// <summary>
+	/// Gets the list of unique file identifier frames (UFID) in this tag.
+	/// </summary>
+	public IReadOnlyList<UniqueFileIdFrame> UniqueFileIdFrames => _uniqueFileIdFrames;
+
 	/// <inheritdoc/>
 	public override string? Genre {
 		get => GetTextFrame ("TCON");
@@ -169,6 +181,91 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? Conductor {
+		get => GetTextFrame ("TPE3");
+		set => SetTextFrame ("TPE3", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Copyright {
+		get => GetTextFrame ("TCOP");
+		set => SetTextFrame ("TCOP", value);
+	}
+
+	/// <inheritdoc/>
+	public override bool IsCompilation {
+		get => GetTextFrame ("TCMP") == "1";
+		set {
+			if (value)
+				SetTextFrame ("TCMP", "1");
+			else
+				SetTextFrame ("TCMP", null);
+		}
+	}
+
+	/// <inheritdoc/>
+	public override uint? TotalTracks {
+		get {
+			var trackStr = GetTextFrame ("TRCK");
+			if (string.IsNullOrEmpty (trackStr))
+				return null;
+
+#if NETSTANDARD2_0
+			var slashIndex = trackStr!.IndexOf ('/');
+#else
+			var slashIndex = trackStr!.IndexOf ('/', StringComparison.Ordinal);
+#endif
+			if (slashIndex > 0) {
+				var totalPart = trackStr.Substring (slashIndex + 1);
+				if (uint.TryParse (totalPart, out var total))
+					return total;
+			}
+			return null;
+		}
+		set {
+			var currentTrack = Track ?? 1;
+			if (value.HasValue)
+				SetTextFrame ("TRCK", $"{currentTrack}/{value.Value}");
+			else
+				SetTextFrame ("TRCK", currentTrack.ToString (System.Globalization.CultureInfo.InvariantCulture));
+		}
+	}
+
+	/// <inheritdoc/>
+	public override uint? TotalDiscs {
+		get {
+			var discStr = GetTextFrame ("TPOS");
+			if (string.IsNullOrEmpty (discStr))
+				return null;
+
+#if NETSTANDARD2_0
+			var slashIndex = discStr!.IndexOf ('/');
+#else
+			var slashIndex = discStr!.IndexOf ('/', StringComparison.Ordinal);
+#endif
+			if (slashIndex > 0) {
+				var totalPart = discStr.Substring (slashIndex + 1);
+				if (uint.TryParse (totalPart, out var total))
+					return total;
+			}
+			return null;
+		}
+		set {
+			var currentDisc = DiscNumber ?? 1;
+			if (value.HasValue)
+				SetTextFrame ("TPOS", $"{currentDisc}/{value.Value}");
+			else
+				SetTextFrame ("TPOS", currentDisc.ToString (System.Globalization.CultureInfo.InvariantCulture));
+		}
+	}
+
+	/// <inheritdoc/>
+	public override string? Lyrics {
+		get => GetLyrics ();
+		set => SetLyrics (value);
+	}
+
+	/// <inheritdoc/>
 	public override string? ReplayGainTrackGain {
 		get => GetUserText ("REPLAYGAIN_TRACK_GAIN");
 		set => SetUserText ("REPLAYGAIN_TRACK_GAIN", value);
@@ -220,6 +317,22 @@ public sealed class Id3v2Tag : Tag
 	public override string? MusicBrainzAlbumArtistId {
 		get => GetUserText ("MUSICBRAINZ_ALBUMARTISTID");
 		set => SetUserText ("MUSICBRAINZ_ALBUMARTISTID", value);
+	}
+
+	/// <summary>
+	/// Gets or sets the MusicBrainz Recording ID from a UFID frame.
+	/// </summary>
+	/// <remarks>
+	/// This is the canonical way to store a MusicBrainz recording ID in ID3v2.
+	/// The UFID frame uses "http://musicbrainz.org" as the owner identifier.
+	/// </remarks>
+	public string? MusicBrainzRecordingId {
+		get => GetUniqueFileId (UniqueFileIdFrame.MusicBrainzOwner)?.IdentifierString;
+		set {
+			RemoveUniqueFileIds (UniqueFileIdFrame.MusicBrainzOwner);
+			if (!string.IsNullOrEmpty (value))
+				_uniqueFileIdFrames.Add (new UniqueFileIdFrame (UniqueFileIdFrame.MusicBrainzOwner, value!));
+		}
 	}
 
 	/// <summary>
@@ -283,8 +396,8 @@ public sealed class Id3v2Tag : Tag
 
 			var frameSize = GetFrameSize (frameData.Slice (4, 4), header.MajorVersion);
 			if (frameSize <= 0 ||
-			    frameSize > remaining - FrameHeaderSize ||
-			    frameSize > frameData.Length - FrameHeaderSize)
+				frameSize > remaining - FrameHeaderSize ||
+				frameSize > frameData.Length - FrameHeaderSize)
 				break;
 
 			// Parse frame content
@@ -313,6 +426,18 @@ public sealed class Id3v2Tag : Tag
 				var userTextResult = UserTextFrame.Read (frameContent, (Id3v2Version)header.MajorVersion);
 				if (userTextResult.IsSuccess)
 					tag._userTextFrames.Add (userTextResult.Frame!);
+			}
+			// Handle lyrics frames (USLT)
+			else if (frameId == "USLT") {
+				var lyricsResult = LyricsFrame.Read (frameContent, (Id3v2Version)header.MajorVersion);
+				if (lyricsResult.IsSuccess)
+					tag._lyricsFrames.Add (lyricsResult.Frame!);
+			}
+			// Handle unique file identifier frames (UFID)
+			else if (frameId == "UFID") {
+				var ufidResult = UniqueFileIdFrame.Read (frameContent, (Id3v2Version)header.MajorVersion);
+				if (ufidResult.IsSuccess)
+					tag._uniqueFileIdFrames.Add (ufidResult.Frame!);
 			}
 
 			// Move to next frame
@@ -466,6 +591,24 @@ public sealed class Id3v2Tag : Tag
 			framesSize += frameHeader.Length + content.Length;
 		}
 
+		// Render lyrics frames (USLT)
+		for (var i = 0; i < _lyricsFrames.Count; i++) {
+			var content = _lyricsFrames[i].RenderContent ();
+			var frameHeader = RenderFrameHeader ("USLT", content.Length);
+			frameDataList.Add (frameHeader);
+			frameDataList.Add (content);
+			framesSize += frameHeader.Length + content.Length;
+		}
+
+		// Render unique file identifier frames (UFID)
+		for (var i = 0; i < _uniqueFileIdFrames.Count; i++) {
+			var content = _uniqueFileIdFrames[i].RenderContent ();
+			var frameHeader = RenderFrameHeader ("UFID", content.Length);
+			frameDataList.Add (frameHeader);
+			frameDataList.Add (content);
+			framesSize += frameHeader.Length + content.Length;
+		}
+
 		var totalSize = framesSize + paddingSize;
 
 		// Render header
@@ -513,6 +656,8 @@ public sealed class Id3v2Tag : Tag
 		_pictures.Clear ();
 		_comments.Clear ();
 		_userTextFrames.Clear ();
+		_lyricsFrames.Clear ();
+		_uniqueFileIdFrames.Clear ();
 	}
 
 	/// <summary>
@@ -645,6 +790,123 @@ public sealed class Id3v2Tag : Tag
 			string.Equals (f.Description, description, StringComparison.OrdinalIgnoreCase));
 	}
 
+	/// <summary>
+	/// Gets the first lyrics with an empty description, or the first lyrics if none have empty description.
+	/// </summary>
+	string? GetLyrics ()
+	{
+		if (_lyricsFrames.Count == 0)
+			return null;
+
+		// Prefer lyrics with empty description (default lyrics)
+		for (var i = 0; i < _lyricsFrames.Count; i++) {
+			if (string.IsNullOrEmpty (_lyricsFrames[i].Description))
+				return _lyricsFrames[i].Text;
+		}
+
+		// Fall back to first lyrics
+		return _lyricsFrames[0].Text;
+	}
+
+	/// <summary>
+	/// Sets or creates lyrics with an empty description.
+	/// </summary>
+	void SetLyrics (string? value)
+	{
+		// Remove existing lyrics with empty description
+		_lyricsFrames.RemoveAll (l => string.IsNullOrEmpty (l.Description));
+
+		// Add new lyrics if value is not empty
+		if (!string.IsNullOrEmpty (value))
+			_lyricsFrames.Add (new LyricsFrame (value!));
+	}
+
+	/// <summary>
+	/// Adds a lyrics frame to the tag.
+	/// </summary>
+	/// <param name="lyrics">The lyrics frame to add.</param>
+	public void AddLyrics (LyricsFrame lyrics)
+	{
+#if NETSTANDARD2_0 || NETSTANDARD2_1
+		if (lyrics is null)
+			throw new ArgumentNullException (nameof (lyrics));
+#else
+		ArgumentNullException.ThrowIfNull (lyrics);
+#endif
+		_lyricsFrames.Add (lyrics);
+	}
+
+	/// <summary>
+	/// Removes all lyrics with the specified language and description.
+	/// </summary>
+	/// <param name="language">The language code to match (null matches any).</param>
+	/// <param name="description">The description to match (null matches any).</param>
+	public void RemoveLyrics (string? language = null, string? description = null)
+	{
+		_lyricsFrames.RemoveAll (l =>
+			(language is null || l.Language == language) &&
+			(description is null || l.Description == description));
+	}
+
+	/// <summary>
+	/// Gets the first lyrics matching the specified criteria.
+	/// </summary>
+	/// <param name="language">The language code to match (null matches any).</param>
+	/// <param name="description">The description to match (null matches any).</param>
+	/// <returns>The lyrics frame, or null if not found.</returns>
+	public LyricsFrame? GetLyricsFrame (string? language = null, string? description = null)
+	{
+		for (var i = 0; i < _lyricsFrames.Count; i++) {
+			var l = _lyricsFrames[i];
+			if ((language is null || l.Language == language) &&
+				(description is null || l.Description == description))
+				return l;
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// Adds a unique file identifier frame to the tag.
+	/// </summary>
+	/// <param name="frame">The UFID frame to add.</param>
+	public void AddUniqueFileId (UniqueFileIdFrame frame)
+	{
+#if NETSTANDARD2_0 || NETSTANDARD2_1
+		if (frame is null)
+			throw new ArgumentNullException (nameof (frame));
+#else
+		ArgumentNullException.ThrowIfNull (frame);
+#endif
+		_uniqueFileIdFrames.Add (frame);
+	}
+
+	/// <summary>
+	/// Gets the first unique file identifier frame with the specified owner.
+	/// </summary>
+	/// <param name="owner">The owner identifier to match (case-insensitive).</param>
+	/// <returns>The UFID frame, or null if not found.</returns>
+	public UniqueFileIdFrame? GetUniqueFileId (string owner)
+	{
+		for (var i = 0; i < _uniqueFileIdFrames.Count; i++) {
+			if (string.Equals (_uniqueFileIdFrames[i].Owner, owner, StringComparison.OrdinalIgnoreCase))
+				return _uniqueFileIdFrames[i];
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// Removes all unique file identifier frames with the specified owner.
+	/// </summary>
+	/// <param name="owner">The owner identifier to match (case-insensitive), or null to remove all.</param>
+	public void RemoveUniqueFileIds (string? owner = null)
+	{
+		if (owner is null)
+			_uniqueFileIdFrames.Clear ();
+		else
+			_uniqueFileIdFrames.RemoveAll (f =>
+				string.Equals (f.Owner, owner, StringComparison.OrdinalIgnoreCase));
+	}
+
 	static string GetFrameId (ReadOnlySpan<byte> data)
 	{
 		if (data.Length < 4)
@@ -694,9 +956,9 @@ public sealed class Id3v2Tag : Tag
 			// v2.3: Size is big-endian and EXCLUDES the size field
 			// Total size = 4 (size field) + extended header size
 			var extSize = (int)(((uint)data[0] << 24) |
-							    ((uint)data[1] << 16) |
-							    ((uint)data[2] << 8) |
-							    (uint)data[3]);
+								((uint)data[1] << 16) |
+								((uint)data[2] << 8) |
+								(uint)data[3]);
 			return extSize + 4;
 		}
 	}
