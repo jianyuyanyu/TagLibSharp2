@@ -706,6 +706,291 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.AreEqual ("Artist Three", artists[2]);
 	}
 
+	// EncodedBy (TENC) Tests
+
+	[TestMethod]
+	public void EncodedBy_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.EncodedBy = "LAME 3.100";
+
+		Assert.AreEqual ("LAME 3.100", tag.EncodedBy);
+		Assert.AreEqual ("LAME 3.100", tag.GetTextFrame ("TENC"));
+	}
+
+	[TestMethod]
+	public void EncodedBy_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { EncodedBy = "iTunes 12.0" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("iTunes 12.0", result.Tag!.EncodedBy);
+	}
+
+	// EncoderSettings (TSSE) Tests
+
+	[TestMethod]
+	public void EncoderSettings_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.EncoderSettings = "LAME 320kbps CBR";
+
+		Assert.AreEqual ("LAME 320kbps CBR", tag.EncoderSettings);
+		Assert.AreEqual ("LAME 320kbps CBR", tag.GetTextFrame ("TSSE"));
+	}
+
+	[TestMethod]
+	public void EncoderSettings_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { EncoderSettings = "VBR V0" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("VBR V0", result.Tag!.EncoderSettings);
+	}
+
+	// Grouping (TIT1) Tests
+
+	[TestMethod]
+	public void Grouping_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.Grouping = "Summer Hits 2024";
+
+		Assert.AreEqual ("Summer Hits 2024", tag.Grouping);
+		Assert.AreEqual ("Summer Hits 2024", tag.GetTextFrame ("TIT1"));
+	}
+
+	[TestMethod]
+	public void Grouping_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { Grouping = "Workout Mix" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Workout Mix", result.Tag!.Grouping);
+	}
+
+	// Subtitle (TIT3) Tests
+
+	[TestMethod]
+	public void Subtitle_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.Subtitle = "Radio Edit";
+
+		Assert.AreEqual ("Radio Edit", tag.Subtitle);
+		Assert.AreEqual ("Radio Edit", tag.GetTextFrame ("TIT3"));
+	}
+
+	[TestMethod]
+	public void Subtitle_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { Subtitle = "Extended Mix" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Extended Mix", result.Tag!.Subtitle);
+	}
+
+	// Remixer (TPE4) Tests
+
+	[TestMethod]
+	public void Remixer_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.Remixer = "Tiësto";
+
+		Assert.AreEqual ("Tiësto", tag.Remixer);
+		Assert.AreEqual ("Tiësto", tag.GetTextFrame ("TPE4"));
+	}
+
+	[TestMethod]
+	public void Remixer_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { Remixer = "David Guetta" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("David Guetta", result.Tag!.Remixer);
+	}
+
+	// InitialKey (TKEY) Tests
+
+	[TestMethod]
+	public void InitialKey_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.InitialKey = "Am";
+
+		Assert.AreEqual ("Am", tag.InitialKey);
+		Assert.AreEqual ("Am", tag.GetTextFrame ("TKEY"));
+	}
+
+	[TestMethod]
+	public void InitialKey_SharpKey_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.InitialKey = "F#m";
+
+		Assert.AreEqual ("F#m", tag.InitialKey);
+	}
+
+	[TestMethod]
+	public void InitialKey_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { InitialKey = "Ebm" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Ebm", result.Tag!.InitialKey);
+	}
+
+	// Mood (TMOO) Tests - ID3v2.4 only
+
+	[TestMethod]
+	public void Mood_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.Mood = "Energetic";
+
+		Assert.AreEqual ("Energetic", tag.Mood);
+		Assert.AreEqual ("Energetic", tag.GetTextFrame ("TMOO"));
+	}
+
+	[TestMethod]
+	public void Mood_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { Mood = "Melancholic" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Melancholic", result.Tag!.Mood);
+	}
+
+	// MediaType (TMED) Tests
+
+	[TestMethod]
+	public void MediaType_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.MediaType = "CD";
+
+		Assert.AreEqual ("CD", tag.MediaType);
+		Assert.AreEqual ("CD", tag.GetTextFrame ("TMED"));
+	}
+
+	[TestMethod]
+	public void MediaType_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { MediaType = "DIG/A" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("DIG/A", result.Tag!.MediaType);
+	}
+
+	// Language (TLAN) Tests
+
+	[TestMethod]
+	public void Language_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.Language = "eng";
+
+		Assert.AreEqual ("eng", tag.Language);
+		Assert.AreEqual ("eng", tag.GetTextFrame ("TLAN"));
+	}
+
+	[TestMethod]
+	public void Language_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { Language = "jpn" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("jpn", result.Tag!.Language);
+	}
+
+	// Barcode (TXXX:BARCODE) Tests
+
+	[TestMethod]
+	public void Barcode_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.Barcode = "012345678901";
+
+		Assert.AreEqual ("012345678901", tag.Barcode);
+		Assert.AreEqual ("012345678901", tag.GetUserText ("BARCODE"));
+	}
+
+	[TestMethod]
+	public void Barcode_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { Barcode = "5099749534728" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("5099749534728", result.Tag!.Barcode);
+	}
+
+	// CatalogNumber (TXXX:CATALOGNUMBER) Tests
+
+	[TestMethod]
+	public void CatalogNumber_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.CatalogNumber = "WPCR-80001";
+
+		Assert.AreEqual ("WPCR-80001", tag.CatalogNumber);
+		Assert.AreEqual ("WPCR-80001", tag.GetUserText ("CATALOGNUMBER"));
+	}
+
+	[TestMethod]
+	public void CatalogNumber_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { CatalogNumber = "ECM 1064/65" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("ECM 1064/65", result.Tag!.CatalogNumber);
+	}
+
 	// Helper Methods
 
 	static byte[] CreateTagWithTextFrame (string frameId, string text, byte version)

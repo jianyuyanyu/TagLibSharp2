@@ -205,6 +205,72 @@ public sealed class VorbisComment : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? EncodedBy {
+		get => GetValue ("ENCODED-BY");
+		set => SetValue ("ENCODED-BY", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? EncoderSettings {
+		get => GetValue ("ENCODER");
+		set => SetValue ("ENCODER", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Grouping {
+		get => GetValue ("GROUPING");
+		set => SetValue ("GROUPING", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Subtitle {
+		get => GetValue ("SUBTITLE");
+		set => SetValue ("SUBTITLE", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Remixer {
+		get => GetValue ("REMIXER");
+		set => SetValue ("REMIXER", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? InitialKey {
+		get => GetValue ("KEY");
+		set => SetValue ("KEY", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Mood {
+		get => GetValue ("MOOD");
+		set => SetValue ("MOOD", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MediaType {
+		get => GetValue ("MEDIA");
+		set => SetValue ("MEDIA", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Language {
+		get => GetValue ("LANGUAGE");
+		set => SetValue ("LANGUAGE", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Barcode {
+		get => GetValue ("BARCODE");
+		set => SetValue ("BARCODE", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? CatalogNumber {
+		get => GetValue ("CATALOGNUMBER");
+		set => SetValue ("CATALOGNUMBER", value);
+	}
+
+	/// <inheritdoc/>
 	public override string? AlbumSort {
 		get => GetValue ("ALBUMSORT");
 		set => SetValue ("ALBUMSORT", value);

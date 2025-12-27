@@ -439,4 +439,279 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual (3u, comment.TotalDiscs);
 		Assert.AreEqual ("3", comment.GetValue ("TOTALDISCS"));
 	}
+
+	// EncodedBy (ENCODED-BY) Tests
+
+	[TestMethod]
+	public void EncodedBy_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.EncodedBy = "LAME 3.100";
+
+		Assert.AreEqual ("LAME 3.100", comment.EncodedBy);
+		Assert.AreEqual ("LAME 3.100", comment.GetValue ("ENCODED-BY"));
+	}
+
+	[TestMethod]
+	public void EncodedBy_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { EncodedBy = "flac 1.4.0" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("flac 1.4.0", result.Tag!.EncodedBy);
+	}
+
+	// EncoderSettings (ENCODER) Tests
+
+	[TestMethod]
+	public void EncoderSettings_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.EncoderSettings = "Lavf58.29.100";
+
+		Assert.AreEqual ("Lavf58.29.100", comment.EncoderSettings);
+		Assert.AreEqual ("Lavf58.29.100", comment.GetValue ("ENCODER"));
+	}
+
+	[TestMethod]
+	public void EncoderSettings_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { EncoderSettings = "libFLAC 1.3.2" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("libFLAC 1.3.2", result.Tag!.EncoderSettings);
+	}
+
+	// Grouping Tests
+
+	[TestMethod]
+	public void Grouping_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.Grouping = "Summer Hits 2024";
+
+		Assert.AreEqual ("Summer Hits 2024", comment.Grouping);
+		Assert.AreEqual ("Summer Hits 2024", comment.GetValue ("GROUPING"));
+	}
+
+	[TestMethod]
+	public void Grouping_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { Grouping = "Workout Mix" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Workout Mix", result.Tag!.Grouping);
+	}
+
+	// Subtitle Tests
+
+	[TestMethod]
+	public void Subtitle_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.Subtitle = "Radio Edit";
+
+		Assert.AreEqual ("Radio Edit", comment.Subtitle);
+		Assert.AreEqual ("Radio Edit", comment.GetValue ("SUBTITLE"));
+	}
+
+	[TestMethod]
+	public void Subtitle_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { Subtitle = "Extended Mix" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Extended Mix", result.Tag!.Subtitle);
+	}
+
+	// Remixer Tests
+
+	[TestMethod]
+	public void Remixer_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.Remixer = "Tiësto";
+
+		Assert.AreEqual ("Tiësto", comment.Remixer);
+		Assert.AreEqual ("Tiësto", comment.GetValue ("REMIXER"));
+	}
+
+	[TestMethod]
+	public void Remixer_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { Remixer = "David Guetta" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("David Guetta", result.Tag!.Remixer);
+	}
+
+	// InitialKey (KEY) Tests
+
+	[TestMethod]
+	public void InitialKey_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.InitialKey = "Am";
+
+		Assert.AreEqual ("Am", comment.InitialKey);
+		Assert.AreEqual ("Am", comment.GetValue ("KEY"));
+	}
+
+	[TestMethod]
+	public void InitialKey_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { InitialKey = "F#m" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("F#m", result.Tag!.InitialKey);
+	}
+
+	// Mood Tests
+
+	[TestMethod]
+	public void Mood_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.Mood = "Energetic";
+
+		Assert.AreEqual ("Energetic", comment.Mood);
+		Assert.AreEqual ("Energetic", comment.GetValue ("MOOD"));
+	}
+
+	[TestMethod]
+	public void Mood_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { Mood = "Melancholic" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Melancholic", result.Tag!.Mood);
+	}
+
+	// MediaType (MEDIA) Tests
+
+	[TestMethod]
+	public void MediaType_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.MediaType = "CD";
+
+		Assert.AreEqual ("CD", comment.MediaType);
+		Assert.AreEqual ("CD", comment.GetValue ("MEDIA"));
+	}
+
+	[TestMethod]
+	public void MediaType_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { MediaType = "Vinyl" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Vinyl", result.Tag!.MediaType);
+	}
+
+	// Language Tests
+
+	[TestMethod]
+	public void Language_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.Language = "eng";
+
+		Assert.AreEqual ("eng", comment.Language);
+		Assert.AreEqual ("eng", comment.GetValue ("LANGUAGE"));
+	}
+
+	[TestMethod]
+	public void Language_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { Language = "jpn" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("jpn", result.Tag!.Language);
+	}
+
+	// Barcode Tests
+
+	[TestMethod]
+	public void Barcode_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.Barcode = "012345678901";
+
+		Assert.AreEqual ("012345678901", comment.Barcode);
+		Assert.AreEqual ("012345678901", comment.GetValue ("BARCODE"));
+	}
+
+	[TestMethod]
+	public void Barcode_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { Barcode = "5099749534728" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("5099749534728", result.Tag!.Barcode);
+	}
+
+	// CatalogNumber Tests
+
+	[TestMethod]
+	public void CatalogNumber_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.CatalogNumber = "WPCR-80001";
+
+		Assert.AreEqual ("WPCR-80001", comment.CatalogNumber);
+		Assert.AreEqual ("WPCR-80001", comment.GetValue ("CATALOGNUMBER"));
+	}
+
+	[TestMethod]
+	public void CatalogNumber_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { CatalogNumber = "ECM 1064/65" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("ECM 1064/65", result.Tag!.CatalogNumber);
+	}
 }

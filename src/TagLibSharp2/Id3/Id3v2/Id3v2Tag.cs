@@ -238,6 +238,72 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? EncodedBy {
+		get => GetTextFrame ("TENC");
+		set => SetTextFrame ("TENC", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? EncoderSettings {
+		get => GetTextFrame ("TSSE");
+		set => SetTextFrame ("TSSE", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Grouping {
+		get => GetTextFrame ("TIT1");
+		set => SetTextFrame ("TIT1", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Subtitle {
+		get => GetTextFrame ("TIT3");
+		set => SetTextFrame ("TIT3", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Remixer {
+		get => GetTextFrame ("TPE4");
+		set => SetTextFrame ("TPE4", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? InitialKey {
+		get => GetTextFrame ("TKEY");
+		set => SetTextFrame ("TKEY", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Mood {
+		get => GetTextFrame ("TMOO");
+		set => SetTextFrame ("TMOO", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MediaType {
+		get => GetTextFrame ("TMED");
+		set => SetTextFrame ("TMED", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Language {
+		get => GetTextFrame ("TLAN");
+		set => SetTextFrame ("TLAN", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Barcode {
+		get => GetUserText ("BARCODE");
+		set => SetUserText ("BARCODE", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? CatalogNumber {
+		get => GetUserText ("CATALOGNUMBER");
+		set => SetUserText ("CATALOGNUMBER", value);
+	}
+
+	/// <inheritdoc/>
 	public override string? AlbumSort {
 		get => GetTextFrame ("TSOA");
 		set => SetTextFrame ("TSOA", value);

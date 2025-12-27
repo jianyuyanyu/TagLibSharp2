@@ -111,7 +111,7 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 ### Phase 2: ID3 Support ✅
 - [x] ID3v1/v1.1 reading and writing (id3.org specification)
 - [x] ID3v2.3/2.4 reading and writing (id3.org specification)
-  - [x] Text frames (TIT2, TPE1, TALB, TYER, TDRC, TCON, TRCK, TPE2, TPOS, TCOM, TBPM)
+  - [x] Text frames (TIT2, TPE1, TALB, TYER, TDRC, TCON, TRCK, TPE2, TPOS, TCOM, TBPM, TENC, TSSE, TIT1, TIT3, TPE4, TKEY, TMOO, TMED, TLAN)
   - [x] Picture frames (APIC) with multiple picture types
   - [x] Syncsafe integer handling, multiple text encodings
   - [x] Extended header support
@@ -141,6 +141,9 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 - [x] Lyrics (USLT frame) with multi-language support
 - [x] UFID (Unique File Identifier) for MusicBrainz Recording IDs
 - [x] Extended properties: Conductor, Copyright, Compilation, TotalTracks/TotalDiscs
+- [x] Encoding metadata: EncodedBy, EncoderSettings
+- [x] Track info: Grouping, Subtitle, Remixer, InitialKey, Mood, Language
+- [x] Release data: MediaType, Barcode, CatalogNumber
 
 ### Future
 - [ ] Additional formats: WAV, MP4, MKV, EXIF

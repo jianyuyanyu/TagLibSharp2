@@ -157,6 +157,105 @@ public abstract class Tag
 	/// </remarks>
 	public virtual string? Publisher { get => null; set { } }
 
+	/// <summary>
+	/// Gets or sets the person or organization that encoded the audio.
+	/// </summary>
+	/// <remarks>
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? EncodedBy { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the encoder settings used to encode the audio.
+	/// </summary>
+	/// <remarks>
+	/// Typically contains software name and encoding parameters (e.g., "LAME 320kbps CBR").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? EncoderSettings { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the content group or grouping for the track.
+	/// </summary>
+	/// <remarks>
+	/// Used to group related tracks (e.g., "Summer Hits 2024", "Workout Mix").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Grouping { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the subtitle or description refinement.
+	/// </summary>
+	/// <remarks>
+	/// Additional information about the track (e.g., "Radio Edit", "Live Version").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Subtitle { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the remixer or modifier of the track.
+	/// </summary>
+	/// <remarks>
+	/// The artist who remixed or modified the original track.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Remixer { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the initial musical key of the track.
+	/// </summary>
+	/// <remarks>
+	/// The key in which the track is performed (e.g., "Am", "F#m", "Cmaj").
+	/// Useful for DJs for harmonic mixing.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? InitialKey { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the mood of the track.
+	/// </summary>
+	/// <remarks>
+	/// Describes the emotional character (e.g., "Energetic", "Melancholic", "Uplifting").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Mood { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the original media type.
+	/// </summary>
+	/// <remarks>
+	/// Describes the source media (e.g., "CD", "Vinyl", "DIG/A" for digital analog).
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? MediaType { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the language of the audio content.
+	/// </summary>
+	/// <remarks>
+	/// Typically an ISO 639-2 three-letter language code (e.g., "eng", "jpn", "deu").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Language { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the barcode (UPC/EAN) of the release.
+	/// </summary>
+	/// <remarks>
+	/// The Universal Product Code or European Article Number for the release.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Barcode { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the catalog number assigned by the label.
+	/// </summary>
+	/// <remarks>
+	/// The label's catalog identifier for the release (e.g., "WPCR-80001").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? CatalogNumber { get => null; set { } }
+
 	// Sort Order properties
 
 	/// <summary>

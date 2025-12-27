@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Track number support (v1.1)
 - ID3v2 tag support (versions 2.3 and 2.4)
   - Header parsing with flags and syncsafe sizes
-  - Text frames (TIT2, TPE1, TALB, TYER, TDRC, TCON, TRCK, TPE2, TPOS, TCOM, TBPM)
+  - Text frames (TIT2, TPE1, TALB, TYER, TDRC, TCON, TRCK, TPE2, TPOS, TCOM, TBPM, TENC, TSSE, TIT1, TIT3, TPE4, TKEY, TMOO, TMED, TLAN)
   - Picture frames (APIC) with description and multiple picture types
   - Multiple text encodings (Latin-1, UTF-8, UTF-16 BE/LE)
   - Tag rendering with proper padding management
@@ -102,6 +102,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Copyright (TCOP frame)
   - Compilation flag (TCMP frame)
   - TotalTracks and TotalDiscs properties
+  - EncodedBy (TENC / ENCODED-BY) and EncoderSettings (TSSE / ENCODER)
+  - Grouping (TIT1 / GROUPING), Subtitle (TIT3 / SUBTITLE), Remixer (TPE4 / REMIXER)
+  - InitialKey (TKEY / KEY), Mood (TMOO / MOOD), Language (TLAN / LANGUAGE)
+  - MediaType (TMED / MEDIA), Barcode (TXXX:BARCODE / BARCODE), CatalogNumber (TXXX:CATALOGNUMBER / CATALOGNUMBER)
 
 #### High-Level MP3 API
 - `Mp3File` class for unified ID3v1/ID3v2 access
@@ -121,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Project Infrastructure
 - GitHub Actions CI workflow for cross-platform builds (Ubuntu, Windows, macOS)
 - Dependabot configuration for automated dependency updates
-- Comprehensive test suite (878 tests)
+- Comprehensive test suite (975 tests)
 - Malformed input test suite for security and robustness
 - Clean-room implementation (no TagLib# code)
 
