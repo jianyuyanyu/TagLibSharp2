@@ -14,7 +14,7 @@ dotnet --list-sdks
 ## Quick Start
 
 ```bash
-git clone https://github.com/decriptor/tagsharp.git
+git clone https://github.com/decriptor/TagLibSharp2.git
 cd tagsharp
 dotnet build
 dotnet test

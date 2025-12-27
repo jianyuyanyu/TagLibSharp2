@@ -12,7 +12,7 @@
 If you discover a security vulnerability in TagLibSharp2, please report it responsibly:
 
 1. **Do NOT** open a public GitHub issue for security vulnerabilities
-2. Use GitHub's private vulnerability reporting: https://github.com/decriptor/tagsharp/security/advisories/new
+2. Use GitHub's private vulnerability reporting: https://github.com/decriptor/TagLibSharp2/security/advisories/new
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce

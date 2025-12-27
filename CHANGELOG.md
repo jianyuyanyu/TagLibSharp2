@@ -128,4 +128,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `BinaryData(byte[])` constructor now copies the array to ensure true immutability
 
-[0.1.0]: https://github.com/decriptor/tagsharp/releases/tag/v0.1.0
+[0.1.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.1.0

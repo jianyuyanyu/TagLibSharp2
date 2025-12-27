@@ -23,7 +23,7 @@ dotnet add package TagLibSharp2
 Or build from source:
 
 ```bash
-git clone https://github.com/decriptor/tagsharp.git
+git clone https://github.com/decriptor/TagLibSharp2.git
 cd tagsharp
 dotnet build
 ```
@@ -91,7 +91,7 @@ See the [examples](examples/) directory for more comprehensive usage patterns.
 ## Building
 
 ```bash
-git clone https://github.com/decriptor/tagsharp.git
+git clone https://github.com/decriptor/TagLibSharp2.git
 cd tagsharp
 dotnet build
 dotnet test

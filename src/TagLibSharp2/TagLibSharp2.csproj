@@ -12,9 +12,9 @@
 		<Description>A modern .NET library for reading and writing metadata in media files. Supports ID3v1, ID3v2, FLAC, and Ogg Vorbis tags with a clean, span-based API designed for performance.</Description>
 		<PackageTags>audio;video;image;metadata;id3;flac;vorbis;ogg;mp3;tags;taglib</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageProjectUrl>https://github.com/decriptor/tagsharp</PackageProjectUrl>
+		<PackageProjectUrl>https://github.com/decriptor/TagLibSharp2</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>See https://github.com/decriptor/tagsharp/blob/main/CHANGELOG.md</PackageReleaseNotes>
+		<PackageReleaseNotes>See https://github.com/decriptor/TagLibSharp2/blob/main/CHANGELOG.md</PackageReleaseNotes>
 
 		<!-- Build Configuration -->
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>

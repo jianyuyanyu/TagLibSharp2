@@ -12,7 +12,7 @@
 		<VersionSuffix Condition="'$(VersionSuffix)' == '' And '$(CI)' == ''">dev</VersionSuffix>
 
 		<!-- Repository Info -->
-		<RepositoryUrl>https://github.com/decriptor/tagsharp</RepositoryUrl>
+		<RepositoryUrl>https://github.com/decriptor/TagLibSharp2</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 
