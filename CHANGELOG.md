@@ -107,6 +107,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - InitialKey (TKEY / KEY), Mood (TMOO / MOOD), Language (TLAN / LANGUAGE)
   - MediaType (TMED / MEDIA), Barcode (TXXX:BARCODE / BARCODE), CatalogNumber (TXXX:CATALOGNUMBER / CATALOGNUMBER)
 
+#### Sort Fields & TagLib# Parity
+- ComposerSort (TSOC / COMPOSERSORT) - Sort order for composer names
+- DateTagged (TDTG / DATETAGGED) - ISO 8601 tagging timestamp (ID3v2.4 only)
+- Description (TXXX:DESCRIPTION / DESCRIPTION) - Content synopsis
+- AmazonId (TXXX:ASIN / ASIN) - Amazon Standard Identification Number
+- MusicIpId (TXXX:MusicIP PUID / MUSICIP_PUID) - Obsolete, deprecated in favor of AcoustID
+- Extended MusicBrainz identifiers (ID3v2 and Vorbis Comments):
+  - WorkId - Musical work/composition identifier
+  - DiscId - CD table of contents hash
+  - ReleaseStatus - official, promotional, bootleg, pseudo-release
+  - ReleaseType - album, single, ep, compilation, etc.
+  - ReleaseCountry - ISO 3166-1 alpha-2 country code
+
 #### High-Level MP3 API
 - `Mp3File` class for unified ID3v1/ID3v2 access
 - Automatic ID3v2 preference with ID3v1 fallback
@@ -125,7 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Project Infrastructure
 - GitHub Actions CI workflow for cross-platform builds (Ubuntu, Windows, macOS)
 - Dependabot configuration for automated dependency updates
-- Comprehensive test suite (975 tests)
+- Comprehensive test suite (1015 tests)
 - Malformed input test suite for security and robustness
 - Clean-room implementation (no TagLib# code)
 

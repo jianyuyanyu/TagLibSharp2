@@ -144,6 +144,9 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 - [x] Encoding metadata: EncodedBy, EncoderSettings
 - [x] Track info: Grouping, Subtitle, Remixer, InitialKey, Mood, Language
 - [x] Release data: MediaType, Barcode, CatalogNumber
+- [x] Sort fields: ComposerSort
+- [x] Tagging metadata: DateTagged, Description, AmazonId
+- [x] Extended MusicBrainz: WorkId, DiscId, ReleaseStatus, ReleaseType, ReleaseCountry
 
 ### Future
 - [ ] Additional formats: WAV, MP4, MKV, EXIF

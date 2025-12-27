@@ -383,6 +383,99 @@ public abstract class Tag
 	public virtual string? MusicBrainzAlbumArtistId { get => null; set { } }
 
 	/// <summary>
+	/// Gets or sets the MusicBrainz Work ID.
+	/// </summary>
+	/// <remarks>
+	/// A UUID identifying the musical work (composition) in the MusicBrainz database.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? MusicBrainzWorkId { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the MusicBrainz Disc ID.
+	/// </summary>
+	/// <remarks>
+	/// A hash identifying the CD table of contents in the MusicBrainz database.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? MusicBrainzDiscId { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the MusicBrainz release status.
+	/// </summary>
+	/// <remarks>
+	/// Values include: official, promotional, bootleg, pseudo-release.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? MusicBrainzReleaseStatus { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the MusicBrainz release type.
+	/// </summary>
+	/// <remarks>
+	/// Values include: album, single, ep, compilation, soundtrack, live, remix, etc.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? MusicBrainzReleaseType { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the MusicBrainz release country.
+	/// </summary>
+	/// <remarks>
+	/// ISO 3166-1 alpha-2 country code (e.g., "US", "GB", "JP").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? MusicBrainzReleaseCountry { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the sort order for the composer name.
+	/// </summary>
+	/// <remarks>
+	/// Used for sorting when the display name should differ from the sort name.
+	/// For example, "Johann Sebastian Bach" might sort as "Bach, Johann Sebastian".
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? ComposerSort { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the date/time when the file was tagged.
+	/// </summary>
+	/// <remarks>
+	/// Stored as an ISO 8601 formatted string (e.g., "2025-12-27" or "2025-12-27T10:30:00").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? DateTagged { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the description or synopsis of the content.
+	/// </summary>
+	/// <remarks>
+	/// Used for story summaries, plot descriptions, or detailed content descriptions.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? Description { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the Amazon Standard Identification Number (ASIN).
+	/// </summary>
+	/// <remarks>
+	/// A 10-character alphanumeric identifier assigned by Amazon (e.g., "B000002UAL").
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	public virtual string? AmazonId { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the MusicIP PUID (Portable Unique Identifier).
+	/// </summary>
+	/// <remarks>
+	/// <b>Obsolete:</b> MusicIP service was discontinued. Use AcoustID fingerprints instead.
+	/// This property is maintained for compatibility with legacy tagged files.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </remarks>
+	[System.Obsolete ("MusicIP PUID is obsolete. MusicIP service was discontinued. Use AcoustID fingerprints instead.")]
+	public virtual string? MusicIpId { get => null; set { } }
+
+	/// <summary>
 	/// Gets a value indicating whether all standard fields are empty or null.
 	/// </summary>
 	public virtual bool IsEmpty =>

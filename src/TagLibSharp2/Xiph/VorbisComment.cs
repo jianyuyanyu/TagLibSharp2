@@ -354,6 +354,67 @@ public sealed class VorbisComment : Tag
 		set => SetValue ("MUSICBRAINZ_ALBUMARTISTID", value);
 	}
 
+	/// <inheritdoc/>
+	public override string? MusicBrainzWorkId {
+		get => GetValue ("MUSICBRAINZ_WORKID");
+		set => SetValue ("MUSICBRAINZ_WORKID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzDiscId {
+		get => GetValue ("MUSICBRAINZ_DISCID");
+		set => SetValue ("MUSICBRAINZ_DISCID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzReleaseStatus {
+		get => GetValue ("RELEASESTATUS");
+		set => SetValue ("RELEASESTATUS", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzReleaseType {
+		get => GetValue ("RELEASETYPE");
+		set => SetValue ("RELEASETYPE", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzReleaseCountry {
+		get => GetValue ("RELEASECOUNTRY");
+		set => SetValue ("RELEASECOUNTRY", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ComposerSort {
+		get => GetValue ("COMPOSERSORT");
+		set => SetValue ("COMPOSERSORT", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? DateTagged {
+		get => GetValue ("DATETAGGED");
+		set => SetValue ("DATETAGGED", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Description {
+		get => GetValue ("DESCRIPTION");
+		set => SetValue ("DESCRIPTION", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AmazonId {
+		get => GetValue ("ASIN");
+		set => SetValue ("ASIN", value);
+	}
+
+	/// <inheritdoc/>
+	[System.Obsolete ("MusicIP PUID is obsolete. MusicIP service was discontinued. Use AcoustID fingerprints instead.")]
+	public override string? MusicIpId {
+		get => GetValue ("MUSICIP_PUID");
+		set => SetValue ("MUSICIP_PUID", value);
+	}
+
 	/// <summary>
 	/// Gets or sets the total number of tracks on the album.
 	/// </summary>

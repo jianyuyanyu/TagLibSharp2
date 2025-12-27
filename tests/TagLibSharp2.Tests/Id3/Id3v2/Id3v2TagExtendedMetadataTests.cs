@@ -991,6 +991,258 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.AreEqual ("ECM 1064/65", result.Tag!.CatalogNumber);
 	}
 
+	// ComposerSort (TSOC) Tests
+
+	[TestMethod]
+	public void ComposerSort_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.ComposerSort = "Bach, Johann Sebastian";
+
+		Assert.AreEqual ("Bach, Johann Sebastian", tag.ComposerSort);
+		Assert.AreEqual ("Bach, Johann Sebastian", tag.GetTextFrame ("TSOC"));
+	}
+
+	[TestMethod]
+	public void ComposerSort_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { ComposerSort = "Mozart, Wolfgang Amadeus" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Mozart, Wolfgang Amadeus", result.Tag!.ComposerSort);
+	}
+
+	// DateTagged (TDTG) Tests - ID3v2.4 only
+
+	[TestMethod]
+	public void DateTagged_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.DateTagged = "2025-12-27T10:30:00";
+
+		Assert.AreEqual ("2025-12-27T10:30:00", tag.DateTagged);
+		Assert.AreEqual ("2025-12-27T10:30:00", tag.GetTextFrame ("TDTG"));
+	}
+
+	[TestMethod]
+	public void DateTagged_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { DateTagged = "2025-12-27" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("2025-12-27", result.Tag!.DateTagged);
+	}
+
+	// Description (TXXX:DESCRIPTION) Tests
+
+	[TestMethod]
+	public void Description_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.Description = "A story about love and loss";
+
+		Assert.AreEqual ("A story about love and loss", tag.Description);
+		Assert.AreEqual ("A story about love and loss", tag.GetUserText ("DESCRIPTION"));
+	}
+
+	[TestMethod]
+	public void Description_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { Description = "Epic adventure through space" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Epic adventure through space", result.Tag!.Description);
+	}
+
+	// AmazonId (TXXX:ASIN) Tests
+
+	[TestMethod]
+	public void AmazonId_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.AmazonId = "B000002UAL";
+
+		Assert.AreEqual ("B000002UAL", tag.AmazonId);
+		Assert.AreEqual ("B000002UAL", tag.GetUserText ("ASIN"));
+	}
+
+	[TestMethod]
+	public void AmazonId_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { AmazonId = "B00005NQ6Z" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("B00005NQ6Z", result.Tag!.AmazonId);
+	}
+
+	// MusicIpId (TXXX:MusicIP PUID) Tests - Obsolete
+
+#pragma warning disable CS0618 // Type or member is obsolete
+	[TestMethod]
+	public void MusicIpId_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.MusicIpId = "f3b89eb0-c53d-4a0c-b4e8-1a0b9c3e2d4f";
+
+		Assert.AreEqual ("f3b89eb0-c53d-4a0c-b4e8-1a0b9c3e2d4f", tag.MusicIpId);
+		Assert.AreEqual ("f3b89eb0-c53d-4a0c-b4e8-1a0b9c3e2d4f", tag.GetUserText ("MusicIP PUID"));
+	}
+
+	[TestMethod]
+	public void MusicIpId_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { MusicIpId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", result.Tag!.MusicIpId);
+	}
+#pragma warning restore CS0618
+
+	// MusicBrainzWorkId (TXXX:MusicBrainz Work Id) Tests
+
+	[TestMethod]
+	public void MusicBrainzWorkId_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.MusicBrainzWorkId = "1a2b3c4d-5e6f-7890-abcd-ef1234567890";
+
+		Assert.AreEqual ("1a2b3c4d-5e6f-7890-abcd-ef1234567890", tag.MusicBrainzWorkId);
+		Assert.AreEqual ("1a2b3c4d-5e6f-7890-abcd-ef1234567890", tag.GetUserText ("MusicBrainz Work Id"));
+	}
+
+	[TestMethod]
+	public void MusicBrainzWorkId_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { MusicBrainzWorkId = "deadbeef-1234-5678-90ab-cdef12345678" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("deadbeef-1234-5678-90ab-cdef12345678", result.Tag!.MusicBrainzWorkId);
+	}
+
+	// MusicBrainzDiscId (TXXX:MusicBrainz Disc Id) Tests
+
+	[TestMethod]
+	public void MusicBrainzDiscId_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.MusicBrainzDiscId = "XHLQnC.F3SJ5XpDPLt7gLfHAy_A-";
+
+		Assert.AreEqual ("XHLQnC.F3SJ5XpDPLt7gLfHAy_A-", tag.MusicBrainzDiscId);
+		Assert.AreEqual ("XHLQnC.F3SJ5XpDPLt7gLfHAy_A-", tag.GetUserText ("MusicBrainz Disc Id"));
+	}
+
+	[TestMethod]
+	public void MusicBrainzDiscId_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { MusicBrainzDiscId = "IbhKz8W2xPbLqA1F5nPKz8xLUBc-" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("IbhKz8W2xPbLqA1F5nPKz8xLUBc-", result.Tag!.MusicBrainzDiscId);
+	}
+
+	// MusicBrainzReleaseStatus (TXXX:MusicBrainz Album Status) Tests
+
+	[TestMethod]
+	public void MusicBrainzReleaseStatus_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.MusicBrainzReleaseStatus = "official";
+
+		Assert.AreEqual ("official", tag.MusicBrainzReleaseStatus);
+		Assert.AreEqual ("official", tag.GetUserText ("MusicBrainz Album Status"));
+	}
+
+	[TestMethod]
+	public void MusicBrainzReleaseStatus_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { MusicBrainzReleaseStatus = "promotional" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("promotional", result.Tag!.MusicBrainzReleaseStatus);
+	}
+
+	// MusicBrainzReleaseType (TXXX:MusicBrainz Album Type) Tests
+
+	[TestMethod]
+	public void MusicBrainzReleaseType_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.MusicBrainzReleaseType = "album";
+
+		Assert.AreEqual ("album", tag.MusicBrainzReleaseType);
+		Assert.AreEqual ("album", tag.GetUserText ("MusicBrainz Album Type"));
+	}
+
+	[TestMethod]
+	public void MusicBrainzReleaseType_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { MusicBrainzReleaseType = "compilation" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("compilation", result.Tag!.MusicBrainzReleaseType);
+	}
+
+	// MusicBrainzReleaseCountry (TXXX:MusicBrainz Album Release Country) Tests
+
+	[TestMethod]
+	public void MusicBrainzReleaseCountry_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.MusicBrainzReleaseCountry = "US";
+
+		Assert.AreEqual ("US", tag.MusicBrainzReleaseCountry);
+		Assert.AreEqual ("US", tag.GetUserText ("MusicBrainz Album Release Country"));
+	}
+
+	[TestMethod]
+	public void MusicBrainzReleaseCountry_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) { MusicBrainzReleaseCountry = "GB" };
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("GB", result.Tag!.MusicBrainzReleaseCountry);
+	}
+
 	// Helper Methods
 
 	static byte[] CreateTagWithTextFrame (string frameId, string text, byte version)

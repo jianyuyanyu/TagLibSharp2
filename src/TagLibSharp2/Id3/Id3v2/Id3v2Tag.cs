@@ -443,6 +443,70 @@ public sealed class Id3v2Tag : Tag
 		set => SetUserText ("MUSICBRAINZ_ALBUMARTISTID", value);
 	}
 
+	/// <inheritdoc/>
+	public override string? MusicBrainzWorkId {
+		get => GetUserText ("MusicBrainz Work Id");
+		set => SetUserText ("MusicBrainz Work Id", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzDiscId {
+		get => GetUserText ("MusicBrainz Disc Id");
+		set => SetUserText ("MusicBrainz Disc Id", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzReleaseStatus {
+		get => GetUserText ("MusicBrainz Album Status");
+		set => SetUserText ("MusicBrainz Album Status", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzReleaseType {
+		get => GetUserText ("MusicBrainz Album Type");
+		set => SetUserText ("MusicBrainz Album Type", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? MusicBrainzReleaseCountry {
+		get => GetUserText ("MusicBrainz Album Release Country");
+		set => SetUserText ("MusicBrainz Album Release Country", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ComposerSort {
+		get => GetTextFrame ("TSOC");
+		set => SetTextFrame ("TSOC", value);
+	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the TDTG (Tagging Time) frame which is ID3v2.4 only.
+	/// </remarks>
+	public override string? DateTagged {
+		get => GetTextFrame ("TDTG");
+		set => SetTextFrame ("TDTG", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Description {
+		get => GetUserText ("DESCRIPTION");
+		set => SetUserText ("DESCRIPTION", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AmazonId {
+		get => GetUserText ("ASIN");
+		set => SetUserText ("ASIN", value);
+	}
+
+	/// <inheritdoc/>
+	[System.Obsolete ("MusicIP PUID is obsolete. MusicIP service was discontinued. Use AcoustID fingerprints instead.")]
+	public override string? MusicIpId {
+		get => GetUserText ("MusicIP PUID");
+		set => SetUserText ("MusicIP PUID", value);
+	}
+
 	/// <summary>
 	/// Gets or sets the MusicBrainz Recording ID from a UFID frame.
 	/// </summary>
