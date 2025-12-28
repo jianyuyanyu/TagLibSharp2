@@ -51,7 +51,7 @@ public sealed class Id3v2Tag : Tag
 
 	/// <inheritdoc/>
 #pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
-	public override Picture[] Pictures {
+	public override IPicture[] Pictures {
 		get => [.. _pictures];
 		set {
 			_pictures.Clear ();

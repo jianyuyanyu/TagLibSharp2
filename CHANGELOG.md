@@ -123,7 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `AlbumArtists[]` - Multiple album artists
   - `Composers[]` - Multiple composers
   - `Genres[]` - Multiple genres
-- `Pictures[]` property on base `Tag` class for format-agnostic picture access
+- `IPicture` interface for picture abstraction (TagLib# API compatibility)
+- `Pictures` property returns `IPicture[]` for format-agnostic picture access
 - Format-specific properties renamed: `PictureFrames` (ID3v2) and `PictureBlocks` (Vorbis)
 
 #### Sort Fields & TagLib# Parity

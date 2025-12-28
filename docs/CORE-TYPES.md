@@ -437,3 +437,97 @@ public (int Major, int Minor, uint Size) ParseId3v2Header(BinaryData header)
     return (majorVersion, minorVersion, size);
 }
 ```
+
+---
+
+## IPicture Interface
+
+Interface for picture/image data in media files. Implemented by format-specific classes like `PictureFrame` (ID3v2) and `FlacPicture` (FLAC).
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `MimeType` | `string` | MIME type (e.g., "image/jpeg", "image/png") |
+| `PictureType` | `PictureType` | Purpose of the image (FrontCover, BackCover, etc.) |
+| `Description` | `string` | Picture description text |
+| `PictureData` | `BinaryData` | Raw image bytes |
+
+### Usage
+
+```csharp
+// Access pictures from any tag type
+IPicture[] pictures = tag.Pictures;
+
+foreach (var pic in pictures)
+{
+    Console.WriteLine($"Type: {pic.PictureType}");
+    Console.WriteLine($"MIME: {pic.MimeType}");
+    Console.WriteLine($"Size: {pic.PictureData.Length} bytes");
+}
+
+// Set pictures (accepts any IPicture implementation)
+tag.Pictures = new IPicture[] { myPicture };
+```
+
+---
+
+## Picture Abstract Class
+
+Base class implementing `IPicture` with shared helper methods.
+
+### Static Methods
+
+| Method | Description |
+|--------|-------------|
+| `DetectMimeType(data, filePath?)` | Detects MIME type from magic bytes or file extension |
+
+### Instance Methods
+
+| Method | Description |
+|--------|-------------|
+| `SaveToFile(path)` | Saves picture data to a file |
+| `ToStream()` | Returns picture data as a MemoryStream |
+
+### MIME Type Detection
+
+```csharp
+// Detect from data
+byte[] imageData = File.ReadAllBytes("cover.jpg");
+string mime = Picture.DetectMimeType(imageData);  // "image/jpeg"
+
+// With file path fallback
+string mime = Picture.DetectMimeType(data, "cover.unknown");
+```
+
+Supported formats: JPEG, PNG, GIF, BMP, WebP, TIFF.
+
+---
+
+## PictureType Enum
+
+Standard picture types from ID3v2 and FLAC specifications.
+
+| Value | Name | Description |
+|-------|------|-------------|
+| 0x00 | Other | Other picture type |
+| 0x01 | FileIcon | 32x32 file icon (PNG only) |
+| 0x02 | OtherFileIcon | Other file icon |
+| 0x03 | FrontCover | Album front cover |
+| 0x04 | BackCover | Album back cover |
+| 0x05 | LeafletPage | Leaflet page |
+| 0x06 | Media | Media (e.g., CD label) |
+| 0x07 | LeadArtist | Lead artist/performer |
+| 0x08 | Artist | Artist/performer |
+| 0x09 | Conductor | Conductor |
+| 0x0A | Band | Band/Orchestra |
+| 0x0B | Composer | Composer |
+| 0x0C | Lyricist | Lyricist/text writer |
+| 0x0D | RecordingLocation | Recording location |
+| 0x0E | DuringRecording | During recording |
+| 0x0F | DuringPerformance | During performance |
+| 0x10 | MovieScreenCapture | Movie/video screen capture |
+| 0x11 | ColouredFish | A bright coloured fish |
+| 0x12 | Illustration | Illustration |
+| 0x13 | BandLogo | Band/artist logotype |
+| 0x14 | PublisherLogo | Publisher/studio logotype |

@@ -16,7 +16,7 @@ namespace TagLibSharp2.Core;
 /// and FlacPicture for FLAC files.
 /// </para>
 /// </remarks>
-public abstract class Picture
+public abstract class Picture : IPicture
 {
 	/// <summary>
 	/// Gets the MIME type of the image (e.g., "image/jpeg", "image/png").
