@@ -211,18 +211,17 @@ public sealed class WavFile
 		if (!IsValid)
 			throw new InvalidOperationException ("Cannot render invalid WAV file");
 
-		// Start with a copy of the RIFF structure
+		// Start with a new RIFF structure
 		var riff = new RiffFile ();
 
-		// Copy essential chunks from original (fmt and data)
-		var fmtChunk = _riff.GetChunk (FmtChunkId);
-		var dataChunk = _riff.GetChunk (DataChunkId);
+		// Copy all chunks from original, except metadata chunks we'll update
+		foreach (var chunk in _riff.AllChunks) {
+			// Skip chunks we'll replace with updated versions
+			if (chunk.FourCC == ListChunkId || chunk.FourCC == Id3ChunkId)
+				continue;
 
-		if (fmtChunk.HasValue)
-			riff.SetChunk (fmtChunk.Value);
-
-		if (dataChunk.HasValue)
-			riff.SetChunk (dataChunk.Value);
+			riff.SetChunk (chunk);
+		}
 
 		// Add INFO tag if present
 		if (InfoTag is not null && !InfoTag.IsEmpty) {

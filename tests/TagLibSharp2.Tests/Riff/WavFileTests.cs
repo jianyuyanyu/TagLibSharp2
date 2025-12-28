@@ -166,4 +166,206 @@ public class WavFileTests
 		Assert.IsTrue (result.IsSuccess);
 		Assert.IsTrue (mockFs.FileExists ("/test/output.wav"));
 	}
+
+	[TestMethod]
+	public void Render_WithFactChunk_PreservesFactChunk ()
+	{
+		var wav = WavFile.ReadFromData (CreateWavWithFactChunk ());
+		Assert.IsNotNull (wav);
+
+		// Modify a tag to force re-render
+		wav.InfoTag = new RiffInfoTag { Title = "Modified" };
+
+		var rendered = wav.Render ();
+		var roundTripped = WavFile.ReadFromData (rendered);
+
+		Assert.IsNotNull (roundTripped);
+		// Verify fact chunk was preserved
+		Assert.IsTrue (rendered.ToStringLatin1 ().Contains ("fact"));
+	}
+
+	[TestMethod]
+	public void Render_WithCueChunk_PreservesCueChunk ()
+	{
+		var wav = WavFile.ReadFromData (CreateWavWithCueChunk ());
+		Assert.IsNotNull (wav);
+
+		wav.InfoTag = new RiffInfoTag { Title = "Modified" };
+
+		var rendered = wav.Render ();
+
+		// Verify cue chunk was preserved
+		Assert.IsTrue (rendered.ToStringLatin1 ().Contains ("cue "));
+	}
+
+	[TestMethod]
+	public void Render_WithSmplChunk_PreservesSmplChunk ()
+	{
+		var wav = WavFile.ReadFromData (CreateWavWithSmplChunk ());
+		Assert.IsNotNull (wav);
+
+		wav.Id3v2Tag = new Id3v2Tag { Title = "Modified" };
+
+		var rendered = wav.Render ();
+
+		// Verify smpl chunk was preserved
+		Assert.IsTrue (rendered.ToStringLatin1 ().Contains ("smpl"));
+	}
+
+	[TestMethod]
+	public void Render_WithMultipleUnknownChunks_PreservesAll ()
+	{
+		var wav = WavFile.ReadFromData (CreateWavWithMultipleUnknownChunks ());
+		Assert.IsNotNull (wav);
+
+		wav.InfoTag = new RiffInfoTag { Artist = "New Artist" };
+
+		var rendered = wav.Render ();
+		var content = rendered.ToStringLatin1 ();
+
+		// Verify all chunks were preserved
+		Assert.IsTrue (content.Contains ("fact"));
+		Assert.IsTrue (content.Contains ("cue "));
+	}
+
+	static BinaryData CreateWavWithFactChunk ()
+	{
+		using var builder = new BinaryDataBuilder (512);
+
+		// RIFF header - size will be calculated
+		builder.AddStringLatin1 ("RIFF");
+		builder.AddUInt32LE (52); // 4 (WAVE) + 24 (fmt) + 12 (fact) + 8 (data) + 4 (data size placeholder)
+		builder.AddStringLatin1 ("WAVE");
+
+		// fmt chunk (16 bytes data)
+		builder.AddStringLatin1 ("fmt ");
+		builder.AddUInt32LE (16);
+		builder.AddUInt16LE (1);    // PCM
+		builder.AddUInt16LE (2);    // stereo
+		builder.AddUInt32LE (44100); // sample rate
+		builder.AddUInt32LE (176400); // byte rate
+		builder.AddUInt16LE (4);    // block align
+		builder.AddUInt16LE (16);   // bits per sample
+
+		// fact chunk (4 bytes data - sample count)
+		builder.AddStringLatin1 ("fact");
+		builder.AddUInt32LE (4);
+		builder.AddUInt32LE (88200); // 2 seconds at 44100 Hz
+
+		// data chunk (empty)
+		builder.AddStringLatin1 ("data");
+		builder.AddUInt32LE (0);
+
+		return builder.ToBinaryData ();
+	}
+
+	static BinaryData CreateWavWithCueChunk ()
+	{
+		using var builder = new BinaryDataBuilder (512);
+
+		builder.AddStringLatin1 ("RIFF");
+		builder.AddUInt32LE (60); // size will need adjustment
+		builder.AddStringLatin1 ("WAVE");
+
+		// fmt chunk
+		builder.AddStringLatin1 ("fmt ");
+		builder.AddUInt32LE (16);
+		builder.AddUInt16LE (1);
+		builder.AddUInt16LE (2);
+		builder.AddUInt32LE (44100);
+		builder.AddUInt32LE (176400);
+		builder.AddUInt16LE (4);
+		builder.AddUInt16LE (16);
+
+		// cue chunk (minimal - 4 byte count + 24 byte cue point)
+		builder.AddStringLatin1 ("cue ");
+		builder.AddUInt32LE (28);  // size: 4 (count) + 24 (one cue point)
+		builder.AddUInt32LE (1);   // 1 cue point
+		// Cue point: ID(4) + Position(4) + ChunkID(4) + ChunkStart(4) + BlockStart(4) + SampleOffset(4)
+		builder.AddUInt32LE (1);   // ID
+		builder.AddUInt32LE (0);   // Position
+		builder.AddStringLatin1 ("data"); // Chunk ID
+		builder.AddUInt32LE (0);   // Chunk start
+		builder.AddUInt32LE (0);   // Block start
+		builder.AddUInt32LE (44100); // Sample offset (1 second mark)
+
+		// data chunk
+		builder.AddStringLatin1 ("data");
+		builder.AddUInt32LE (0);
+
+		return builder.ToBinaryData ();
+	}
+
+	static BinaryData CreateWavWithSmplChunk ()
+	{
+		using var builder = new BinaryDataBuilder (512);
+
+		builder.AddStringLatin1 ("RIFF");
+		builder.AddUInt32LE (80);
+		builder.AddStringLatin1 ("WAVE");
+
+		// fmt chunk
+		builder.AddStringLatin1 ("fmt ");
+		builder.AddUInt32LE (16);
+		builder.AddUInt16LE (1);
+		builder.AddUInt16LE (2);
+		builder.AddUInt32LE (44100);
+		builder.AddUInt32LE (176400);
+		builder.AddUInt16LE (4);
+		builder.AddUInt16LE (16);
+
+		// smpl chunk (36 bytes minimum)
+		builder.AddStringLatin1 ("smpl");
+		builder.AddUInt32LE (36);
+		builder.AddUInt32LE (0);  // Manufacturer
+		builder.AddUInt32LE (0);  // Product
+		builder.AddUInt32LE (22675); // Sample period (1/44100 in nanoseconds)
+		builder.AddUInt32LE (60); // MIDI unity note (middle C)
+		builder.AddUInt32LE (0);  // MIDI pitch fraction
+		builder.AddUInt32LE (0);  // SMPTE format
+		builder.AddUInt32LE (0);  // SMPTE offset
+		builder.AddUInt32LE (0);  // Num sample loops
+		builder.AddUInt32LE (0);  // Sampler data
+
+		// data chunk
+		builder.AddStringLatin1 ("data");
+		builder.AddUInt32LE (0);
+
+		return builder.ToBinaryData ();
+	}
+
+	static BinaryData CreateWavWithMultipleUnknownChunks ()
+	{
+		using var builder = new BinaryDataBuilder (512);
+
+		builder.AddStringLatin1 ("RIFF");
+		builder.AddUInt32LE (68);
+		builder.AddStringLatin1 ("WAVE");
+
+		// fmt chunk
+		builder.AddStringLatin1 ("fmt ");
+		builder.AddUInt32LE (16);
+		builder.AddUInt16LE (1);
+		builder.AddUInt16LE (2);
+		builder.AddUInt32LE (44100);
+		builder.AddUInt32LE (176400);
+		builder.AddUInt16LE (4);
+		builder.AddUInt16LE (16);
+
+		// fact chunk
+		builder.AddStringLatin1 ("fact");
+		builder.AddUInt32LE (4);
+		builder.AddUInt32LE (88200);
+
+		// cue chunk (minimal)
+		builder.AddStringLatin1 ("cue ");
+		builder.AddUInt32LE (4);
+		builder.AddUInt32LE (0); // 0 cue points
+
+		// data chunk
+		builder.AddStringLatin1 ("data");
+		builder.AddUInt32LE (0);
+
+		return builder.ToBinaryData ();
+	}
 }
