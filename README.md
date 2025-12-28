@@ -4,6 +4,20 @@ A modern .NET library for reading and writing metadata in media files.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## When to Use TagLibSharp2
+
+**Choose TagLibSharp2 if you need:**
+- MIT license (TagLib# is LGPL)
+- Async I/O for high-throughput scenarios
+- Modern .NET features (nullable types, `Span<T>`)
+- Result-based error handling (no exceptions)
+
+**Choose TagLib# if you need:**
+- MP4/M4A, ASF/WMA, APE, or AIFF support (not yet implemented here)
+- A battle-tested library used in production for years
+
+See the [Migration Guide](docs/MIGRATION-FROM-TAGLIB.md) for detailed comparison.
+
 ## Features
 
 - **Modern .NET**: Built for .NET 8+ with nullable reference types, `Span<T>`, and async support
@@ -31,59 +45,28 @@ dotnet build
 ## Quick Start
 
 ```csharp
-using TagLibSharp2.Id3.Id3v2;
 using TagLibSharp2.Mpeg;
 using TagLibSharp2.Xiph;
 using TagLibSharp2.Ogg;
 
-// Read ID3v2 tags from MP3 files
-var mp3Data = File.ReadAllBytes("song.mp3");
-var id3Result = Id3v2Tag.Read(mp3Data);
-if (id3Result.IsSuccess)
+// Read MP3 tags (prefers ID3v2, falls back to ID3v1)
+var result = Mp3File.ReadFromFile("song.mp3");
+if (result.IsSuccess)
 {
-    var tag = id3Result.Tag!;
-    Console.WriteLine($"Title: {tag.Title}");
-    Console.WriteLine($"Artist: {tag.Artist}");
-    Console.WriteLine($"Album: {tag.Album}");
-}
-
-// High-level MP3 access (prefers ID3v2, falls back to ID3v1)
-var mp3Result = Mp3File.ReadFromFile("song.mp3");
-if (mp3Result.IsSuccess)
-{
-    var mp3 = mp3Result.File!;
-    Console.WriteLine($"Title: {mp3.Title}");
-    Console.WriteLine($"Artist: {mp3.Artist}");
+    var mp3 = result.File!;
+    Console.WriteLine($"{mp3.Title} by {mp3.Artist}");
 
     // Modify and save
     mp3.Title = "New Title";
-    var originalData = File.ReadAllBytes("song.mp3");
-    mp3.SaveToFile("song.mp3", originalData);
+    mp3.SaveToFile("song.mp3", File.ReadAllBytes("song.mp3"));
 }
 
-// Read FLAC metadata (sync)
-var flacResult = FlacFile.ReadFromFile("song.flac");
-if (flacResult.IsSuccess)
-{
-    var flac = flacResult.File!;
-    Console.WriteLine($"Title: {flac.Title}");
-    Console.WriteLine($"Artist: {flac.Artist}");
-}
+// FLAC and Ogg Vorbis work the same way
+var flac = FlacFile.ReadFromFile("song.flac").File;
+var ogg = OggVorbisFile.ReadFromFile("song.ogg").File;
 
-// Read FLAC metadata (async)
-var flacAsync = await FlacFile.ReadFromFileAsync("song.flac");
-if (flacAsync.IsSuccess)
-{
-    Console.WriteLine($"Title: {flacAsync.File!.Title}");
-}
-
-// Read Ogg Vorbis comments
-var oggResult = OggVorbisFile.ReadFromFile("song.ogg");
-if (oggResult.IsSuccess)
-{
-    var ogg = oggResult.File!;
-    Console.WriteLine($"Title: {ogg.Title}");
-}
+// Async support for high-throughput scenarios
+var asyncResult = await Mp3File.ReadFromFileAsync("song.mp3");
 ```
 
 See the [examples](examples/) directory for more comprehensive usage patterns.
@@ -157,6 +140,7 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 
 ## Documentation
 
+- [Migration Guide](docs/MIGRATION-FROM-TAGLIB.md) - Migrating from TagLib#
 - [Architecture Overview](docs/ARCHITECTURE.md) - Design principles and allocation behavior
 - [Core Types Reference](docs/CORE-TYPES.md) - Complete API documentation
 - [Building Guide](docs/BUILDING.md) - Build instructions and requirements
