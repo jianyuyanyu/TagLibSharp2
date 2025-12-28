@@ -33,6 +33,7 @@ public sealed class FlacFile
 	static readonly byte[] FlacMagic = { 0x66, 0x4C, 0x61, 0x43 }; // "fLaC"
 
 	readonly List<FlacPicture> _pictures = new (2);
+	readonly List<FlacPreservedBlock> _preservedBlocks = new (2);
 
 	/// <summary>
 	/// Gets the size of the metadata section in bytes (magic + all metadata blocks).
@@ -68,6 +69,15 @@ public sealed class FlacFile
 	/// Gets the list of PICTURE blocks.
 	/// </summary>
 	public IReadOnlyList<FlacPicture> Pictures => _pictures;
+
+	/// <summary>
+	/// Gets the list of preserved metadata blocks (SEEKTABLE, APPLICATION, etc.).
+	/// </summary>
+	/// <remarks>
+	/// These blocks are preserved during read and written back during save
+	/// to maintain compatibility with applications that depend on them.
+	/// </remarks>
+	public IReadOnlyList<FlacPreservedBlock> PreservedBlocks => _preservedBlocks;
 
 	/// <summary>
 	/// Gets or sets the title tag.
@@ -288,7 +298,15 @@ public sealed class FlacFile
 						file.CueSheet = cueSheetResult.CueSheet;
 					break;
 
-					// Other block types (PADDING, APPLICATION, SEEKTABLE) are skipped
+				case FlacBlockType.SeekTable:
+				case FlacBlockType.Application:
+					// Preserve these blocks to write back during save
+					file._preservedBlocks.Add (new FlacPreservedBlock (
+						headerResult.Header.BlockType,
+						new BinaryData (blockData)));
+					break;
+
+					// PADDING is not preserved - we generate fresh padding on save
 			}
 		}
 
@@ -372,6 +390,10 @@ public sealed class FlacFile
 		for (var i = 0; i < pictureDataList.Count; i++)
 			totalMetadataSize += FlacMetadataBlockHeader.HeaderSize + pictureDataList[i].Length;
 
+		// Add preserved blocks (SEEKTABLE, APPLICATION)
+		for (var i = 0; i < _preservedBlocks.Count; i++)
+			totalMetadataSize += FlacMetadataBlockHeader.HeaderSize + _preservedBlocks[i].Data.Length;
+
 		// Add padding block (4K is common)
 		const int PaddingSize = 4096;
 		totalMetadataSize += FlacMetadataBlockHeader.HeaderSize + PaddingSize;
@@ -409,6 +431,14 @@ public sealed class FlacFile
 			var pictureHeader = new FlacMetadataBlockHeader (isLast: false, FlacBlockType.Picture, pictureDataList[i].Length);
 			builder.Add (pictureHeader.Render ());
 			builder.Add (pictureDataList[i]);
+		}
+
+		// Preserved blocks (SEEKTABLE, APPLICATION)
+		for (var i = 0; i < _preservedBlocks.Count; i++) {
+			var block = _preservedBlocks[i];
+			var blockHeader = new FlacMetadataBlockHeader (isLast: false, block.BlockType, block.Data.Length);
+			builder.Add (blockHeader.Render ());
+			builder.Add (block.Data);
 		}
 
 		// PADDING block (always last)
@@ -531,5 +561,59 @@ public readonly struct FlacFileReadResult : IEquatable<FlacFileReadResult>
 	/// Determines whether two results are not equal.
 	/// </summary>
 	public static bool operator != (FlacFileReadResult left, FlacFileReadResult right) =>
+		!left.Equals (right);
+}
+
+/// <summary>
+/// Represents a FLAC metadata block that is preserved during read/write operations.
+/// </summary>
+/// <remarks>
+/// Used for blocks like SEEKTABLE and APPLICATION that are not directly modified
+/// by the library but must be preserved to maintain file compatibility.
+/// </remarks>
+public readonly struct FlacPreservedBlock : IEquatable<FlacPreservedBlock>
+{
+	/// <summary>
+	/// Gets the type of the metadata block.
+	/// </summary>
+	public FlacBlockType BlockType { get; }
+
+	/// <summary>
+	/// Gets the raw data of the metadata block (excluding the 4-byte header).
+	/// </summary>
+	public BinaryData Data { get; }
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="FlacPreservedBlock"/> struct.
+	/// </summary>
+	/// <param name="blockType">The type of metadata block.</param>
+	/// <param name="data">The raw block data.</param>
+	public FlacPreservedBlock (FlacBlockType blockType, BinaryData data)
+	{
+		BlockType = blockType;
+		Data = data;
+	}
+
+	/// <inheritdoc/>
+	public bool Equals (FlacPreservedBlock other) =>
+		BlockType == other.BlockType && Data.Equals (other.Data);
+
+	/// <inheritdoc/>
+	public override bool Equals (object? obj) =>
+		obj is FlacPreservedBlock other && Equals (other);
+
+	/// <inheritdoc/>
+	public override int GetHashCode () => HashCode.Combine (BlockType, Data);
+
+	/// <summary>
+	/// Determines whether two blocks are equal.
+	/// </summary>
+	public static bool operator == (FlacPreservedBlock left, FlacPreservedBlock right) =>
+		left.Equals (right);
+
+	/// <summary>
+	/// Determines whether two blocks are not equal.
+	/// </summary>
+	public static bool operator != (FlacPreservedBlock left, FlacPreservedBlock right) =>
 		!left.Equals (right);
 }

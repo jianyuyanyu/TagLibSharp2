@@ -392,6 +392,87 @@ public class FlacFileTests
 		Assert.IsGreaterThan (data.Length, rendered.Length);
 	}
 
+	[TestMethod]
+	public void Read_WithSeekTable_PreservesBlock ()
+	{
+		var data = BuildFlacWithSeekTable ();
+
+		var result = FlacFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.HasCount (1, result.File!.PreservedBlocks);
+		Assert.AreEqual (FlacBlockType.SeekTable, result.File.PreservedBlocks[0].BlockType);
+	}
+
+	[TestMethod]
+	public void Read_WithApplicationBlock_PreservesBlock ()
+	{
+		var data = BuildFlacWithApplicationBlock ();
+
+		var result = FlacFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.HasCount (1, result.File!.PreservedBlocks);
+		Assert.AreEqual (FlacBlockType.Application, result.File.PreservedBlocks[0].BlockType);
+	}
+
+	[TestMethod]
+	public void Render_WithSeekTable_PreservesSeekTable ()
+	{
+		var data = BuildFlacWithSeekTable ();
+		var result = FlacFile.Read (data);
+		var file = result.File!;
+
+		// Modify tags to ensure we're re-rendering
+		file.Title = "New Title";
+
+		var rendered = file.Render (data);
+		var reResult = FlacFile.Read (rendered.Span);
+
+		Assert.IsTrue (reResult.IsSuccess);
+		Assert.HasCount (1, reResult.File!.PreservedBlocks);
+		Assert.AreEqual (FlacBlockType.SeekTable, reResult.File.PreservedBlocks[0].BlockType);
+		// Verify seek table data is preserved
+		Assert.AreEqual (result.File!.PreservedBlocks[0].Data.Length, reResult.File.PreservedBlocks[0].Data.Length);
+	}
+
+	[TestMethod]
+	public void Render_WithApplicationBlock_PreservesApplicationBlock ()
+	{
+		var data = BuildFlacWithApplicationBlock ();
+		var result = FlacFile.Read (data);
+		var file = result.File!;
+
+		file.Title = "New Title";
+
+		var rendered = file.Render (data);
+		var reResult = FlacFile.Read (rendered.Span);
+
+		Assert.IsTrue (reResult.IsSuccess);
+		Assert.HasCount (1, reResult.File!.PreservedBlocks);
+		Assert.AreEqual (FlacBlockType.Application, reResult.File.PreservedBlocks[0].BlockType);
+		// Verify application ID is preserved (first 4 bytes)
+		CollectionAssert.AreEqual (
+			result.File!.PreservedBlocks[0].Data.Span.Slice (0, 4).ToArray (),
+			reResult.File.PreservedBlocks[0].Data.Span.Slice (0, 4).ToArray ());
+	}
+
+	[TestMethod]
+	public void Render_WithMultiplePreservedBlocks_PreservesAll ()
+	{
+		var data = BuildFlacWithSeekTableAndApplication ();
+		var result = FlacFile.Read (data);
+		var file = result.File!;
+
+		file.Title = "Modified";
+
+		var rendered = file.Render (data);
+		var reResult = FlacFile.Read (rendered.Span);
+
+		Assert.IsTrue (reResult.IsSuccess);
+		Assert.HasCount (2, reResult.File!.PreservedBlocks);
+	}
+
 	#region Helper Methods
 
 	static byte[] BuildMinimalFlacFile ()
@@ -600,6 +681,111 @@ public class FlacFileTests
 
 		// Audio data
 		builder.Add (audioData);
+
+		return builder.ToBinaryData ().ToArray ();
+	}
+
+	/// <summary>
+	/// Builds a FLAC file with a SEEKTABLE block.
+	/// </summary>
+	static byte[] BuildFlacWithSeekTable ()
+	{
+		using var builder = new BinaryDataBuilder ();
+
+		// Magic
+		builder.Add (System.Text.Encoding.ASCII.GetBytes ("fLaC"));
+
+		// STREAMINFO (not last)
+		builder.Add (new byte[] { 0x00, 0x00, 0x00, 0x22 });
+		builder.Add (new byte[] { 0x10, 0x00, 0x10, 0x00 });
+		builder.Add (new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+		builder.Add (new byte[] { 0x0A, 0xC4, 0x42, 0xF0, 0x00, 0x00, 0x00, 0x00 });
+		builder.AddZeros (16);
+
+		// SEEKTABLE block (last=true, type=3)
+		// Each seek point is 18 bytes: sample number (8) + offset (8) + samples (2)
+		// We'll create 2 seek points = 36 bytes
+		var seekTableSize = 36;
+		var header = new FlacMetadataBlockHeader (true, FlacBlockType.SeekTable, seekTableSize);
+		builder.Add (header.Render ());
+
+		// Seek point 1: sample 0 at offset 0, 4096 samples
+		builder.AddZeros (8); // sample number = 0
+		builder.AddZeros (8); // offset = 0
+		builder.Add (new byte[] { 0x10, 0x00 }); // 4096 samples (big-endian)
+
+		// Seek point 2: sample 44100 at offset 12345, 4096 samples
+		builder.Add (new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xAC, 0x44 }); // 44100
+		builder.Add (new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39 }); // 12345
+		builder.Add (new byte[] { 0x10, 0x00 }); // 4096 samples
+
+		return builder.ToBinaryData ().ToArray ();
+	}
+
+	/// <summary>
+	/// Builds a FLAC file with an APPLICATION block.
+	/// </summary>
+	static byte[] BuildFlacWithApplicationBlock ()
+	{
+		using var builder = new BinaryDataBuilder ();
+
+		// Magic
+		builder.Add (System.Text.Encoding.ASCII.GetBytes ("fLaC"));
+
+		// STREAMINFO (not last)
+		builder.Add (new byte[] { 0x00, 0x00, 0x00, 0x22 });
+		builder.Add (new byte[] { 0x10, 0x00, 0x10, 0x00 });
+		builder.Add (new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+		builder.Add (new byte[] { 0x0A, 0xC4, 0x42, 0xF0, 0x00, 0x00, 0x00, 0x00 });
+		builder.AddZeros (16);
+
+		// APPLICATION block (last=true, type=2)
+		// 4-byte application ID + application data
+		var appData = System.Text.Encoding.ASCII.GetBytes ("TEST"); // App ID
+		var appContent = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 }; // App data
+		var totalSize = appData.Length + appContent.Length;
+
+		var header = new FlacMetadataBlockHeader (true, FlacBlockType.Application, totalSize);
+		builder.Add (header.Render ());
+		builder.Add (appData);
+		builder.Add (appContent);
+
+		return builder.ToBinaryData ().ToArray ();
+	}
+
+	/// <summary>
+	/// Builds a FLAC file with both SEEKTABLE and APPLICATION blocks.
+	/// </summary>
+	static byte[] BuildFlacWithSeekTableAndApplication ()
+	{
+		using var builder = new BinaryDataBuilder ();
+
+		// Magic
+		builder.Add (System.Text.Encoding.ASCII.GetBytes ("fLaC"));
+
+		// STREAMINFO (not last)
+		builder.Add (new byte[] { 0x00, 0x00, 0x00, 0x22 });
+		builder.Add (new byte[] { 0x10, 0x00, 0x10, 0x00 });
+		builder.Add (new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+		builder.Add (new byte[] { 0x0A, 0xC4, 0x42, 0xF0, 0x00, 0x00, 0x00, 0x00 });
+		builder.AddZeros (16);
+
+		// SEEKTABLE block (not last, type=3)
+		var seekTableSize = 18; // 1 seek point
+		var seekHeader = new FlacMetadataBlockHeader (false, FlacBlockType.SeekTable, seekTableSize);
+		builder.Add (seekHeader.Render ());
+		builder.AddZeros (8); // sample number
+		builder.AddZeros (8); // offset
+		builder.Add (new byte[] { 0x10, 0x00 }); // samples
+
+		// APPLICATION block (last, type=2)
+		var appData = System.Text.Encoding.ASCII.GetBytes ("APPL");
+		var appContent = new byte[] { 0xAA, 0xBB };
+		var appSize = appData.Length + appContent.Length;
+		var appHeader = new FlacMetadataBlockHeader (true, FlacBlockType.Application, appSize);
+		builder.Add (appHeader.Render ());
+		builder.Add (appData);
+		builder.Add (appContent);
 
 		return builder.ToBinaryData ().ToArray ();
 	}
