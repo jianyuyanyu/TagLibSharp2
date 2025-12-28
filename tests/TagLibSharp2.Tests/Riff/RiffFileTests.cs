@@ -1,0 +1,148 @@
+// Copyright (c) 2025 Stephen Shaw and contributors
+
+using TagLibSharp2.Core;
+using TagLibSharp2.Riff;
+
+namespace TagLibSharp2.Tests.Riff;
+
+[TestClass]
+[TestCategory ("Unit")]
+[TestCategory ("Riff")]
+public class RiffFileTests
+{
+	static BinaryData CreateMinimalWavRiff ()
+	{
+		return new BinaryData ([
+			(byte)'R', (byte)'I', (byte)'F', (byte)'F',
+			0x04, 0x00, 0x00, 0x00,
+			(byte)'W', (byte)'A', (byte)'V', (byte)'E'
+		]);
+	}
+
+	static BinaryData CreateRiffWithFmtChunk ()
+	{
+		using var builder = new BinaryDataBuilder (100);
+		builder.AddStringLatin1 ("RIFF");
+		builder.AddUInt32LE (20); // 4 + 8 + 8 (form + chunk header + 4 bytes data)
+		builder.AddStringLatin1 ("WAVE");
+		builder.AddStringLatin1 ("fmt ");
+		builder.AddUInt32LE (4);
+		builder.AddUInt32LE (0xDEADBEEF);
+		return builder.ToBinaryData ();
+	}
+
+	[TestMethod]
+	public void TryParse_ValidWaveFile_Succeeds ()
+	{
+		var data = CreateMinimalWavRiff ();
+		var result = RiffFile.TryParse (data, out var file);
+
+		Assert.IsTrue (result);
+		Assert.IsTrue (file.IsValid);
+		Assert.AreEqual ("WAVE", file.FormType);
+	}
+
+	[TestMethod]
+	public void TryParse_TooShort_ReturnsFalse ()
+	{
+		var data = new BinaryData ([1, 2, 3, 4, 5, 6, 7, 8]);
+		var result = RiffFile.TryParse (data, out _);
+		Assert.IsFalse (result);
+	}
+
+	[TestMethod]
+	public void TryParse_WrongMagic_ReturnsFalse ()
+	{
+		var data = new BinaryData ([
+			(byte)'X', (byte)'X', (byte)'X', (byte)'X',
+			0x04, 0x00, 0x00, 0x00,
+			(byte)'W', (byte)'A', (byte)'V', (byte)'E'
+		]);
+		var result = RiffFile.TryParse (data, out _);
+		Assert.IsFalse (result);
+	}
+
+	[TestMethod]
+	public void TryParse_WithChunks_ParsesChunk ()
+	{
+		var data = CreateRiffWithFmtChunk ();
+		Assert.IsTrue (RiffFile.TryParse (data, out var file));
+
+		var chunk = file.GetChunk ("fmt ");
+		Assert.IsNotNull (chunk);
+		Assert.AreEqual ("fmt ", chunk.Value.FourCC);
+	}
+
+	[TestMethod]
+	public void GetChunk_NonExistent_ReturnsNull ()
+	{
+		Assert.IsTrue (RiffFile.TryParse (CreateMinimalWavRiff (), out var file));
+		Assert.IsNull (file.GetChunk ("fmt "));
+	}
+
+	[TestMethod]
+	public void SetChunk_AddsNewChunk ()
+	{
+		Assert.IsTrue (RiffFile.TryParse (CreateMinimalWavRiff (), out var file));
+		file.SetChunk (new RiffChunk ("test", new BinaryData ([1, 2, 3])));
+
+		Assert.AreEqual (1, file.AllChunks.Count);
+		Assert.AreEqual ("test", file.AllChunks[0].FourCC);
+	}
+
+	[TestMethod]
+	public void SetChunk_ReplacesExisting ()
+	{
+		Assert.IsTrue (RiffFile.TryParse (CreateRiffWithFmtChunk (), out var file));
+		file.SetChunk (new RiffChunk ("fmt ", new BinaryData ([0xAA, 0xBB])));
+
+		Assert.AreEqual (1, file.AllChunks.Count);
+		Assert.AreEqual (2u, file.AllChunks[0].DataSize);
+	}
+
+	[TestMethod]
+	public void RemoveChunks_ExistingChunk_ReturnsTrue ()
+	{
+		Assert.IsTrue (RiffFile.TryParse (CreateRiffWithFmtChunk (), out var file));
+		Assert.IsTrue (file.RemoveChunks ("fmt "));
+		Assert.AreEqual (0, file.AllChunks.Count);
+	}
+
+	[TestMethod]
+	public void RemoveChunks_NonExistent_ReturnsFalse ()
+	{
+		Assert.IsTrue (RiffFile.TryParse (CreateMinimalWavRiff (), out var file));
+		Assert.IsFalse (file.RemoveChunks ("fmt "));
+	}
+
+	[TestMethod]
+	public void Render_ProducesValidRiff ()
+	{
+		Assert.IsTrue (RiffFile.TryParse (CreateMinimalWavRiff (), out var file));
+		file.SetChunk (new RiffChunk ("test", new BinaryData ([1, 2, 3, 4])));
+
+		var rendered = file.Render ();
+
+		Assert.AreEqual ((byte)'R', rendered[0]);
+		Assert.AreEqual ((byte)'W', rendered[8]);
+	}
+
+	[TestMethod]
+	public void Render_RoundTrip_PreservesData ()
+	{
+		Assert.IsTrue (RiffFile.TryParse (CreateRiffWithFmtChunk (), out var original));
+
+		var rendered = original.Render ();
+		Assert.IsTrue (RiffFile.TryParse (rendered, out var roundTripped));
+
+		Assert.AreEqual (original.FormType, roundTripped.FormType);
+		Assert.AreEqual (original.AllChunks.Count, roundTripped.AllChunks.Count);
+	}
+
+	[TestMethod]
+	public void FileSize_MatchesHeaderValue ()
+	{
+		Assert.IsTrue (RiffFile.TryParse (CreateMinimalWavRiff (), out var file));
+		Assert.AreEqual (4u, file.FileSize);
+	}
+}
