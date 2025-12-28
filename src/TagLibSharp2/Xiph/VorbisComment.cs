@@ -277,6 +277,42 @@ public sealed class VorbisComment : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? Work {
+		get => GetValue ("WORK");
+		set => SetValue ("WORK", value);
+	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the MOVEMENT field. Falls back to MOVEMENTNAME for compatibility.
+	/// </remarks>
+	public override string? Movement {
+		get => GetValue ("MOVEMENT") ?? GetValue ("MOVEMENTNAME");
+		set => SetValue ("MOVEMENT", value);
+	}
+
+	/// <inheritdoc/>
+	public override uint? MovementNumber {
+		get {
+			var value = GetValue ("MOVEMENTNUMBER");
+			return !string.IsNullOrEmpty (value) && uint.TryParse (value, out var num) ? num : null;
+		}
+		set => SetValue ("MOVEMENTNUMBER", value?.ToString (System.Globalization.CultureInfo.InvariantCulture));
+	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the MOVEMENTTOTAL field. Falls back to MOVEMENTCOUNT for compatibility.
+	/// </remarks>
+	public override uint? MovementTotal {
+		get {
+			var value = GetValue ("MOVEMENTTOTAL") ?? GetValue ("MOVEMENTCOUNT");
+			return !string.IsNullOrEmpty (value) && uint.TryParse (value, out var num) ? num : null;
+		}
+		set => SetValue ("MOVEMENTTOTAL", value?.ToString (System.Globalization.CultureInfo.InvariantCulture));
+	}
+
+	/// <inheritdoc/>
 	public override string? Copyright {
 		get => GetValue ("COPYRIGHT");
 		set => SetValue ("COPYRIGHT", value);

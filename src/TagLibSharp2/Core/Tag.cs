@@ -234,6 +234,70 @@ public abstract class Tag
 	public virtual string? Conductor { get => null; set { } }
 
 	/// <summary>
+	/// Gets or sets the name of the work (composition).
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// For classical music, this is the overall composition name (e.g., "Symphony No. 9 in D minor, Op. 125").
+	/// The track title typically contains the movement name, while this field contains the work name.
+	/// </para>
+	/// <para>
+	/// In ID3v2, this is stored in a TXXX frame with description "WORK".
+	/// In Vorbis Comments, this is stored as WORK.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </para>
+	/// </remarks>
+	public virtual string? Work { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the movement name.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// For classical music, this is the name of the movement (e.g., "Allegro con brio").
+	/// Used in conjunction with <see cref="Work"/> to describe the full piece.
+	/// </para>
+	/// <para>
+	/// In ID3v2, this is stored in a TXXX frame with description "MOVEMENT".
+	/// In Vorbis Comments, this is stored as MOVEMENT or MOVEMENTNAME.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </para>
+	/// </remarks>
+	public virtual string? Movement { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the movement number within the work.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// For classical music, this indicates which movement this is (e.g., 1 for the first movement).
+	/// Used with <see cref="MovementTotal"/> to show position like "Movement 2 of 4".
+	/// </para>
+	/// <para>
+	/// In ID3v2, this is stored in a TXXX frame with description "MOVEMENTNUMBER".
+	/// In Vorbis Comments, this is stored as MOVEMENTNUMBER.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </para>
+	/// </remarks>
+	public virtual uint? MovementNumber { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the total number of movements in the work.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// For classical music, this indicates the total movements in the work (e.g., 4 for a typical symphony).
+	/// Used with <see cref="MovementNumber"/> to show position like "Movement 2 of 4".
+	/// </para>
+	/// <para>
+	/// In ID3v2, this is stored in a TXXX frame with description "MOVEMENTTOTAL".
+	/// In Vorbis Comments, this is stored as MOVEMENTTOTAL or MOVEMENTCOUNT.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </para>
+	/// </remarks>
+	public virtual uint? MovementTotal { get => null; set { } }
+
+	/// <summary>
 	/// Gets or sets the copyright information.
 	/// </summary>
 	/// <remarks>
@@ -999,6 +1063,16 @@ public abstract class Tag
 				target.AmazonId = AmazonId;
 			if (IsCompilation)
 				target.IsCompilation = true;
+
+			// Classical music metadata
+			if (Work is not null)
+				target.Work = Work;
+			if (Movement is not null)
+				target.Movement = Movement;
+			if (MovementNumber.HasValue)
+				target.MovementNumber = MovementNumber;
+			if (MovementTotal.HasValue)
+				target.MovementTotal = MovementTotal;
 
 			// Performers role
 			if (PerformersRole is { Length: > 0 })

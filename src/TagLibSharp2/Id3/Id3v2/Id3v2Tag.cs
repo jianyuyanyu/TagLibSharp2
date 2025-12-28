@@ -826,6 +826,36 @@ public sealed class Id3v2Tag : Tag
 		set => SetUserText ("ACOUSTID_FINGERPRINT", value);
 	}
 
+	/// <inheritdoc/>
+	public override string? Work {
+		get => GetUserText ("WORK");
+		set => SetUserText ("WORK", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Movement {
+		get => GetUserText ("MOVEMENT");
+		set => SetUserText ("MOVEMENT", value);
+	}
+
+	/// <inheritdoc/>
+	public override uint? MovementNumber {
+		get {
+			var value = GetUserText ("MOVEMENTNUMBER");
+			return uint.TryParse (value, out var num) ? num : null;
+		}
+		set => SetUserText ("MOVEMENTNUMBER", value?.ToString (System.Globalization.CultureInfo.InvariantCulture));
+	}
+
+	/// <inheritdoc/>
+	public override uint? MovementTotal {
+		get {
+			var value = GetUserText ("MOVEMENTTOTAL");
+			return uint.TryParse (value, out var num) ? num : null;
+		}
+		set => SetUserText ("MOVEMENTTOTAL", value?.ToString (System.Globalization.CultureInfo.InvariantCulture));
+	}
+
 	/// <summary>
 	/// Gets or sets the roles of the performers.
 	/// </summary>
