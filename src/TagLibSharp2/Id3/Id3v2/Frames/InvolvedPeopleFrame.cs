@@ -27,7 +27,8 @@ public enum InvolvedPeopleFrameType
 /// <remarks>
 /// <para>
 /// TIPL (Involved People List) and TMCL (Musician Credits List) store pairs
-/// of roles/instruments and the people who filled them.
+/// of roles/instruments and the people who filled them. Multiple people can
+/// have the same role (e.g., two guitarists).
 /// </para>
 /// <para>
 /// Frame format (ID3v2.4):
@@ -40,10 +41,17 @@ public enum InvolvedPeopleFrameType
 /// </remarks>
 public sealed class InvolvedPeopleFrame
 {
-	readonly Dictionary<string, string> _pairs = new (StringComparer.OrdinalIgnoreCase);
+	// Cached terminator bytes to avoid allocations
+	static readonly byte[] SingleTerminator = [0];
+	static readonly byte[] DoubleTerminator = [0, 0];
+
+	// Maximum valid encoding value
+	const int MaxEncodingValue = (int)TextEncodingType.Utf8;
+
+	readonly List<(string Role, string Person)> _pairs = [];
 
 	/// <summary>
-	/// Gets the frame ID (TIPL or TMCL).
+	/// Gets the frame ID (TIPL, TMCL, or IPLS).
 	/// </summary>
 	public string Id { get; }
 
@@ -72,51 +80,135 @@ public sealed class InvolvedPeopleFrame
 	}
 
 	/// <summary>
-	/// Adds or updates a role/person pair.
+	/// Adds a role/person pair. Multiple people can have the same role.
 	/// </summary>
-	/// <param name="role">The role or instrument.</param>
-	/// <param name="person">The person's name.</param>
+	/// <param name="role">The role or instrument. Cannot be null or empty.</param>
+	/// <param name="person">The person's name. Null is treated as empty string.</param>
+	/// <exception cref="ArgumentException">Thrown if role is null or empty.</exception>
+	/// <remarks>
+	/// Unlike a dictionary, this method allows duplicate roles. For example,
+	/// you can add two entries for "guitar" with different people.
+	/// </remarks>
 	public void Add (string role, string person)
 	{
-		_pairs[role] = person;
+		if (string.IsNullOrEmpty (role))
+			throw new ArgumentException ("Role cannot be null or empty", nameof (role));
+		_pairs.Add ((role, person ?? ""));
 	}
 
 	/// <summary>
-	/// Gets the person for a given role.
+	/// Sets (replaces) the person for a given role. If the role exists, updates the first match.
+	/// If the role doesn't exist, adds a new pair.
+	/// </summary>
+	/// <param name="role">The role or instrument. Cannot be null or empty.</param>
+	/// <param name="person">The person's name. Null is treated as empty string.</param>
+	/// <exception cref="ArgumentException">Thrown if role is null or empty.</exception>
+	/// <remarks>
+	/// Role matching is case-insensitive. Use <see cref="Add"/> if you want to allow
+	/// multiple people for the same role.
+	/// </remarks>
+	public void Set (string role, string person)
+	{
+		if (string.IsNullOrEmpty (role))
+			throw new ArgumentException ("Role cannot be null or empty", nameof (role));
+
+		for (var i = 0; i < _pairs.Count; i++) {
+			if (string.Equals (_pairs[i].Role, role, StringComparison.OrdinalIgnoreCase)) {
+				_pairs[i] = (role, person ?? "");
+				return;
+			}
+		}
+
+		_pairs.Add ((role, person ?? ""));
+	}
+
+	/// <summary>
+	/// Gets the first person for a given role.
 	/// </summary>
 	/// <param name="role">The role or instrument (case-insensitive).</param>
 	/// <returns>The person's name, or null if not found.</returns>
 	public string? GetPerson (string role)
 	{
-		return _pairs.TryGetValue (role, out var person) ? person : null;
+		for (var i = 0; i < _pairs.Count; i++) {
+			if (string.Equals (_pairs[i].Role, role, StringComparison.OrdinalIgnoreCase))
+				return _pairs[i].Person;
+		}
+		return null;
 	}
 
 	/// <summary>
-	/// Gets all roles in this frame.
+	/// Gets all people for a given role.
 	/// </summary>
-	/// <returns>A list of all roles.</returns>
+	/// <param name="role">The role or instrument (case-insensitive).</param>
+	/// <returns>A list of all people with the specified role.</returns>
+	public IReadOnlyList<string> GetPeopleForRole (string role)
+	{
+		var result = new List<string> ();
+		for (var i = 0; i < _pairs.Count; i++) {
+			if (string.Equals (_pairs[i].Role, role, StringComparison.OrdinalIgnoreCase))
+				result.Add (_pairs[i].Person);
+		}
+		return result;
+	}
+
+	/// <summary>
+	/// Gets all role/person pairs in this frame.
+	/// </summary>
+	public IReadOnlyList<(string Role, string Person)> Pairs => _pairs;
+
+	/// <summary>
+	/// Gets all unique roles in this frame.
+	/// </summary>
+	/// <returns>A list of unique roles (case-sensitive, preserving first occurrence).</returns>
 	public IReadOnlyList<string> GetRoles ()
 	{
-		return _pairs.Keys.ToList ();
+		var seen = new HashSet<string> (StringComparer.OrdinalIgnoreCase);
+		var result = new List<string> ();
+		for (var i = 0; i < _pairs.Count; i++) {
+			if (seen.Add (_pairs[i].Role))
+				result.Add (_pairs[i].Role);
+		}
+		return result;
 	}
 
 	/// <summary>
-	/// Gets all people in this frame.
+	/// Gets all people in this frame (may contain duplicates if same person has multiple roles).
 	/// </summary>
 	/// <returns>A list of all people.</returns>
 	public IReadOnlyList<string> GetPeople ()
 	{
-		return _pairs.Values.ToList ();
+		var result = new List<string> (_pairs.Count);
+		for (var i = 0; i < _pairs.Count; i++)
+			result.Add (_pairs[i].Person);
+		return result;
 	}
 
 	/// <summary>
-	/// Removes a role/person pair.
+	/// Removes all entries for a given role.
 	/// </summary>
 	/// <param name="role">The role to remove (case-insensitive).</param>
-	/// <returns>True if the pair was removed, false if not found.</returns>
-	public bool Remove (string role)
+	/// <returns>The number of pairs removed.</returns>
+	public int Remove (string role)
 	{
-		return _pairs.Remove (role);
+		return _pairs.RemoveAll (p => string.Equals (p.Role, role, StringComparison.OrdinalIgnoreCase));
+	}
+
+	/// <summary>
+	/// Removes a specific role/person pair.
+	/// </summary>
+	/// <param name="role">The role (case-insensitive).</param>
+	/// <param name="person">The person (case-sensitive).</param>
+	/// <returns>True if a pair was removed, false if not found.</returns>
+	public bool RemovePair (string role, string person)
+	{
+		for (var i = 0; i < _pairs.Count; i++) {
+			if (string.Equals (_pairs[i].Role, role, StringComparison.OrdinalIgnoreCase) &&
+				_pairs[i].Person == person) {
+				_pairs.RemoveAt (i);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/// <summary>
@@ -136,11 +228,14 @@ public sealed class InvolvedPeopleFrame
 	/// <returns>A result indicating success or failure.</returns>
 	public static InvolvedPeopleFrameReadResult Read (string frameId, ReadOnlySpan<byte> data, Id3v2Version version)
 	{
+		if (string.IsNullOrEmpty (frameId))
+			return InvolvedPeopleFrameReadResult.Failure ("Frame ID cannot be null or empty");
+
 		if (data.IsEmpty)
 			return InvolvedPeopleFrameReadResult.Failure ("Frame data is empty");
 
 		var encodingByte = data[0];
-		if (encodingByte > 3)
+		if (encodingByte > MaxEncodingValue)
 			return InvolvedPeopleFrameReadResult.Failure ($"Invalid text encoding: {encodingByte}");
 
 		var encoding = (TextEncodingType)encodingByte;
@@ -159,7 +254,7 @@ public sealed class InvolvedPeopleFrame
 			var role = strings[i];
 			var person = strings[i + 1];
 			if (!string.IsNullOrEmpty (role))
-				frame._pairs[role] = person;
+				frame._pairs.Add ((role, person));
 		}
 
 		return InvolvedPeopleFrameReadResult.Success (frame, data.Length);
@@ -177,34 +272,26 @@ public sealed class InvolvedPeopleFrame
 			return emptyBuilder.ToBinaryData ();
 		}
 
-		// Calculate size: encoding byte + all strings with null terminators
-		var strings = new List<string> ();
-		foreach (var pair in _pairs) {
-			strings.Add (pair.Key);
-			strings.Add (pair.Value);
+		// Estimate size: encoding byte + all strings with null terminators
+		var estimatedSize = 1;
+		for (var i = 0; i < _pairs.Count; i++) {
+			estimatedSize += _pairs[i].Role.Length * 4 + 2; // Worst case: UTF-8 4 bytes per char + terminator
+			estimatedSize += _pairs[i].Person.Length * 4 + 2;
 		}
 
-		// Build the content
-		// Per ID3v2 spec, each text string is null-terminated
-		using var builder = new BinaryDataBuilder (1 + EstimateSize (strings));
+		// Build the content - encode directly without intermediate list
+		using var builder = new BinaryDataBuilder (estimatedSize);
 		builder.Add ((byte)Encoding);
 
-		for (var i = 0; i < strings.Count; i++) {
-			var bytes = EncodeText (strings[i], Encoding);
-			builder.Add (bytes);
-			// Add null terminator after each string (spec says each is null-terminated)
-			builder.Add (GetTerminatorBytes (Encoding));
+		var terminator = GetTerminatorBytes (Encoding);
+		for (var i = 0; i < _pairs.Count; i++) {
+			builder.Add (EncodeText (_pairs[i].Role, Encoding));
+			builder.Add (terminator);
+			builder.Add (EncodeText (_pairs[i].Person, Encoding));
+			builder.Add (terminator);
 		}
 
 		return builder.ToBinaryData ();
-	}
-
-	static int EstimateSize (List<string> strings)
-	{
-		var size = 0;
-		foreach (var s in strings)
-			size += s.Length * 4 + 2; // Worst case: UTF-8 4 bytes per char + terminator
-		return size;
 	}
 
 	static List<string> ParseNullSeparatedStrings (ReadOnlySpan<byte> data, TextEncodingType encoding)
@@ -249,10 +336,10 @@ public sealed class InvolvedPeopleFrame
 	static int GetTerminatorSize (TextEncodingType encoding) =>
 		encoding is TextEncodingType.Utf16WithBom or TextEncodingType.Utf16BE ? 2 : 1;
 
-	static byte[] GetTerminatorBytes (TextEncodingType encoding) =>
+	static ReadOnlySpan<byte> GetTerminatorBytes (TextEncodingType encoding) =>
 		encoding is TextEncodingType.Utf16WithBom or TextEncodingType.Utf16BE
-			? new byte[] { 0, 0 }
-			: new byte[] { 0 };
+			? DoubleTerminator
+			: SingleTerminator;
 
 	static string DecodeText (ReadOnlySpan<byte> data, TextEncodingType encoding)
 	{
@@ -281,12 +368,12 @@ public sealed class InvolvedPeopleFrame
 			return System.Text.Encoding.Unicode.GetString (data); // Default to LE if no BOM
 
 		// Skip BOM and decode
-		data = data.Slice (2);
+		var content = data.Slice (2);
 		var enc = isLittleEndian
 			? System.Text.Encoding.Unicode
 			: System.Text.Encoding.BigEndianUnicode;
 
-		return enc.GetString (data);
+		return enc.GetString (content);
 	}
 
 	static BinaryData EncodeText (string text, TextEncodingType encoding)

@@ -508,27 +508,50 @@ public sealed class Id3v2Tag : Tag
 		set => SetUserText ("MusicIP PUID", value);
 	}
 
-	/// <inheritdoc/>
+	/// <summary>
+	/// Gets or sets the roles of the performers.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is a parallel array to the <see cref="Artists"/> list. Each element
+	/// describes the role of the corresponding artist at the same index.
+	/// For example, if Artists = ["John", "Jane"], PerformersRole might be ["vocals", "guitar"].
+	/// </para>
+	/// <para>
+	/// The getter returns roles from the TMCL (Musician Credits List) frame.
+	/// The setter combines roles with the current Artists to create role-person pairs.
+	/// For full control over TMCL content, use <see cref="InvolvedPeopleFrames"/> directly.
+	/// </para>
+	/// </remarks>
 #pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
 	public override string[]? PerformersRole {
 		get {
 			var tmcl = GetInvolvedPeopleFrame ("TMCL");
 			if (tmcl is null || tmcl.Count == 0)
 				return null;
-			return tmcl.GetRoles ().ToArray ();
+
+			var pairs = tmcl.Pairs;
+			var roles = new string[pairs.Count];
+			for (var i = 0; i < pairs.Count; i++)
+				roles[i] = pairs[i].Role;
+			return roles;
 		}
 		set {
 			// Remove existing TMCL frames
-			_involvedPeopleFrames.RemoveAll (f => f.Id == "TMCL");
+			RemoveInvolvedPeopleFrames ("TMCL");
 
 			if (value is null || value.Length == 0)
 				return;
 
-			// Create new TMCL frame with roles
-			// Use placeholder names since PerformersRole only stores roles
+			// Create new TMCL frame combining roles with artists
 			var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
-			for (var i = 0; i < value.Length; i++)
-				frame.Add (value[i], "");
+			var artists = Artists;
+
+			for (var i = 0; i < value.Length; i++) {
+				// Pair each role with the corresponding artist (if available)
+				var person = (i < artists.Count) ? artists[i] : "";
+				frame.Add (value[i], person);
+			}
 
 			_involvedPeopleFrames.Add (frame);
 		}

@@ -72,6 +72,83 @@ public class InvolvedPeopleFrameTests
 	}
 
 	[TestMethod]
+	public void Add_DuplicateRole_AllowsMultiplePeople ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+
+		frame.Add ("guitar", "John Smith");
+		frame.Add ("guitar", "Jane Doe"); // Add another guitarist
+
+		Assert.AreEqual (2, frame.Count);
+		// GetPerson returns the first match
+		Assert.AreEqual ("John Smith", frame.GetPerson ("guitar"));
+		// GetPeopleForRole returns all matches
+		var guitarists = frame.GetPeopleForRole ("guitar");
+		Assert.HasCount (2, guitarists);
+		Assert.AreEqual ("John Smith", guitarists[0]);
+		Assert.AreEqual ("Jane Doe", guitarists[1]);
+	}
+
+	[TestMethod]
+	public void Add_NullOrEmptyRole_ThrowsArgumentException ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+
+		Assert.ThrowsExactly<ArgumentException> (() => frame.Add ("", "John"));
+		Assert.ThrowsExactly<ArgumentException> (() => frame.Add (null!, "John"));
+	}
+
+	[TestMethod]
+	public void Add_NullPerson_TreatedAsEmptyString ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+
+		frame.Add ("guitar", null!);
+
+		Assert.AreEqual (1, frame.Count);
+		Assert.AreEqual ("", frame.GetPerson ("guitar"));
+	}
+
+	// Set Tests
+
+	[TestMethod]
+	public void Set_NewRole_AddsPair ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+
+		frame.Set ("guitar", "John Smith");
+
+		Assert.AreEqual (1, frame.Count);
+		Assert.AreEqual ("John Smith", frame.GetPerson ("guitar"));
+	}
+
+	[TestMethod]
+	public void Set_ExistingRole_ReplacesPerson ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+		frame.Add ("guitar", "John Smith");
+
+		frame.Set ("guitar", "Jane Doe");
+
+		Assert.AreEqual (1, frame.Count);
+		Assert.AreEqual ("Jane Doe", frame.GetPerson ("guitar"));
+	}
+
+	[TestMethod]
+	public void Set_CaseInsensitiveRoleMatch ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+		frame.Add ("Guitar", "John Smith");
+
+		frame.Set ("GUITAR", "Jane Doe");
+
+		Assert.AreEqual (1, frame.Count);
+		Assert.AreEqual ("Jane Doe", frame.GetPerson ("guitar"));
+	}
+
+	// GetPerson Tests
+
+	[TestMethod]
 	public void GetPerson_NonExistentRole_ReturnsNull ()
 	{
 		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
@@ -83,11 +160,24 @@ public class InvolvedPeopleFrameTests
 	}
 
 	[TestMethod]
-	public void GetRoles_ReturnsAllRoles ()
+	public void GetPerson_CaseInsensitiveMatch ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+		frame.Add ("Guitar", "John Smith");
+
+		Assert.AreEqual ("John Smith", frame.GetPerson ("guitar"));
+		Assert.AreEqual ("John Smith", frame.GetPerson ("GUITAR"));
+	}
+
+	// GetRoles/GetPeople Tests
+
+	[TestMethod]
+	public void GetRoles_ReturnsUniqueRoles ()
 	{
 		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
 		frame.Add ("guitar", "John Smith");
-		frame.Add ("drums", "Jane Doe");
+		frame.Add ("guitar", "Jane Doe"); // Duplicate role
+		frame.Add ("drums", "Bob Wilson");
 
 		var roles = frame.GetRoles ();
 
@@ -110,6 +200,22 @@ public class InvolvedPeopleFrameTests
 		Assert.IsTrue (people.Contains ("Jane Doe"));
 	}
 
+	[TestMethod]
+	public void Pairs_ReturnsAllPairs ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+		frame.Add ("guitar", "John Smith");
+		frame.Add ("guitar", "Jane Doe");
+		frame.Add ("drums", "Bob Wilson");
+
+		var pairs = frame.Pairs;
+
+		Assert.HasCount (3, pairs);
+		Assert.AreEqual (("guitar", "John Smith"), pairs[0]);
+		Assert.AreEqual (("guitar", "Jane Doe"), pairs[1]);
+		Assert.AreEqual (("drums", "Bob Wilson"), pairs[2]);
+	}
+
 	// Clear/Remove Tests
 
 	[TestMethod]
@@ -125,27 +231,54 @@ public class InvolvedPeopleFrameTests
 	}
 
 	[TestMethod]
-	public void Remove_ExistingRole_RemovesPair ()
+	public void Remove_ExistingRole_RemovesAllMatchingPairs ()
 	{
 		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
 		frame.Add ("guitar", "John Smith");
-		frame.Add ("drums", "Jane Doe");
+		frame.Add ("guitar", "Jane Doe");
+		frame.Add ("drums", "Bob Wilson");
 
-		var removed = frame.Remove ("guitar");
+		var removedCount = frame.Remove ("guitar");
 
-		Assert.IsTrue (removed);
+		Assert.AreEqual (2, removedCount);
 		Assert.AreEqual (1, frame.Count);
 		Assert.IsNull (frame.GetPerson ("guitar"));
-		Assert.AreEqual ("Jane Doe", frame.GetPerson ("drums"));
+		Assert.AreEqual ("Bob Wilson", frame.GetPerson ("drums"));
 	}
 
 	[TestMethod]
-	public void Remove_NonExistentRole_ReturnsFalse ()
+	public void Remove_NonExistentRole_ReturnsZero ()
 	{
 		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
 		frame.Add ("guitar", "John Smith");
 
-		var removed = frame.Remove ("piano");
+		var removedCount = frame.Remove ("piano");
+
+		Assert.AreEqual (0, removedCount);
+		Assert.AreEqual (1, frame.Count);
+	}
+
+	[TestMethod]
+	public void RemovePair_ExistingPair_RemovesSpecificPair ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+		frame.Add ("guitar", "John Smith");
+		frame.Add ("guitar", "Jane Doe");
+
+		var removed = frame.RemovePair ("guitar", "John Smith");
+
+		Assert.IsTrue (removed);
+		Assert.AreEqual (1, frame.Count);
+		Assert.AreEqual ("Jane Doe", frame.GetPerson ("guitar"));
+	}
+
+	[TestMethod]
+	public void RemovePair_NonExistentPair_ReturnsFalse ()
+	{
+		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+		frame.Add ("guitar", "John Smith");
+
+		var removed = frame.RemovePair ("guitar", "Jane Doe");
 
 		Assert.IsFalse (removed);
 		Assert.AreEqual (1, frame.Count);
@@ -191,11 +324,62 @@ public class InvolvedPeopleFrameTests
 	}
 
 	[TestMethod]
+	public void Read_ValidIplsFrame_ParsesPairs ()
+	{
+		// UTF-8 encoding for IPLS (ID3v2.3 equivalent)
+		var data = new byte[] {
+			0x03, // UTF-8 encoding
+			(byte)'m', (byte)'i', (byte)'x', (byte)'e', (byte)'r', 0x00,
+			(byte)'B', (byte)'o', (byte)'b', (byte)' ', (byte)'C', (byte)'l', (byte)'e', (byte)'a', (byte)'r', (byte)'m', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)'a', (byte)'i', (byte)'n'
+		};
+
+		var result = InvolvedPeopleFrame.Read ("IPLS", data, Id3v2Version.V23);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (1, result.Frame!.Count);
+		Assert.AreEqual ("Bob Clearmountain", result.Frame.GetPerson ("mixer"));
+	}
+
+	[TestMethod]
 	public void Read_EmptyData_ReturnsFailure ()
 	{
 		var result = InvolvedPeopleFrame.Read ("TMCL", ReadOnlySpan<byte>.Empty, Id3v2Version.V24);
 
 		Assert.IsFalse (result.IsSuccess);
+		Assert.AreEqual ("Frame data is empty", result.Error);
+	}
+
+	[TestMethod]
+	public void Read_NullFrameId_ReturnsFailure ()
+	{
+		var data = new byte[] { 0x03 };
+
+		var result = InvolvedPeopleFrame.Read (null!, data, Id3v2Version.V24);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.AreEqual ("Frame ID cannot be null or empty", result.Error);
+	}
+
+	[TestMethod]
+	public void Read_EmptyFrameId_ReturnsFailure ()
+	{
+		var data = new byte[] { 0x03 };
+
+		var result = InvolvedPeopleFrame.Read ("", data, Id3v2Version.V24);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.AreEqual ("Frame ID cannot be null or empty", result.Error);
+	}
+
+	[TestMethod]
+	public void Read_InvalidEncoding_ReturnsFailure ()
+	{
+		var data = new byte[] { 0x05 }; // Invalid encoding (> 3)
+
+		var result = InvolvedPeopleFrame.Read ("TMCL", data, Id3v2Version.V24);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.Contains ("Invalid text encoding", result.Error!);
 	}
 
 	[TestMethod]
@@ -207,6 +391,42 @@ public class InvolvedPeopleFrameTests
 
 		Assert.IsTrue (result.IsSuccess);
 		Assert.AreEqual (0, result.Frame!.Count);
+	}
+
+	[TestMethod]
+	public void Read_OddNumberOfStrings_SkipsIncompletePair ()
+	{
+		// UTF-8 encoding, "guitar\0John Smith\0drums" (missing person for drums)
+		var data = new byte[] {
+			0x03,
+			(byte)'g', (byte)'u', (byte)'i', (byte)'t', (byte)'a', (byte)'r', 0x00,
+			(byte)'J', (byte)'o', (byte)'h', (byte)'n', (byte)' ', (byte)'S', (byte)'m', (byte)'i', (byte)'t', (byte)'h', 0x00,
+			(byte)'d', (byte)'r', (byte)'u', (byte)'m', (byte)'s'
+		};
+
+		var result = InvolvedPeopleFrame.Read ("TMCL", data, Id3v2Version.V24);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (1, result.Frame!.Count); // Only complete pair
+		Assert.AreEqual ("John Smith", result.Frame.GetPerson ("guitar"));
+		Assert.IsNull (result.Frame.GetPerson ("drums"));
+	}
+
+	[TestMethod]
+	public void Read_Latin1Encoding_ParsesCorrectly ()
+	{
+		// Latin1 encoding (0x00), "role\0name"
+		var data = new byte[] {
+			0x00, // Latin1 encoding
+			(byte)'r', (byte)'o', (byte)'l', (byte)'e', 0x00,
+			(byte)'n', (byte)'a', (byte)'m', (byte)'e'
+		};
+
+		var result = InvolvedPeopleFrame.Read ("TMCL", data, Id3v2Version.V24);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (1, result.Frame!.Count);
+		Assert.AreEqual ("name", result.Frame.GetPerson ("role"));
 	}
 
 	// Render Tests
@@ -271,6 +491,22 @@ public class InvolvedPeopleFrameTests
 	}
 
 	[TestMethod]
+	public void RoundTrip_DuplicateRoles_PreservesAll ()
+	{
+		var original = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+		original.Add ("guitar", "Brian May");
+		original.Add ("guitar", "John Deacon"); // Two guitarists
+
+		var content = original.RenderContent ();
+		var result = InvolvedPeopleFrame.Read ("TMCL", content.Span, Id3v2Version.V24);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (2, result.Frame!.Count);
+		var guitarists = result.Frame.GetPeopleForRole ("guitar");
+		Assert.HasCount (2, guitarists);
+	}
+
+	[TestMethod]
 	public void RoundTrip_Unicode_PreservesCharacters ()
 	{
 		var original = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
@@ -299,29 +535,5 @@ public class InvolvedPeopleFrameTests
 		Assert.AreEqual ("Phil Spector", frame.GetPerson ("producer"));
 		Assert.AreEqual ("Eddie Kramer", frame.GetPerson ("engineer"));
 		Assert.AreEqual ("Bob Clearmountain", frame.GetPerson ("mixing"));
-	}
-
-	// Edge cases
-
-	[TestMethod]
-	public void Add_DuplicateRole_ReplacesExisting ()
-	{
-		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
-		frame.Add ("guitar", "John Smith");
-		frame.Add ("guitar", "Jane Doe"); // Replace
-
-		Assert.AreEqual (1, frame.Count);
-		Assert.AreEqual ("Jane Doe", frame.GetPerson ("guitar"));
-	}
-
-	[TestMethod]
-	public void GetPerson_CaseInsensitiveMatch ()
-	{
-		var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
-		frame.Add ("Guitar", "John Smith");
-
-		// Should match case-insensitively
-		Assert.AreEqual ("John Smith", frame.GetPerson ("guitar"));
-		Assert.AreEqual ("John Smith", frame.GetPerson ("GUITAR"));
 	}
 }
