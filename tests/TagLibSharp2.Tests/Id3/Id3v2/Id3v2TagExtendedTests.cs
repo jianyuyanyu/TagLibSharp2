@@ -188,6 +188,104 @@ public sealed class Id3v2TagExtendedTests
 
 	#endregion
 
+	#region R128 Loudness Tests
+
+	[TestMethod]
+	public void R128TrackGain_GetSet_RoundTrips ()
+	{
+		var tag = new Id3v2Tag ();
+		var gain = "-512"; // -2 dB in Q7.8 format
+
+		tag.R128TrackGain = gain;
+
+		Assert.AreEqual (gain, tag.R128TrackGain);
+		Assert.AreEqual (gain, tag.GetUserText ("R128_TRACK_GAIN"));
+	}
+
+	[TestMethod]
+	public void R128AlbumGain_GetSet_RoundTrips ()
+	{
+		var tag = new Id3v2Tag ();
+		var gain = "256"; // +1 dB in Q7.8 format
+
+		tag.R128AlbumGain = gain;
+
+		Assert.AreEqual (gain, tag.R128AlbumGain);
+		Assert.AreEqual (gain, tag.GetUserText ("R128_ALBUM_GAIN"));
+	}
+
+	[TestMethod]
+	public void R128_AllFields_RenderAndReadBack ()
+	{
+		var tag = new Id3v2Tag ();
+		tag.R128TrackGain = "-512";
+		tag.R128AlbumGain = "256";
+
+		var rendered = tag.Render ();
+		var readResult = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (readResult.IsSuccess);
+		Assert.AreEqual ("-512", readResult.Tag!.R128TrackGain);
+		Assert.AreEqual ("256", readResult.Tag.R128AlbumGain);
+	}
+
+	#endregion
+
+	#region AcoustID Tests
+
+	[TestMethod]
+	public void AcoustIdId_GetSet_RoundTrips ()
+	{
+		var tag = new Id3v2Tag ();
+		var acoustId = "f4e7c9d8-1234-5678-9abc-def012345678";
+
+		tag.AcoustIdId = acoustId;
+
+		Assert.AreEqual (acoustId, tag.AcoustIdId);
+		Assert.AreEqual (acoustId, tag.GetUserText ("ACOUSTID_ID"));
+	}
+
+	[TestMethod]
+	public void AcoustIdFingerprint_GetSet_RoundTrips ()
+	{
+		var tag = new Id3v2Tag ();
+		var fingerprint = "AQADtNQyRUkSRZEGAAAAAA";
+
+		tag.AcoustIdFingerprint = fingerprint;
+
+		Assert.AreEqual (fingerprint, tag.AcoustIdFingerprint);
+		Assert.AreEqual (fingerprint, tag.GetUserText ("ACOUSTID_FINGERPRINT"));
+	}
+
+	[TestMethod]
+	public void AcoustId_SetNull_RemovesField ()
+	{
+		var tag = new Id3v2Tag ();
+		tag.AcoustIdId = "f4e7c9d8-1234-5678-9abc-def012345678";
+
+		tag.AcoustIdId = null;
+
+		Assert.IsNull (tag.AcoustIdId);
+		Assert.IsNull (tag.GetUserText ("ACOUSTID_ID"));
+	}
+
+	[TestMethod]
+	public void AcoustId_AllFields_RenderAndReadBack ()
+	{
+		var tag = new Id3v2Tag ();
+		tag.AcoustIdId = "f4e7c9d8-1234-5678-9abc-def012345678";
+		tag.AcoustIdFingerprint = "AQADtNQyRUkSRZEGAAAAAA";
+
+		var rendered = tag.Render ();
+		var readResult = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (readResult.IsSuccess);
+		Assert.AreEqual ("f4e7c9d8-1234-5678-9abc-def012345678", readResult.Tag!.AcoustIdId);
+		Assert.AreEqual ("AQADtNQyRUkSRZEGAAAAAA", readResult.Tag.AcoustIdFingerprint);
+	}
+
+	#endregion
+
 	#region Combined Tests
 
 	[TestMethod]

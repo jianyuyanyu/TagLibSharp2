@@ -488,6 +488,18 @@ public sealed class VorbisComment : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? R128TrackGain {
+		get => GetValue ("R128_TRACK_GAIN");
+		set => SetValue ("R128_TRACK_GAIN", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? R128AlbumGain {
+		get => GetValue ("R128_ALBUM_GAIN");
+		set => SetValue ("R128_ALBUM_GAIN", value);
+	}
+
+	/// <inheritdoc/>
 	public override string? MusicBrainzTrackId {
 		get => GetValue ("MUSICBRAINZ_TRACKID");
 		set => SetValue ("MUSICBRAINZ_TRACKID", value);
@@ -586,6 +598,18 @@ public sealed class VorbisComment : Tag
 	public override string? MusicIpId {
 		get => GetValue ("MUSICIP_PUID");
 		set => SetValue ("MUSICIP_PUID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AcoustIdId {
+		get => GetValue ("ACOUSTID_ID");
+		set => SetValue ("ACOUSTID_ID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AcoustIdFingerprint {
+		get => GetValue ("ACOUSTID_FINGERPRINT");
+		set => SetValue ("ACOUSTID_FINGERPRINT", value);
 	}
 
 	/// <inheritdoc/>

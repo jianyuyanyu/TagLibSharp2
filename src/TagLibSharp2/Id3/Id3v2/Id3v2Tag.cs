@@ -709,6 +709,18 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <inheritdoc/>
+	public override string? R128TrackGain {
+		get => GetUserText ("R128_TRACK_GAIN");
+		set => SetUserText ("R128_TRACK_GAIN", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? R128AlbumGain {
+		get => GetUserText ("R128_ALBUM_GAIN");
+		set => SetUserText ("R128_ALBUM_GAIN", value);
+	}
+
+	/// <inheritdoc/>
 	public override string? MusicBrainzTrackId {
 		get => GetUserText ("MUSICBRAINZ_TRACKID");
 		set => SetUserText ("MUSICBRAINZ_TRACKID", value);
@@ -800,6 +812,18 @@ public sealed class Id3v2Tag : Tag
 	public override string? MusicIpId {
 		get => GetUserText ("MusicIP PUID");
 		set => SetUserText ("MusicIP PUID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AcoustIdId {
+		get => GetUserText ("ACOUSTID_ID");
+		set => SetUserText ("ACOUSTID_ID", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AcoustIdFingerprint {
+		get => GetUserText ("ACOUSTID_FINGERPRINT");
+		set => SetUserText ("ACOUSTID_FINGERPRINT", value);
 	}
 
 	/// <summary>
