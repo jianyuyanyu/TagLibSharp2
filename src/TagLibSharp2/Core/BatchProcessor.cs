@@ -84,15 +84,12 @@ public static class BatchProcessor
 				try {
 					var result = await operation (path, cancellationToken).ConfigureAwait (false);
 					results[index] = BatchResult<T>.Success (path, result);
-				}
-				catch (OperationCanceledException) {
+				} catch (OperationCanceledException) {
 					results[index] = BatchResult<T>.Cancelled (path);
 					throw;
-				}
-				catch (Exception ex) {
+				} catch (Exception ex) {
 					results[index] = BatchResult<T>.Failure (path, ex);
-				}
-				finally {
+				} finally {
 					semaphore.Release ();
 					var count = Interlocked.Increment (ref completed);
 					progress?.Report (new BatchProgress (count, pathList.Count, path));
@@ -102,8 +99,7 @@ public static class BatchProcessor
 
 		try {
 			await Task.WhenAll (tasks).ConfigureAwait (false);
-		}
-		catch (OperationCanceledException) {
+		} catch (OperationCanceledException) {
 			// Some tasks may have been cancelled, results will reflect this
 		}
 
@@ -147,11 +143,9 @@ public static class BatchProcessor
 			try {
 				var result = operation (path);
 				results[i] = BatchResult<T>.Success (path, result);
-			}
-			catch (Exception ex) {
+			} catch (Exception ex) {
 				results[i] = BatchResult<T>.Failure (path, ex);
-			}
-			finally {
+			} finally {
 				var count = Interlocked.Increment (ref completed);
 				progress?.Report (new BatchProgress (count, pathList.Count, path));
 			}

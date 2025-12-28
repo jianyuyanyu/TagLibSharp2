@@ -4,43 +4,43 @@
 using TagLibSharp2.Core;
 using TagLibSharp2.Id3.Id3v2;
 using TagLibSharp2.Mpeg;
-using TagLibSharp2.Xiph;
 using TagLibSharp2.Ogg;
+using TagLibSharp2.Xiph;
 
-Console.WriteLine("TagLibSharp2 File Operations Examples");
-Console.WriteLine(new string('=', 50));
+Console.WriteLine ("TagLibSharp2 File Operations Examples");
+Console.WriteLine (new string ('=', 50));
 
 // Example 1: Auto-detect and read any supported format
-Console.WriteLine("\n1. Auto-Detect Format");
-Console.WriteLine("-".PadRight(30, '-'));
+Console.WriteLine ("\n1. Auto-Detect Format");
+Console.WriteLine ("-".PadRight (30, '-'));
 
 await DemoAutoDetect ().ConfigureAwait (false);
 
 // Example 2: Batch processing with progress
-Console.WriteLine("\n2. Batch Processing");
-Console.WriteLine("-".PadRight(30, '-'));
+Console.WriteLine ("\n2. Batch Processing");
+Console.WriteLine ("-".PadRight (30, '-'));
 
 await DemoBatchProcessing ().ConfigureAwait (false);
 
 // Example 3: Tag validation
-Console.WriteLine("\n3. Tag Validation");
-Console.WriteLine("-".PadRight(30, '-'));
+Console.WriteLine ("\n3. Tag Validation");
+Console.WriteLine ("-".PadRight (30, '-'));
 
 DemoTagValidation ();
 
 // Example 4: Cross-format tag copying
-Console.WriteLine("\n4. Cross-Format Tag Copying");
-Console.WriteLine("-".PadRight(30, '-'));
+Console.WriteLine ("\n4. Cross-Format Tag Copying");
+Console.WriteLine ("-".PadRight (30, '-'));
 
 DemoTagCopy ();
 
 // Example 5: Safe file operations
-Console.WriteLine("\n5. Safe File Operations");
-Console.WriteLine("-".PadRight(30, '-'));
+Console.WriteLine ("\n5. Safe File Operations");
+Console.WriteLine ("-".PadRight (30, '-'));
 
 await DemoSafeFileOps ().ConfigureAwait (false);
 
-Console.WriteLine("\nAll examples completed!");
+Console.WriteLine ("\nAll examples completed!");
 
 // --- Example Implementations ---
 

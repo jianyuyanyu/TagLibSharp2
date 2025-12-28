@@ -94,8 +94,7 @@ public sealed class ValidationResult
 	/// <summary>
 	/// Gets a value indicating whether the tag has any errors.
 	/// </summary>
-	public bool HasErrors
-	{
+	public bool HasErrors {
 		get {
 			for (var i = 0; i < _issues.Count; i++) {
 				if (_issues[i].Severity == ValidationSeverity.Error)
@@ -108,8 +107,7 @@ public sealed class ValidationResult
 	/// <summary>
 	/// Gets a value indicating whether the tag has any warnings.
 	/// </summary>
-	public bool HasWarnings
-	{
+	public bool HasWarnings {
 		get {
 			for (var i = 0; i < _issues.Count; i++) {
 				if (_issues[i].Severity == ValidationSeverity.Warning)
@@ -122,8 +120,7 @@ public sealed class ValidationResult
 	/// <summary>
 	/// Gets the number of errors.
 	/// </summary>
-	public int ErrorCount
-	{
+	public int ErrorCount {
 		get {
 			var count = 0;
 			for (var i = 0; i < _issues.Count; i++) {
@@ -137,8 +134,7 @@ public sealed class ValidationResult
 	/// <summary>
 	/// Gets the number of warnings.
 	/// </summary>
-	public int WarningCount
-	{
+	public int WarningCount {
 		get {
 			var count = 0;
 			for (var i = 0; i < _issues.Count; i++) {
