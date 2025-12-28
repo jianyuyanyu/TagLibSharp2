@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using TagLibSharp2.Id3.Id3v2;
+using TagLibSharp2.Id3.Id3v2.Frames;
 
 namespace TagLibSharp2.Tests.Id3.Id3v2;
 
@@ -358,6 +359,136 @@ public class Id3v2TagExtendedMetadataTests
 
 		Assert.IsTrue (result.IsSuccess);
 		Assert.AreEqual ("Compilation Artists", result.Tag!.AlbumArtistSort);
+	}
+
+	// PerformersSort Tests
+
+	[TestMethod]
+	public void PerformersSort_SingleValue_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.PerformersSort = ["Beatles, The"];
+
+		Assert.IsNotNull (tag.PerformersSort);
+		Assert.HasCount (1, tag.PerformersSort);
+		Assert.AreEqual ("Beatles, The", tag.PerformersSort[0]);
+	}
+
+	[TestMethod]
+	public void PerformersSort_MultipleValues_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.PerformersSort = ["Beatles, The", "Bowie, David"];
+
+		Assert.IsNotNull (tag.PerformersSort);
+		Assert.HasCount (2, tag.PerformersSort);
+		Assert.AreEqual ("Beatles, The", tag.PerformersSort[0]);
+		Assert.AreEqual ("Bowie, David", tag.PerformersSort[1]);
+	}
+
+	[TestMethod]
+	public void PerformersSort_SetNull_ClearsValue ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.PerformersSort = ["Beatles, The"];
+
+		tag.PerformersSort = null;
+
+		Assert.IsNull (tag.PerformersSort);
+	}
+
+	[TestMethod]
+	public void PerformersSort_RoundTrip_PreservesMultipleValues ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) {
+			PerformersSort = ["Beatles, The", "Bowie, David", "Mercury, Freddie"]
+		};
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.Tag!.PerformersSort);
+		Assert.HasCount (3, result.Tag.PerformersSort);
+		Assert.AreEqual ("Beatles, The", result.Tag.PerformersSort[0]);
+		Assert.AreEqual ("Bowie, David", result.Tag.PerformersSort[1]);
+		Assert.AreEqual ("Mercury, Freddie", result.Tag.PerformersSort[2]);
+	}
+
+	// PerformersRole Caching Tests
+
+	[TestMethod]
+	public void PerformersRole_IsCached_ReturnsSameInstance ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.PerformersRole = ["vocals", "guitar"];
+
+		var first = tag.PerformersRole;
+		var second = tag.PerformersRole;
+
+		Assert.AreSame (first, second);
+	}
+
+	[TestMethod]
+	public void PerformersRole_CacheInvalidated_WhenSetterCalled ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.PerformersRole = ["vocals", "guitar"];
+
+		var first = tag.PerformersRole;
+		tag.PerformersRole = ["drums"];
+		var second = tag.PerformersRole;
+
+		Assert.AreNotSame (first, second);
+		Assert.HasCount (1, second!);
+		Assert.AreEqual ("drums", second[0]);
+	}
+
+	[TestMethod]
+	public void PerformersRole_CacheInvalidated_WhenFrameAdded ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.PerformersRole = ["vocals"];
+
+		var first = tag.PerformersRole;
+
+		var newFrame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
+		newFrame.Add ("bass", "Paul McCartney");
+		tag.AddInvolvedPeopleFrame (newFrame);
+
+		var second = tag.PerformersRole;
+
+		Assert.AreNotSame (first, second);
+	}
+
+	[TestMethod]
+	public void PerformersRole_CacheInvalidated_WhenFramesRemoved ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.PerformersRole = ["vocals", "guitar"];
+
+		var first = tag.PerformersRole;
+		tag.RemoveInvolvedPeopleFrames ("TMCL");
+		var second = tag.PerformersRole;
+
+		Assert.AreNotSame (first, second);
+		Assert.IsNull (second);
+	}
+
+	[TestMethod]
+	public void PerformersRole_CacheInvalidated_WhenCleared ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.PerformersRole = ["vocals", "guitar"];
+
+		var first = tag.PerformersRole;
+		tag.Clear ();
+		var second = tag.PerformersRole;
+
+		Assert.AreNotSame (first, second);
+		Assert.IsNull (second);
 	}
 
 	// TotalTracks Tests

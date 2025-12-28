@@ -297,6 +297,24 @@ public abstract class Tag
 	/// </remarks>
 	public virtual string? AlbumArtistSort { get => null; set { } }
 
+	/// <summary>
+	/// Gets or sets the sort names for the performers.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is a parallel array to the performers list. Each element provides the sort name
+	/// for the corresponding performer at the same index. For example, if performers are
+	/// ["The Beatles", "David Bowie"], PerformersSort might be ["Beatles, The", "Bowie, David"].
+	/// </para>
+	/// <para>
+	/// Not all tag formats support multiple performer sort names.
+	/// Default implementation returns null.
+	/// </para>
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public virtual string[]? PerformersSort { get => null; set { } }
+#pragma warning restore CA1819
+
 	// ReplayGain properties
 
 	/// <summary>

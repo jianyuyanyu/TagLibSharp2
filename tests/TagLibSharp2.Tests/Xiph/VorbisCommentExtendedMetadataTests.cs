@@ -293,6 +293,66 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual ("Compilation Artists", result.Tag!.AlbumArtistSort);
 	}
 
+	// PerformersSort (ARTISTSORT multi-value) Tests
+
+	[TestMethod]
+	public void PerformersSort_SingleValue_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.PerformersSort = ["Beatles, The"];
+
+		Assert.IsNotNull (comment.PerformersSort);
+		Assert.HasCount (1, comment.PerformersSort);
+		Assert.AreEqual ("Beatles, The", comment.PerformersSort[0]);
+	}
+
+	[TestMethod]
+	public void PerformersSort_MultipleValues_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.PerformersSort = ["Beatles, The", "Bowie, David"];
+
+		Assert.IsNotNull (comment.PerformersSort);
+		Assert.HasCount (2, comment.PerformersSort);
+		Assert.AreEqual ("Beatles, The", comment.PerformersSort[0]);
+		Assert.AreEqual ("Bowie, David", comment.PerformersSort[1]);
+		// Verify stored as separate ARTISTSORT fields
+		var values = comment.GetValues ("ARTISTSORT");
+		Assert.HasCount (2, values);
+	}
+
+	[TestMethod]
+	public void PerformersSort_SetNull_ClearsValue ()
+	{
+		var comment = new VorbisComment ("test");
+		comment.PerformersSort = ["Beatles, The"];
+
+		comment.PerformersSort = null;
+
+		Assert.IsNull (comment.PerformersSort);
+		Assert.HasCount (0, comment.GetValues ("ARTISTSORT"));
+	}
+
+	[TestMethod]
+	public void PerformersSort_RoundTrip_PreservesMultipleValues ()
+	{
+		var original = new VorbisComment ("test") {
+			PerformersSort = ["Beatles, The", "Bowie, David", "Mercury, Freddie"]
+		};
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.Tag!.PerformersSort);
+		Assert.HasCount (3, result.Tag.PerformersSort);
+		Assert.AreEqual ("Beatles, The", result.Tag.PerformersSort[0]);
+		Assert.AreEqual ("Bowie, David", result.Tag.PerformersSort[1]);
+		Assert.AreEqual ("Mercury, Freddie", result.Tag.PerformersSort[2]);
+	}
+
 	// Original Release Date (ORIGINALDATE/ORIGINALYEAR) Tests
 
 	[TestMethod]

@@ -105,20 +105,18 @@ public sealed class TextFrame
 
 	static string DecodeTextLatin1 (ReadOnlySpan<byte> data)
 	{
-		// Find null terminator
-		var nullIndex = data.IndexOf ((byte)0);
-		if (nullIndex >= 0)
-			data = data.Slice (0, nullIndex);
+		// Strip trailing null bytes only (preserve internal nulls for multi-value support)
+		while (data.Length > 0 && data[data.Length - 1] == 0)
+			data = data.Slice (0, data.Length - 1);
 
 		return Polyfills.Latin1.GetString (data);
 	}
 
 	static string DecodeTextUtf8 (ReadOnlySpan<byte> data)
 	{
-		// Find null terminator
-		var nullIndex = data.IndexOf ((byte)0);
-		if (nullIndex >= 0)
-			data = data.Slice (0, nullIndex);
+		// Strip trailing null bytes only (preserve internal nulls for multi-value support)
+		while (data.Length > 0 && data[data.Length - 1] == 0)
+			data = data.Slice (0, data.Length - 1);
 
 		return System.Text.Encoding.UTF8.GetString (data);
 	}
@@ -148,13 +146,9 @@ public sealed class TextFrame
 
 	static string DecodeTextUtf16 (ReadOnlySpan<byte> data, bool isLittleEndian)
 	{
-		// Find double-null terminator
-		for (var i = 0; i < data.Length - 1; i += 2) {
-			if (data[i] == 0 && data[i + 1] == 0) {
-				data = data.Slice (0, i);
-				break;
-			}
-		}
+		// Strip trailing double-null bytes only (preserve internal nulls for multi-value support)
+		while (data.Length >= 2 && data[data.Length - 2] == 0 && data[data.Length - 1] == 0)
+			data = data.Slice (0, data.Length - 2);
 
 		var encoding = isLittleEndian
 			? System.Text.Encoding.Unicode

@@ -295,6 +295,28 @@ public sealed class VorbisComment : Tag
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the ARTISTSORT field. Multiple values are stored as separate fields
+	/// per Vorbis Comment specification.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override string[]? PerformersSort {
+		get {
+			var values = GetValues ("ARTISTSORT");
+			return values.Count > 0 ? [.. values] : null;
+		}
+		set {
+			RemoveAll ("ARTISTSORT");
+			if (value is null || value.Length == 0)
+				return;
+
+			for (var i = 0; i < value.Length; i++)
+				AddField ("ARTISTSORT", value[i]);
+		}
+	}
+#pragma warning restore CA1819
+
+	/// <inheritdoc/>
 	public override string? Lyrics {
 		get => GetValue ("LYRICS");
 		set => SetValue ("LYRICS", value);

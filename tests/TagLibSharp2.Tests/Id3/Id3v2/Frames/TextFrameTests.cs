@@ -224,17 +224,17 @@ public class TextFrameTests
 	}
 
 	[TestMethod]
-	public void Read_MultipleNullSeparatedValues_ParsesFirst ()
+	public void Read_MultipleNullSeparatedValues_PreservesAll ()
 	{
-		// Some tags have multiple null-separated values
-		// Example: "Value1\0Value2\0"
+		// ID3v2.4 uses null separators for multi-value text frames
+		// Example: "Value1\0Value2\0" (trailing null stripped)
 		var data = new byte[] { 0x00, (byte)'A', 0x00, (byte)'B', 0x00 };
 
 		var result = TextFrame.Read ("TIT2", data, Id3v2Version.V24);
 
 		Assert.IsTrue (result.IsSuccess);
-		// Should parse at least the first value
-		Assert.AreEqual ("A", result.Frame!.Text);
+		// Preserves all values with null separators (trailing null stripped)
+		Assert.AreEqual ("A\0B", result.Frame!.Text);
 	}
 
 	#endregion

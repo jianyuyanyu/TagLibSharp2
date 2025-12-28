@@ -22,6 +22,10 @@ public sealed class Id3v2Tag : Tag
 	readonly List<UniqueFileIdFrame> _uniqueFileIdFrames = new (2);
 	readonly List<InvolvedPeopleFrame> _involvedPeopleFrames = new (2);
 
+	// Cache for PerformersRole to avoid recalculating on each access
+	string[]? _performersRoleCache;
+	bool _performersRoleCacheValid;
+
 	/// <summary>
 	/// Gets the ID3v2 version (2, 3, or 4).
 	/// </summary>
@@ -329,6 +333,28 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the TSOP (Performer sort order) frame. Multiple values are stored
+	/// with null separators per ID3v2.4 spec.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override string[]? PerformersSort {
+		get {
+			var values = GetTextFrameValues ("TSOP");
+			return values.Count > 0 ? [.. values] : null;
+		}
+		set {
+			if (value is null || value.Length == 0) {
+				SetTextFrame ("TSOP", null);
+				return;
+			}
+			// Join with null separator for ID3v2.4 multi-value support
+			SetTextFrame ("TSOP", string.Join ("\0", value));
+		}
+	}
+#pragma warning restore CA1819
+
+	/// <inheritdoc/>
 	public override uint? TotalTracks {
 		get {
 			var trackStr = GetTextFrame ("TRCK");
@@ -526,18 +552,28 @@ public sealed class Id3v2Tag : Tag
 #pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
 	public override string[]? PerformersRole {
 		get {
+			// Return cached value if valid
+			if (_performersRoleCacheValid)
+				return _performersRoleCache;
+
 			var tmcl = GetInvolvedPeopleFrame ("TMCL");
-			if (tmcl is null || tmcl.Count == 0)
+			if (tmcl is null || tmcl.Count == 0) {
+				_performersRoleCache = null;
+				_performersRoleCacheValid = true;
 				return null;
+			}
 
 			var pairs = tmcl.Pairs;
 			var roles = new string[pairs.Count];
 			for (var i = 0; i < pairs.Count; i++)
 				roles[i] = pairs[i].Role;
+
+			_performersRoleCache = roles;
+			_performersRoleCacheValid = true;
 			return roles;
 		}
 		set {
-			// Remove existing TMCL frames
+			// Remove existing TMCL frames (this also invalidates cache)
 			RemoveInvolvedPeopleFrames ("TMCL");
 
 			if (value is null || value.Length == 0)
@@ -590,6 +626,7 @@ public sealed class Id3v2Tag : Tag
 		ArgumentNullException.ThrowIfNull (frame);
 #endif
 		_involvedPeopleFrames.Add (frame);
+		InvalidatePerformersRoleCache ();
 	}
 
 	/// <summary>
@@ -602,6 +639,7 @@ public sealed class Id3v2Tag : Tag
 			_involvedPeopleFrames.Clear ();
 		else
 			_involvedPeopleFrames.RemoveAll (f => f.Id == frameId);
+		InvalidatePerformersRoleCache ();
 	}
 
 	/// <summary>
@@ -1066,6 +1104,16 @@ public sealed class Id3v2Tag : Tag
 		_lyricsFrames.Clear ();
 		_uniqueFileIdFrames.Clear ();
 		_involvedPeopleFrames.Clear ();
+		InvalidatePerformersRoleCache ();
+	}
+
+	/// <summary>
+	/// Invalidates the cached PerformersRole value.
+	/// </summary>
+	void InvalidatePerformersRoleCache ()
+	{
+		_performersRoleCacheValid = false;
+		_performersRoleCache = null;
 	}
 
 	/// <summary>
