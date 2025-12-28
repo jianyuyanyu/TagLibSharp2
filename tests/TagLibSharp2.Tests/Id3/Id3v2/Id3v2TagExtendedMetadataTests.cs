@@ -714,7 +714,7 @@ public class Id3v2TagExtendedMetadataTests
 	{
 		var tag = new Id3v2Tag (Id3v2Version.V24) { Artist = "The Beatles" };
 
-		var artists = tag.Artists;
+		var artists = tag.Performers;
 
 		Assert.HasCount (1, artists);
 		Assert.AreEqual ("The Beatles", artists[0]);
@@ -727,7 +727,7 @@ public class Id3v2TagExtendedMetadataTests
 		var artistValues = new List<string> { "John Lennon", "Paul McCartney" };
 		tag.SetTextFrameValues ("TPE1", artistValues);
 
-		var artists = tag.Artists;
+		var artists = tag.Performers;
 
 		Assert.HasCount (2, artists);
 		Assert.AreEqual ("John Lennon", artists[0]);
@@ -739,7 +739,7 @@ public class Id3v2TagExtendedMetadataTests
 	{
 		var tag = new Id3v2Tag (Id3v2Version.V24) { Artist = "Daft Punk / The Weeknd" };
 
-		var artists = tag.Artists;
+		var artists = tag.Performers;
 
 		Assert.HasCount (2, artists);
 		Assert.AreEqual ("Daft Punk", artists[0]);
@@ -764,7 +764,7 @@ public class Id3v2TagExtendedMetadataTests
 		tag.SetTextFrameValues ("TPE1", null);
 
 		Assert.IsNull (tag.Artist);
-		Assert.IsEmpty (tag.Artists);
+		Assert.IsEmpty (tag.Performers);
 	}
 
 	[TestMethod]
@@ -830,7 +830,7 @@ public class Id3v2TagExtendedMetadataTests
 		var result = Id3v2Tag.Read (rendered.Span);
 
 		Assert.IsTrue (result.IsSuccess);
-		var artists = result.Tag!.Artists;
+		var artists = result.Tag!.Performers;
 		Assert.HasCount (3, artists);
 		Assert.AreEqual ("Artist One", artists[0]);
 		Assert.AreEqual ("Artist Two", artists[1]);
@@ -1374,6 +1374,160 @@ public class Id3v2TagExtendedMetadataTests
 		Assert.AreEqual ("GB", result.Tag!.MusicBrainzReleaseCountry);
 	}
 
+	// AlbumArtistsSort (TSO2) Array Tests
+
+	[TestMethod]
+	public void AlbumArtistsSort_SingleValue_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.AlbumArtistsSort = ["Various Artists"];
+
+		Assert.IsNotNull (tag.AlbumArtistsSort);
+		Assert.HasCount (1, tag.AlbumArtistsSort);
+		Assert.AreEqual ("Various Artists", tag.AlbumArtistsSort[0]);
+	}
+
+	[TestMethod]
+	public void AlbumArtistsSort_MultipleValues_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.AlbumArtistsSort = ["Beatles, The", "Stones, The Rolling"];
+
+		Assert.IsNotNull (tag.AlbumArtistsSort);
+		Assert.HasCount (2, tag.AlbumArtistsSort);
+		Assert.AreEqual ("Beatles, The", tag.AlbumArtistsSort[0]);
+		Assert.AreEqual ("Stones, The Rolling", tag.AlbumArtistsSort[1]);
+	}
+
+	[TestMethod]
+	public void AlbumArtistsSort_SetNull_ClearsValue ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.AlbumArtistsSort = ["Various Artists"];
+
+		tag.AlbumArtistsSort = null;
+
+		Assert.IsNull (tag.AlbumArtistsSort);
+	}
+
+	[TestMethod]
+	public void AlbumArtistsSort_RoundTrip_PreservesMultipleValues ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) {
+			AlbumArtistsSort = ["Beatles, The", "Stones, The Rolling", "Who, The"]
+		};
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.Tag!.AlbumArtistsSort);
+		Assert.HasCount (3, result.Tag.AlbumArtistsSort);
+		Assert.AreEqual ("Beatles, The", result.Tag.AlbumArtistsSort[0]);
+		Assert.AreEqual ("Stones, The Rolling", result.Tag.AlbumArtistsSort[1]);
+		Assert.AreEqual ("Who, The", result.Tag.AlbumArtistsSort[2]);
+	}
+
+	// ComposersSort (TSOC) Array Tests
+
+	[TestMethod]
+	public void ComposersSort_SingleValue_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.ComposersSort = ["Bach, Johann Sebastian"];
+
+		Assert.IsNotNull (tag.ComposersSort);
+		Assert.HasCount (1, tag.ComposersSort);
+		Assert.AreEqual ("Bach, Johann Sebastian", tag.ComposersSort[0]);
+	}
+
+	[TestMethod]
+	public void ComposersSort_MultipleValues_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.ComposersSort = ["Lennon, John", "McCartney, Paul"];
+
+		Assert.IsNotNull (tag.ComposersSort);
+		Assert.HasCount (2, tag.ComposersSort);
+		Assert.AreEqual ("Lennon, John", tag.ComposersSort[0]);
+		Assert.AreEqual ("McCartney, Paul", tag.ComposersSort[1]);
+	}
+
+	[TestMethod]
+	public void ComposersSort_SetNull_ClearsValue ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.ComposersSort = ["Bach, Johann Sebastian"];
+
+		tag.ComposersSort = null;
+
+		Assert.IsNull (tag.ComposersSort);
+	}
+
+	[TestMethod]
+	public void ComposersSort_RoundTrip_PreservesMultipleValues ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) {
+			ComposersSort = ["Mozart, Wolfgang Amadeus", "Beethoven, Ludwig van", "Bach, Johann Sebastian"]
+		};
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.Tag!.ComposersSort);
+		Assert.HasCount (3, result.Tag.ComposersSort);
+		Assert.AreEqual ("Mozart, Wolfgang Amadeus", result.Tag.ComposersSort[0]);
+		Assert.AreEqual ("Beethoven, Ludwig van", result.Tag.ComposersSort[1]);
+		Assert.AreEqual ("Bach, Johann Sebastian", result.Tag.ComposersSort[2]);
+	}
+
+	// MusicBrainzRecordingId (UFID) Tests
+
+	[TestMethod]
+	public void MusicBrainzRecordingId_GetSet_Works ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+
+		tag.MusicBrainzRecordingId = "c6b36210-7812-4b57-a48a-8bf78e0d7f82";
+
+		Assert.AreEqual ("c6b36210-7812-4b57-a48a-8bf78e0d7f82", tag.MusicBrainzRecordingId);
+		// Verify it's stored in UFID frame with MusicBrainz owner
+		var ufid = tag.GetUniqueFileId (UniqueFileIdFrame.MusicBrainzOwner);
+		Assert.IsNotNull (ufid);
+		Assert.AreEqual ("c6b36210-7812-4b57-a48a-8bf78e0d7f82", ufid.IdentifierString);
+	}
+
+	[TestMethod]
+	public void MusicBrainzRecordingId_SetNull_ClearsField ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24);
+		tag.MusicBrainzRecordingId = "c6b36210-7812-4b57-a48a-8bf78e0d7f82";
+
+		tag.MusicBrainzRecordingId = null;
+
+		Assert.IsNull (tag.MusicBrainzRecordingId);
+		Assert.IsNull (tag.GetUniqueFileId (UniqueFileIdFrame.MusicBrainzOwner));
+	}
+
+	[TestMethod]
+	public void MusicBrainzRecordingId_RoundTrip_PreservesValue ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) {
+			MusicBrainzRecordingId = "deadbeef-1234-5678-90ab-cdef12345678"
+		};
+
+		var rendered = original.Render ();
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("deadbeef-1234-5678-90ab-cdef12345678", result.Tag!.MusicBrainzRecordingId);
+	}
+
 	// PerformersRole (TMCL frame) Tests
 
 	[TestMethod]
@@ -1439,11 +1593,11 @@ public class Id3v2TagExtendedMetadataTests
 		tag.PerformersRole = new[] { "vocals", "guitar" };
 
 		// Both arrays should have matching lengths
-		Assert.HasCount (2, tag.Artists);
+		Assert.HasCount (2, tag.Performers);
 		Assert.HasCount (2, tag.PerformersRole!);
-		Assert.AreEqual ("John Smith", tag.Artists[0]);
+		Assert.AreEqual ("John Smith", tag.Performers[0]);
 		Assert.AreEqual ("vocals", tag.PerformersRole[0]);
-		Assert.AreEqual ("Jane Doe", tag.Artists[1]);
+		Assert.AreEqual ("Jane Doe", tag.Performers[1]);
 		Assert.AreEqual ("guitar", tag.PerformersRole[1]);
 	}
 

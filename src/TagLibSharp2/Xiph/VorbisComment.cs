@@ -45,19 +45,40 @@ public sealed class VorbisComment : Tag
 	/// </summary>
 	public string VendorString { get; set; }
 
+	/// <inheritdoc/>
+	public override TagTypes TagType => TagTypes.Xiph;
+
 	/// <summary>
 	/// Gets the list of all fields in this comment block.
 	/// </summary>
 	public IReadOnlyList<VorbisCommentField> Fields => _fields;
 
 	/// <summary>
-	/// Gets the list of embedded pictures.
+	/// Gets the list of embedded pictures as FlacPicture objects.
 	/// </summary>
 	/// <remarks>
 	/// For Ogg Vorbis, pictures are stored as base64-encoded METADATA_BLOCK_PICTURE fields.
 	/// For FLAC, pictures are stored separately in PICTURE metadata blocks (use FlacFile.Pictures instead).
 	/// </remarks>
-	public IReadOnlyList<FlacPicture> Pictures => _pictures;
+	public IReadOnlyList<FlacPicture> PictureBlocks => _pictures;
+
+	/// <inheritdoc/>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override Picture[] Pictures {
+		get => [.. _pictures];
+		set {
+			_pictures.Clear ();
+			if (value is not null) {
+				foreach (var pic in value) {
+					if (pic is FlacPicture flacPic)
+						_pictures.Add (flacPic);
+					else
+						_pictures.Add (new FlacPicture (pic.MimeType, pic.PictureType, pic.Description, pic.PictureData, 0, 0, 0, 0));
+				}
+			}
+		}
+	}
+#pragma warning restore CA1819
 
 	/// <inheritdoc/>
 	public override string? Title {
@@ -70,6 +91,26 @@ public sealed class VorbisComment : Tag
 		get => GetValue ("ARTIST");
 		set => SetValue ("ARTIST", value);
 	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the ARTIST field. Multiple values are stored as separate fields.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override string[] Performers {
+		get {
+			var values = GetValues ("ARTIST");
+			return values.Count > 0 ? [.. values] : [];
+		}
+		set {
+			RemoveAll ("ARTIST");
+			if (value is null || value.Length == 0)
+				return;
+			for (var i = 0; i < value.Length; i++)
+				AddField ("ARTIST", value[i]);
+		}
+	}
+#pragma warning restore CA1819
 
 	/// <inheritdoc/>
 	public override string? Album {
@@ -97,6 +138,26 @@ public sealed class VorbisComment : Tag
 		get => GetValue ("GENRE");
 		set => SetValue ("GENRE", value);
 	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the GENRE field. Multiple values are stored as separate fields.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override string[] Genres {
+		get {
+			var values = GetValues ("GENRE");
+			return values.Count > 0 ? [.. values] : [];
+		}
+		set {
+			RemoveAll ("GENRE");
+			if (value is null || value.Length == 0)
+				return;
+			for (var i = 0; i < value.Length; i++)
+				AddField ("GENRE", value[i]);
+		}
+	}
+#pragma warning restore CA1819
 
 	/// <inheritdoc/>
 	public override uint? Track {
@@ -132,6 +193,26 @@ public sealed class VorbisComment : Tag
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the ALBUMARTIST field. Multiple values are stored as separate fields.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override string[] AlbumArtists {
+		get {
+			var values = GetValues ("ALBUMARTIST");
+			return values.Count > 0 ? [.. values] : [];
+		}
+		set {
+			RemoveAll ("ALBUMARTIST");
+			if (value is null || value.Length == 0)
+				return;
+			for (var i = 0; i < value.Length; i++)
+				AddField ("ALBUMARTIST", value[i]);
+		}
+	}
+#pragma warning restore CA1819
+
+	/// <inheritdoc/>
 	public override uint? DiscNumber {
 		get {
 			var value = GetValue ("DISCNUMBER");
@@ -157,6 +238,26 @@ public sealed class VorbisComment : Tag
 		get => GetValue ("COMPOSER");
 		set => SetValue ("COMPOSER", value);
 	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the COMPOSER field. Multiple values are stored as separate fields.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override string[] Composers {
+		get {
+			var values = GetValues ("COMPOSER");
+			return values.Count > 0 ? [.. values] : [];
+		}
+		set {
+			RemoveAll ("COMPOSER");
+			if (value is null || value.Length == 0)
+				return;
+			for (var i = 0; i < value.Length; i++)
+				AddField ("COMPOSER", value[i]);
+		}
+	}
+#pragma warning restore CA1819
 
 	/// <inheritdoc/>
 	public override uint? BeatsPerMinute {
@@ -314,6 +415,46 @@ public sealed class VorbisComment : Tag
 				AddField ("ARTISTSORT", value[i]);
 		}
 	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the ALBUMARTISTSORT field. Multiple values are stored as separate fields
+	/// per Vorbis Comment specification.
+	/// </remarks>
+	public override string[]? AlbumArtistsSort {
+		get {
+			var values = GetValues ("ALBUMARTISTSORT");
+			return values.Count > 0 ? [.. values] : null;
+		}
+		set {
+			RemoveAll ("ALBUMARTISTSORT");
+			if (value is null || value.Length == 0)
+				return;
+
+			for (var i = 0; i < value.Length; i++)
+				AddField ("ALBUMARTISTSORT", value[i]);
+		}
+	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the COMPOSERSORT field. Multiple values are stored as separate fields
+	/// per Vorbis Comment specification.
+	/// </remarks>
+	public override string[]? ComposersSort {
+		get {
+			var values = GetValues ("COMPOSERSORT");
+			return values.Count > 0 ? [.. values] : null;
+		}
+		set {
+			RemoveAll ("COMPOSERSORT");
+			if (value is null || value.Length == 0)
+				return;
+
+			for (var i = 0; i < value.Length; i++)
+				AddField ("COMPOSERSORT", value[i]);
+		}
+	}
 #pragma warning restore CA1819
 
 	/// <inheritdoc/>
@@ -348,6 +489,16 @@ public sealed class VorbisComment : Tag
 
 	/// <inheritdoc/>
 	public override string? MusicBrainzTrackId {
+		get => GetValue ("MUSICBRAINZ_TRACKID");
+		set => SetValue ("MUSICBRAINZ_TRACKID", value);
+	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the MUSICBRAINZ_TRACKID field. This is the same field as MusicBrainzTrackId
+	/// because MusicBrainz historically used "Track ID" for what is now called "Recording ID".
+	/// </remarks>
+	public override string? MusicBrainzRecordingId {
 		get => GetValue ("MUSICBRAINZ_TRACKID");
 		set => SetValue ("MUSICBRAINZ_TRACKID", value);
 	}
@@ -499,21 +650,6 @@ public sealed class VorbisComment : Tag
 		}
 		set => SetValue ("TOTALDISCS", value?.ToString (System.Globalization.CultureInfo.InvariantCulture));
 	}
-
-	/// <summary>
-	/// Gets all artist values (multi-value support).
-	/// </summary>
-	public IReadOnlyList<string> Artists => GetValues ("ARTIST");
-
-	/// <summary>
-	/// Gets all genre values (multi-value support).
-	/// </summary>
-	public IReadOnlyList<string> Genres => GetValues ("GENRE");
-
-	/// <summary>
-	/// Gets all composer values (multi-value support).
-	/// </summary>
-	public IReadOnlyList<string> Composers => GetValues ("COMPOSER");
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="VorbisComment"/> class with an empty vendor string.

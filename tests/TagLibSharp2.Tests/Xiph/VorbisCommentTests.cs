@@ -469,7 +469,7 @@ public class VorbisCommentTests
 		comment.AddField ("ARTIST", "Artist 2");
 		comment.AddField ("ARTIST", "Artist 3");
 
-		var artists = comment.Artists;
+		var artists = comment.Performers;
 
 		Assert.HasCount (3, artists);
 		Assert.IsTrue (artists.Contains ("Artist 1"));

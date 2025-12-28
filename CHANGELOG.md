@@ -115,6 +115,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Vorbis Comment PERFORMER_ROLE field support
   - InvolvedPeopleFrame class for parsing/rendering role-person pairs
 
+#### TagTypes Enum & Array Properties
+- `TagTypes` flags enum for identifying tag format types (Id3v1, Id3v2, Xiph, Apple, Asf, etc.)
+- `TagType` abstract property on base `Tag` class
+- Array properties for multi-value metadata:
+  - `Performers[]` - Multiple artists/performers with null-separator support (ID3v2) and multi-field support (Vorbis)
+  - `AlbumArtists[]` - Multiple album artists
+  - `Composers[]` - Multiple composers
+  - `Genres[]` - Multiple genres
+- `Pictures[]` property on base `Tag` class for format-agnostic picture access
+- Format-specific properties renamed: `PictureFrames` (ID3v2) and `PictureBlocks` (Vorbis)
+
 #### Sort Fields & TagLib# Parity
 - ComposerSort (TSOC / COMPOSERSORT) - Sort order for composer names
 - DateTagged (TDTG / DATETAGGED) - ISO 8601 tagging timestamp (ID3v2.4 only)

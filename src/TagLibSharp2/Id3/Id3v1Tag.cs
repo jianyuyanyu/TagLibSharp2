@@ -16,6 +16,9 @@ public sealed class Id3v1Tag : Tag
 	/// </summary>
 	public const int TagSize = 128;
 
+	/// <inheritdoc/>
+	public override TagTypes TagType => TagTypes.Id3v1;
+
 	// Field offsets
 	const int TitleOffset = 3;
 	const int ArtistOffset = 33;

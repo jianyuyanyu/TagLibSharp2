@@ -1027,6 +1027,181 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual ("GB", result.Tag!.MusicBrainzReleaseCountry);
 	}
 
+	// AlbumArtistsSort (ALBUMARTISTSORT multi-value) Tests
+
+	[TestMethod]
+	public void AlbumArtistsSort_SingleValue_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.AlbumArtistsSort = ["Various Artists"];
+
+		Assert.IsNotNull (comment.AlbumArtistsSort);
+		Assert.HasCount (1, comment.AlbumArtistsSort);
+		Assert.AreEqual ("Various Artists", comment.AlbumArtistsSort[0]);
+	}
+
+	[TestMethod]
+	public void AlbumArtistsSort_MultipleValues_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.AlbumArtistsSort = ["Beatles, The", "Stones, The Rolling"];
+
+		Assert.IsNotNull (comment.AlbumArtistsSort);
+		Assert.HasCount (2, comment.AlbumArtistsSort);
+		Assert.AreEqual ("Beatles, The", comment.AlbumArtistsSort[0]);
+		Assert.AreEqual ("Stones, The Rolling", comment.AlbumArtistsSort[1]);
+		// Verify stored as separate ALBUMARTISTSORT fields
+		var values = comment.GetValues ("ALBUMARTISTSORT");
+		Assert.HasCount (2, values);
+	}
+
+	[TestMethod]
+	public void AlbumArtistsSort_SetNull_ClearsValue ()
+	{
+		var comment = new VorbisComment ("test");
+		comment.AlbumArtistsSort = ["Various Artists"];
+
+		comment.AlbumArtistsSort = null;
+
+		Assert.IsNull (comment.AlbumArtistsSort);
+		Assert.HasCount (0, comment.GetValues ("ALBUMARTISTSORT"));
+	}
+
+	[TestMethod]
+	public void AlbumArtistsSort_RoundTrip_PreservesMultipleValues ()
+	{
+		var original = new VorbisComment ("test") {
+			AlbumArtistsSort = ["Beatles, The", "Stones, The Rolling", "Who, The"]
+		};
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.Tag!.AlbumArtistsSort);
+		Assert.HasCount (3, result.Tag.AlbumArtistsSort);
+		Assert.AreEqual ("Beatles, The", result.Tag.AlbumArtistsSort[0]);
+		Assert.AreEqual ("Stones, The Rolling", result.Tag.AlbumArtistsSort[1]);
+		Assert.AreEqual ("Who, The", result.Tag.AlbumArtistsSort[2]);
+	}
+
+	// ComposersSort (COMPOSERSORT multi-value) Tests
+
+	[TestMethod]
+	public void ComposersSort_SingleValue_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.ComposersSort = ["Bach, Johann Sebastian"];
+
+		Assert.IsNotNull (comment.ComposersSort);
+		Assert.HasCount (1, comment.ComposersSort);
+		Assert.AreEqual ("Bach, Johann Sebastian", comment.ComposersSort[0]);
+	}
+
+	[TestMethod]
+	public void ComposersSort_MultipleValues_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.ComposersSort = ["Lennon, John", "McCartney, Paul"];
+
+		Assert.IsNotNull (comment.ComposersSort);
+		Assert.HasCount (2, comment.ComposersSort);
+		Assert.AreEqual ("Lennon, John", comment.ComposersSort[0]);
+		Assert.AreEqual ("McCartney, Paul", comment.ComposersSort[1]);
+		// Verify stored as separate COMPOSERSORT fields
+		var values = comment.GetValues ("COMPOSERSORT");
+		Assert.HasCount (2, values);
+	}
+
+	[TestMethod]
+	public void ComposersSort_SetNull_ClearsValue ()
+	{
+		var comment = new VorbisComment ("test");
+		comment.ComposersSort = ["Bach, Johann Sebastian"];
+
+		comment.ComposersSort = null;
+
+		Assert.IsNull (comment.ComposersSort);
+		Assert.HasCount (0, comment.GetValues ("COMPOSERSORT"));
+	}
+
+	[TestMethod]
+	public void ComposersSort_RoundTrip_PreservesMultipleValues ()
+	{
+		var original = new VorbisComment ("test") {
+			ComposersSort = ["Mozart, Wolfgang Amadeus", "Beethoven, Ludwig van", "Bach, Johann Sebastian"]
+		};
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.Tag!.ComposersSort);
+		Assert.HasCount (3, result.Tag.ComposersSort);
+		Assert.AreEqual ("Mozart, Wolfgang Amadeus", result.Tag.ComposersSort[0]);
+		Assert.AreEqual ("Beethoven, Ludwig van", result.Tag.ComposersSort[1]);
+		Assert.AreEqual ("Bach, Johann Sebastian", result.Tag.ComposersSort[2]);
+	}
+
+	// MusicBrainzRecordingId (MUSICBRAINZ_TRACKID alias) Tests
+
+	[TestMethod]
+	public void MusicBrainzRecordingId_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.MusicBrainzRecordingId = "c6b36210-7812-4b57-a48a-8bf78e0d7f82";
+
+		Assert.AreEqual ("c6b36210-7812-4b57-a48a-8bf78e0d7f82", comment.MusicBrainzRecordingId);
+		// MusicBrainzRecordingId uses the same field as MusicBrainzTrackId
+		Assert.AreEqual ("c6b36210-7812-4b57-a48a-8bf78e0d7f82", comment.GetValue ("MUSICBRAINZ_TRACKID"));
+	}
+
+	[TestMethod]
+	public void MusicBrainzRecordingId_IsAliasForTrackId ()
+	{
+		var comment = new VorbisComment ("test");
+
+		// Set via RecordingId
+		comment.MusicBrainzRecordingId = "c6b36210-7812-4b57-a48a-8bf78e0d7f82";
+
+		// Read via TrackId - should be the same value
+		Assert.AreEqual ("c6b36210-7812-4b57-a48a-8bf78e0d7f82", comment.MusicBrainzTrackId);
+		Assert.AreEqual (comment.MusicBrainzRecordingId, comment.MusicBrainzTrackId);
+	}
+
+	[TestMethod]
+	public void MusicBrainzRecordingId_SetNull_ClearsField ()
+	{
+		var comment = new VorbisComment ("test");
+		comment.MusicBrainzRecordingId = "c6b36210-7812-4b57-a48a-8bf78e0d7f82";
+
+		comment.MusicBrainzRecordingId = null;
+
+		Assert.IsNull (comment.MusicBrainzRecordingId);
+		Assert.IsNull (comment.MusicBrainzTrackId);
+		Assert.IsNull (comment.GetValue ("MUSICBRAINZ_TRACKID"));
+	}
+
+	[TestMethod]
+	public void MusicBrainzRecordingId_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") {
+			MusicBrainzRecordingId = "deadbeef-1234-5678-90ab-cdef12345678"
+		};
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("deadbeef-1234-5678-90ab-cdef12345678", result.Tag!.MusicBrainzRecordingId);
+		Assert.AreEqual ("deadbeef-1234-5678-90ab-cdef12345678", result.Tag.MusicBrainzTrackId);
+	}
+
 	// PerformersRole Tests
 
 	[TestMethod]

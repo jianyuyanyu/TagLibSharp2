@@ -4,11 +4,85 @@
 namespace TagLibSharp2.Core;
 
 /// <summary>
+/// Indicates the tag types present in a file.
+/// </summary>
+#pragma warning disable CA2217 // Do not mark enums with FlagsAttribute - AllTags is intentionally all bits set
+[Flags]
+public enum TagTypes
+{
+	/// <summary>
+	/// No tags present.
+	/// </summary>
+	None = 0,
+
+	/// <summary>
+	/// ID3v1 tag.
+	/// </summary>
+	Id3v1 = 1 << 0,
+
+	/// <summary>
+	/// ID3v2 tag.
+	/// </summary>
+	Id3v2 = 1 << 1,
+
+	/// <summary>
+	/// APE tag.
+	/// </summary>
+	Ape = 1 << 2,
+
+	/// <summary>
+	/// Xiph Vorbis Comment (used in FLAC, Ogg Vorbis, Opus, etc.).
+	/// </summary>
+	Xiph = 1 << 3,
+
+	/// <summary>
+	/// Apple/iTunes metadata (MP4/M4A).
+	/// </summary>
+	Apple = 1 << 4,
+
+	/// <summary>
+	/// ASF/WMA metadata.
+	/// </summary>
+	Asf = 1 << 5,
+
+	/// <summary>
+	/// RIFF INFO chunk.
+	/// </summary>
+	RiffInfo = 1 << 6,
+
+	/// <summary>
+	/// Matroska tags.
+	/// </summary>
+	Matroska = 1 << 7,
+
+	/// <summary>
+	/// FLAC metadata blocks (pictures, etc.).
+	/// </summary>
+	FlacMetadata = 1 << 8,
+
+	/// <summary>
+	/// XMP metadata.
+	/// </summary>
+	Xmp = 1 << 9,
+
+	/// <summary>
+	/// All tag types.
+	/// </summary>
+	AllTags = unchecked((int)0xFFFFFFFF)
+}
+#pragma warning restore CA2217
+
+/// <summary>
 /// Abstract base class for all tag types (ID3v1, ID3v2, Vorbis Comments, etc.).
 /// Provides common metadata properties with nullable support.
 /// </summary>
 public abstract class Tag
 {
+	/// <summary>
+	/// Gets the type of tag represented by this instance.
+	/// </summary>
+	public abstract TagTypes TagType { get; }
+
 	/// <summary>
 	/// Gets or sets the title/song name.
 	/// </summary>
@@ -17,7 +91,24 @@ public abstract class Tag
 	/// <summary>
 	/// Gets or sets the primary artist/performer.
 	/// </summary>
+	/// <remarks>
+	/// This returns the first performer. For multiple performers, use <see cref="Performers"/>.
+	/// </remarks>
 	public abstract string? Artist { get; set; }
+
+	/// <summary>
+	/// Gets or sets the performers/artists for this track.
+	/// </summary>
+	/// <remarks>
+	/// This is the primary array of artists. The <see cref="Artist"/> property returns
+	/// the first value from this array.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public virtual string[] Performers {
+		get => string.IsNullOrEmpty (Artist) ? [] : [Artist!];
+		set => Artist = value is { Length: > 0 } ? value[0] : null;
+	}
+#pragma warning restore CA1819
 
 	/// <summary>
 	/// Gets or sets the album/collection name.
@@ -47,7 +138,23 @@ public abstract class Tag
 	/// <summary>
 	/// Gets or sets the genre name.
 	/// </summary>
+	/// <remarks>
+	/// This returns the first genre. For multiple genres, use <see cref="Genres"/>.
+	/// </remarks>
 	public abstract string? Genre { get; set; }
+
+	/// <summary>
+	/// Gets or sets the genres for this track.
+	/// </summary>
+	/// <remarks>
+	/// The <see cref="Genre"/> property returns the first value from this array.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public virtual string[] Genres {
+		get => string.IsNullOrEmpty (Genre) ? [] : [Genre!];
+		set => Genre = value is { Length: > 0 } ? value[0] : null;
+	}
+#pragma warning restore CA1819
 
 	/// <summary>
 	/// Gets or sets the track number.
@@ -58,9 +165,25 @@ public abstract class Tag
 	/// Gets or sets the album artist (for compilations/various artists albums).
 	/// </summary>
 	/// <remarks>
+	/// This returns the first album artist. For multiple album artists, use <see cref="AlbumArtists"/>.
 	/// Not all tag formats support this field. Default implementation returns null.
 	/// </remarks>
 	public virtual string? AlbumArtist { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the album artists for this track.
+	/// </summary>
+	/// <remarks>
+	/// Used for compilations and various artists albums. The <see cref="AlbumArtist"/>
+	/// property returns the first value from this array.
+	/// Not all tag formats support this field.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public virtual string[] AlbumArtists {
+		get => string.IsNullOrEmpty (AlbumArtist) ? [] : [AlbumArtist!];
+		set => AlbumArtist = value is { Length: > 0 } ? value[0] : null;
+	}
+#pragma warning restore CA1819
 
 	/// <summary>
 	/// Gets or sets the disc number.
@@ -74,9 +197,24 @@ public abstract class Tag
 	/// Gets or sets the composer.
 	/// </summary>
 	/// <remarks>
+	/// This returns the first composer. For multiple composers, use <see cref="Composers"/>.
 	/// Not all tag formats support this field. Default implementation returns null.
 	/// </remarks>
 	public virtual string? Composer { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the composers for this track.
+	/// </summary>
+	/// <remarks>
+	/// The <see cref="Composer"/> property returns the first value from this array.
+	/// Not all tag formats support this field.
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public virtual string[] Composers {
+		get => string.IsNullOrEmpty (Composer) ? [] : [Composer!];
+		set => Composer = value is { Length: > 0 } ? value[0] : null;
+	}
+#pragma warning restore CA1819
 
 	/// <summary>
 	/// Gets or sets the beats per minute (BPM) of the track.
@@ -315,6 +453,41 @@ public abstract class Tag
 	public virtual string[]? PerformersSort { get => null; set { } }
 #pragma warning restore CA1819
 
+	/// <summary>
+	/// Gets or sets the sort names for the album artists.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is a parallel array to the album artists list. Each element provides the sort name
+	/// for the corresponding album artist at the same index.
+	/// </para>
+	/// <para>
+	/// Not all tag formats support multiple album artist sort names.
+	/// Default implementation returns null.
+	/// </para>
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public virtual string[]? AlbumArtistsSort { get => null; set { } }
+#pragma warning restore CA1819
+
+	/// <summary>
+	/// Gets or sets the sort names for the composers.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is a parallel array to the composers list. Each element provides the sort name
+	/// for the corresponding composer at the same index. For example, if composers are
+	/// ["Johann Sebastian Bach"], ComposersSort might be ["Bach, Johann Sebastian"].
+	/// </para>
+	/// <para>
+	/// Not all tag formats support multiple composer sort names.
+	/// Default implementation returns null.
+	/// </para>
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public virtual string[]? ComposersSort { get => null; set { } }
+#pragma warning restore CA1819
+
 	// ReplayGain properties
 
 	/// <summary>
@@ -399,6 +572,40 @@ public abstract class Tag
 	/// Not all tag formats support this field. Default implementation returns null.
 	/// </remarks>
 	public virtual string? MusicBrainzAlbumArtistId { get => null; set { } }
+
+	/// <summary>
+	/// Gets or sets the MusicBrainz Release Artist ID.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This is an alias for <see cref="MusicBrainzAlbumArtistId"/> for TagLib# compatibility.
+	/// Both properties read/write the same underlying data.
+	/// </para>
+	/// <para>
+	/// A UUID identifying the release artist in the MusicBrainz database.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </para>
+	/// </remarks>
+	public virtual string? MusicBrainzReleaseArtistId {
+		get => MusicBrainzAlbumArtistId;
+		set => MusicBrainzAlbumArtistId = value;
+	}
+
+	/// <summary>
+	/// Gets or sets the MusicBrainz Recording ID.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// A UUID identifying the specific recording in the MusicBrainz database.
+	/// This differs from TrackId which identifies the track on a specific release.
+	/// </para>
+	/// <para>
+	/// In ID3v2, this is stored in a UFID frame with owner "http://musicbrainz.org".
+	/// In Vorbis Comments, this is stored as MUSICBRAINZ_TRACKID (same as TrackId).
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </para>
+	/// </remarks>
+	public virtual string? MusicBrainzRecordingId { get => null; set { } }
 
 	/// <summary>
 	/// Gets or sets the MusicBrainz Work ID.
@@ -504,6 +711,23 @@ public abstract class Tag
 	/// </remarks>
 #pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
 	public virtual string[]? PerformersRole { get => null; set { } }
+#pragma warning restore CA1819
+
+	/// <summary>
+	/// Gets or sets the pictures/images attached to this media.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Returns album artwork, cover images, artist photos, etc.
+	/// The first image of type <see cref="PictureType.FrontCover"/> is typically
+	/// the primary album art.
+	/// </para>
+	/// <para>
+	/// Not all tag formats support embedded images. Default implementation returns empty array.
+	/// </para>
+	/// </remarks>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public virtual Picture[] Pictures { get => []; set { } }
 #pragma warning restore CA1819
 
 	/// <summary>

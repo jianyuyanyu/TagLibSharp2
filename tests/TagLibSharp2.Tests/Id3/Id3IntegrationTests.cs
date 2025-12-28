@@ -159,9 +159,9 @@ public class Id3IntegrationTests
 		Assert.IsTrue (result.IsSuccess);
 
 		var pictures = result.Tag!.Pictures;
-		Console.WriteLine ($"Album Art Frames: {pictures.Count}");
+		Console.WriteLine ($"Album Art Frames: {pictures.Length}");
 
-		if (pictures.Count > 0) {
+		if (pictures.Length > 0) {
 			foreach (var pic in pictures) {
 				Console.WriteLine ($"  Picture Type: {pic.PictureType}");
 				Console.WriteLine ($"  MIME Type: {pic.MimeType}");

@@ -31,6 +31,9 @@ public sealed class Id3v2Tag : Tag
 	/// </summary>
 	public int Version { get; }
 
+	/// <inheritdoc/>
+	public override TagTypes TagType => TagTypes.Id3v2;
+
 	/// <summary>
 	/// Gets the list of text frames in this tag.
 	/// </summary>
@@ -39,12 +42,30 @@ public sealed class Id3v2Tag : Tag
 	/// <summary>
 	/// Gets the list of picture frames (album art) in this tag.
 	/// </summary>
-	public IReadOnlyList<PictureFrame> Pictures => _pictures;
+	public IReadOnlyList<PictureFrame> PictureFrames => _pictures;
 
 	/// <summary>
 	/// Gets a value indicating whether this tag contains any pictures.
 	/// </summary>
 	public bool HasPictures => _pictures.Count > 0;
+
+	/// <inheritdoc/>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override Picture[] Pictures {
+		get => [.. _pictures];
+		set {
+			_pictures.Clear ();
+			if (value is not null) {
+				foreach (var pic in value) {
+					if (pic is PictureFrame frame)
+						_pictures.Add (frame);
+					else
+						_pictures.Add (new PictureFrame (pic.MimeType, pic.PictureType, pic.Description, pic.PictureData));
+				}
+			}
+		}
+	}
+#pragma warning restore CA1819
 
 	/// <summary>
 	/// Gets or sets the front cover art.
@@ -352,6 +373,46 @@ public sealed class Id3v2Tag : Tag
 			SetTextFrame ("TSOP", string.Join ("\0", value));
 		}
 	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the TSO2 (Album Artist sort order) frame. Multiple values are stored
+	/// with null separators per ID3v2.4 spec. TSO2 is an iTunes extension.
+	/// </remarks>
+	public override string[]? AlbumArtistsSort {
+		get {
+			var values = GetTextFrameValues ("TSO2");
+			return values.Count > 0 ? [.. values] : null;
+		}
+		set {
+			if (value is null || value.Length == 0) {
+				SetTextFrame ("TSO2", null);
+				return;
+			}
+			// Join with null separator for ID3v2.4 multi-value support
+			SetTextFrame ("TSO2", string.Join ("\0", value));
+		}
+	}
+
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the TSOC (Composer sort order) frame. Multiple values are stored
+	/// with null separators per ID3v2.4 spec. TSOC is an iTunes extension.
+	/// </remarks>
+	public override string[]? ComposersSort {
+		get {
+			var values = GetTextFrameValues ("TSOC");
+			return values.Count > 0 ? [.. values] : null;
+		}
+		set {
+			if (value is null || value.Length == 0) {
+				SetTextFrame ("TSOC", null);
+				return;
+			}
+			// Join with null separator for ID3v2.4 multi-value support
+			SetTextFrame ("TSOC", string.Join ("\0", value));
+		}
+	}
 #pragma warning restore CA1819
 
 	/// <inheritdoc/>
@@ -539,13 +600,13 @@ public sealed class Id3v2Tag : Tag
 	/// </summary>
 	/// <remarks>
 	/// <para>
-	/// This is a parallel array to the <see cref="Artists"/> list. Each element
-	/// describes the role of the corresponding artist at the same index.
-	/// For example, if Artists = ["John", "Jane"], PerformersRole might be ["vocals", "guitar"].
+	/// This is a parallel array to the <see cref="Performers"/> list. Each element
+	/// describes the role of the corresponding performer at the same index.
+	/// For example, if Performers = ["John", "Jane"], PerformersRole might be ["vocals", "guitar"].
 	/// </para>
 	/// <para>
 	/// The getter returns roles from the TMCL (Musician Credits List) frame.
-	/// The setter combines roles with the current Artists to create role-person pairs.
+	/// The setter combines roles with the current Performers to create role-person pairs.
 	/// For full control over TMCL content, use <see cref="InvolvedPeopleFrames"/> directly.
 	/// </para>
 	/// </remarks>
@@ -581,11 +642,11 @@ public sealed class Id3v2Tag : Tag
 
 			// Create new TMCL frame combining roles with artists
 			var frame = new InvolvedPeopleFrame (InvolvedPeopleFrameType.MusicianCredits);
-			var artists = Artists;
+			var artists = Performers;
 
 			for (var i = 0; i < value.Length; i++) {
 				// Pair each role with the corresponding artist (if available)
-				var person = (i < artists.Count) ? artists[i] : "";
+				var person = (i < artists.Length) ? artists[i] : "";
 				frame.Add (value[i], person);
 			}
 
@@ -642,14 +703,12 @@ public sealed class Id3v2Tag : Tag
 		InvalidatePerformersRoleCache ();
 	}
 
-	/// <summary>
-	/// Gets or sets the MusicBrainz Recording ID from a UFID frame.
-	/// </summary>
+	/// <inheritdoc/>
 	/// <remarks>
+	/// Uses a UFID frame with owner "http://musicbrainz.org".
 	/// This is the canonical way to store a MusicBrainz recording ID in ID3v2.
-	/// The UFID frame uses "http://musicbrainz.org" as the owner identifier.
 	/// </remarks>
-	public string? MusicBrainzRecordingId {
+	public override string? MusicBrainzRecordingId {
 		get => GetUniqueFileId (UniqueFileIdFrame.MusicBrainzOwner)?.IdentifierString;
 		set {
 			RemoveUniqueFileIds (UniqueFileIdFrame.MusicBrainzOwner);
@@ -876,29 +935,83 @@ public sealed class Id3v2Tag : Tag
 		SetTextFrame (frameId, joined);
 	}
 
-	/// <summary>
-	/// Gets all artist names (multi-value support).
-	/// </summary>
+	/// <inheritdoc/>
 	/// <remarks>
-	/// Many songs have multiple artists. This property returns all of them.
-	/// For a single concatenated string, use <see cref="Artist"/>.
+	/// Uses the TPE1 (Lead performer) frame. Multiple values are stored
+	/// with null separators per ID3v2.4 spec.
 	/// </remarks>
-	public IReadOnlyList<string> Artists => GetTextFrameValues ("TPE1");
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override string[] Performers {
+		get {
+			var values = GetTextFrameValues ("TPE1");
+			return values.Count > 0 ? [.. values] : [];
+		}
+		set {
+			if (value is null || value.Length == 0) {
+				SetTextFrame ("TPE1", null);
+				return;
+			}
+			SetTextFrame ("TPE1", string.Join ("\0", value));
+		}
+	}
 
-	/// <summary>
-	/// Gets all genre names (multi-value support).
-	/// </summary>
-	public IReadOnlyList<string> Genres => GetTextFrameValues ("TCON");
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the TPE2 (Album artist) frame. Multiple values are stored
+	/// with null separators per ID3v2.4 spec.
+	/// </remarks>
+	public override string[] AlbumArtists {
+		get {
+			var values = GetTextFrameValues ("TPE2");
+			return values.Count > 0 ? [.. values] : [];
+		}
+		set {
+			if (value is null || value.Length == 0) {
+				SetTextFrame ("TPE2", null);
+				return;
+			}
+			SetTextFrame ("TPE2", string.Join ("\0", value));
+		}
+	}
 
-	/// <summary>
-	/// Gets all composer names (multi-value support).
-	/// </summary>
-	public IReadOnlyList<string> Composers => GetTextFrameValues ("TCOM");
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the TCOM (Composer) frame. Multiple values are stored
+	/// with null separators per ID3v2.4 spec.
+	/// </remarks>
+	public override string[] Composers {
+		get {
+			var values = GetTextFrameValues ("TCOM");
+			return values.Count > 0 ? [.. values] : [];
+		}
+		set {
+			if (value is null || value.Length == 0) {
+				SetTextFrame ("TCOM", null);
+				return;
+			}
+			SetTextFrame ("TCOM", string.Join ("\0", value));
+		}
+	}
 
-	/// <summary>
-	/// Gets all album artist names (multi-value support).
-	/// </summary>
-	public IReadOnlyList<string> AlbumArtists => GetTextFrameValues ("TPE2");
+	/// <inheritdoc/>
+	/// <remarks>
+	/// Uses the TCON (Genre) frame. Multiple values are stored
+	/// with null separators per ID3v2.4 spec.
+	/// </remarks>
+	public override string[] Genres {
+		get {
+			var values = GetTextFrameValues ("TCON");
+			return values.Count > 0 ? [.. values] : [];
+		}
+		set {
+			if (value is null || value.Length == 0) {
+				SetTextFrame ("TCON", null);
+				return;
+			}
+			SetTextFrame ("TCON", string.Join ("\0", value));
+		}
+	}
+#pragma warning restore CA1819
 
 	/// <summary>
 	/// Sets or creates a text frame.

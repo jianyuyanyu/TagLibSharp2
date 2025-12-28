@@ -148,6 +148,9 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 - [x] Sort fields: ComposerSort
 - [x] Tagging metadata: DateTagged, Description, AmazonId
 - [x] Extended MusicBrainz: WorkId, DiscId, ReleaseStatus, ReleaseType, ReleaseCountry
+- [x] TagTypes flags enum for tag format identification
+- [x] Array properties: Performers[], AlbumArtists[], Composers[], Genres[]
+- [x] Pictures[] property on base Tag class
 
 ### Future
 - [ ] Additional formats: WAV, MP4, MKV, EXIF
