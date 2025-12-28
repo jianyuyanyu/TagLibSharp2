@@ -1,8 +1,10 @@
 // Copyright (c) 2025 Stephen Shaw and contributors
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
+using TagLibSharp2.Aiff;
 using TagLibSharp2.Mpeg;
 using TagLibSharp2.Ogg;
+using TagLibSharp2.Riff;
 using TagLibSharp2.Xiph;
 
 namespace TagLibSharp2.Core;
@@ -19,6 +21,8 @@ namespace TagLibSharp2.Core;
 /// <item>MP3 (ID3v1, ID3v2)</item>
 /// <item>FLAC (Vorbis Comment, FLAC metadata)</item>
 /// <item>Ogg Vorbis (Vorbis Comment)</item>
+/// <item>WAV (RIFF INFO, ID3v2)</item>
+/// <item>AIFF (ID3 chunk)</item>
 /// </list>
 /// </remarks>
 /// <example>
@@ -36,6 +40,11 @@ public static class MediaFile
 	static readonly byte[] FlacMagic = { 0x66, 0x4C, 0x61, 0x43 }; // "fLaC"
 	static readonly byte[] OggMagic = { 0x4F, 0x67, 0x67, 0x53 }; // "OggS"
 	static readonly byte[] Id3Magic = { 0x49, 0x44, 0x33 }; // "ID3"
+	static readonly byte[] RiffMagic = { 0x52, 0x49, 0x46, 0x46 }; // "RIFF"
+	static readonly byte[] WaveId = { 0x57, 0x41, 0x56, 0x45 }; // "WAVE"
+	static readonly byte[] FormMagic = { 0x46, 0x4F, 0x52, 0x4D }; // "FORM"
+	static readonly byte[] AiffId = { 0x41, 0x49, 0x46, 0x46 }; // "AIFF"
+	static readonly byte[] AifcId = { 0x41, 0x49, 0x46, 0x43 }; // "AIFC"
 
 	/// <summary>
 	/// Opens a media file and returns a unified result.
@@ -100,6 +109,8 @@ public static class MediaFile
 			MediaFormat.Flac => OpenFlac (data),
 			MediaFormat.OggVorbis => OpenOggVorbis (data),
 			MediaFormat.Mp3 => OpenMp3 (data),
+			MediaFormat.Wav => OpenWav (data),
+			MediaFormat.Aiff => OpenAiff (data),
 			_ => MediaFileResult.Failure ($"Unknown or unsupported file format{(pathHint is not null ? $": {pathHint}" : "")}")
 		};
 	}
@@ -123,6 +134,24 @@ public static class MediaFile
 			if (data[0] == OggMagic[0] && data[1] == OggMagic[1] &&
 				data[2] == OggMagic[2] && data[3] == OggMagic[3])
 				return MediaFormat.OggVorbis;
+
+			// RIFF: starts with "RIFF" + 4 bytes size + "WAVE"
+			if (data.Length >= 12 &&
+				data[0] == RiffMagic[0] && data[1] == RiffMagic[1] &&
+				data[2] == RiffMagic[2] && data[3] == RiffMagic[3] &&
+				data[8] == WaveId[0] && data[9] == WaveId[1] &&
+				data[10] == WaveId[2] && data[11] == WaveId[3])
+				return MediaFormat.Wav;
+
+			// AIFF/AIFC: starts with "FORM" + 4 bytes size + "AIFF" or "AIFC"
+			if (data.Length >= 12 &&
+				data[0] == FormMagic[0] && data[1] == FormMagic[1] &&
+				data[2] == FormMagic[2] && data[3] == FormMagic[3] &&
+				((data[8] == AiffId[0] && data[9] == AiffId[1] &&
+				  data[10] == AiffId[2] && data[11] == AiffId[3]) ||
+				 (data[8] == AifcId[0] && data[9] == AifcId[1] &&
+				  data[10] == AifcId[2] && data[11] == AifcId[3])))
+				return MediaFormat.Aiff;
 		}
 
 		if (data.Length >= 3) {
@@ -142,6 +171,8 @@ public static class MediaFile
 				".FLAC" => MediaFormat.Flac,
 				".OGG" => MediaFormat.OggVorbis,
 				".MP3" => MediaFormat.Mp3,
+				".WAV" => MediaFormat.Wav,
+				".AIF" or ".AIFF" or ".AIFC" => MediaFormat.Aiff,
 				_ => MediaFormat.Unknown
 			};
 		}
@@ -178,6 +209,29 @@ public static class MediaFile
 			? result.File.Id3v2Tag
 			: result.File.Id3v1Tag;
 		return MediaFileResult.Success (result.File, tag, MediaFormat.Mp3);
+	}
+
+	static MediaFileResult OpenWav (ReadOnlyMemory<byte> data)
+	{
+		var binaryData = new BinaryData (data.Span);
+		var file = WavFile.ReadFromData (binaryData);
+		if (file is null)
+			return MediaFileResult.Failure ("Failed to parse WAV file");
+
+		// Prefer ID3v2 tag, fall back to RIFF INFO tag
+		Tag? tag = file.Id3v2Tag is not null
+			? file.Id3v2Tag
+			: file.InfoTag;
+		return MediaFileResult.Success (file, tag, MediaFormat.Wav);
+	}
+
+	static MediaFileResult OpenAiff (ReadOnlyMemory<byte> data)
+	{
+		var binaryData = new BinaryData (data.Span);
+		if (!AiffFile.TryParse (binaryData, out var file) || file is null)
+			return MediaFileResult.Failure ("Failed to parse AIFF file");
+
+		return MediaFileResult.Success (file, file.Tag, MediaFormat.Aiff);
 	}
 }
 
@@ -263,5 +317,15 @@ public enum MediaFormat
 	/// <summary>
 	/// MP3 audio format.
 	/// </summary>
-	Mp3
+	Mp3,
+
+	/// <summary>
+	/// WAV audio format (RIFF container).
+	/// </summary>
+	Wav,
+
+	/// <summary>
+	/// AIFF/AIFC audio format (IFF container).
+	/// </summary>
+	Aiff
 }

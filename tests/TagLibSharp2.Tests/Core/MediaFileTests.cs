@@ -1,9 +1,11 @@
 // Copyright (c) 2025 Stephen Shaw and contributors
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
+using TagLibSharp2.Aiff;
 using TagLibSharp2.Core;
 using TagLibSharp2.Mpeg;
 using TagLibSharp2.Ogg;
+using TagLibSharp2.Riff;
 using TagLibSharp2.Xiph;
 
 namespace TagLibSharp2.Tests.Core;
@@ -57,6 +59,51 @@ public class MediaFileTests
 	}
 
 	[TestMethod]
+	public void DetectFormat_RiffWaveMagic_ReturnsWav ()
+	{
+		// "RIFF" + size + "WAVE"
+		var data = new byte[] {
+			0x52, 0x49, 0x46, 0x46, // "RIFF"
+			0x00, 0x00, 0x00, 0x00, // size (placeholder)
+			0x57, 0x41, 0x56, 0x45  // "WAVE"
+		};
+
+		var format = MediaFile.DetectFormat (data);
+
+		Assert.AreEqual (MediaFormat.Wav, format);
+	}
+
+	[TestMethod]
+	public void DetectFormat_FormAiffMagic_ReturnsAiff ()
+	{
+		// "FORM" + size + "AIFF"
+		var data = new byte[] {
+			0x46, 0x4F, 0x52, 0x4D, // "FORM"
+			0x00, 0x00, 0x00, 0x00, // size (placeholder)
+			0x41, 0x49, 0x46, 0x46  // "AIFF"
+		};
+
+		var format = MediaFile.DetectFormat (data);
+
+		Assert.AreEqual (MediaFormat.Aiff, format);
+	}
+
+	[TestMethod]
+	public void DetectFormat_FormAifcMagic_ReturnsAiff ()
+	{
+		// "FORM" + size + "AIFC"
+		var data = new byte[] {
+			0x46, 0x4F, 0x52, 0x4D, // "FORM"
+			0x00, 0x00, 0x00, 0x00, // size (placeholder)
+			0x41, 0x49, 0x46, 0x43  // "AIFC"
+		};
+
+		var format = MediaFile.DetectFormat (data);
+
+		Assert.AreEqual (MediaFormat.Aiff, format);
+	}
+
+	[TestMethod]
 	public void DetectFormat_UnknownMagic_UsesExtension ()
 	{
 		var data = new byte[] { 0x00, 0x00, 0x00, 0x00 };
@@ -64,6 +111,9 @@ public class MediaFileTests
 		Assert.AreEqual (MediaFormat.Flac, MediaFile.DetectFormat (data, "song.flac"));
 		Assert.AreEqual (MediaFormat.Mp3, MediaFile.DetectFormat (data, "song.mp3"));
 		Assert.AreEqual (MediaFormat.OggVorbis, MediaFile.DetectFormat (data, "song.ogg"));
+		Assert.AreEqual (MediaFormat.Wav, MediaFile.DetectFormat (data, "song.wav"));
+		Assert.AreEqual (MediaFormat.Aiff, MediaFile.DetectFormat (data, "song.aiff"));
+		Assert.AreEqual (MediaFormat.Aiff, MediaFile.DetectFormat (data, "song.aif"));
 	}
 
 	[TestMethod]
