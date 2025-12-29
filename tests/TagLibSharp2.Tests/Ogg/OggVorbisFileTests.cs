@@ -249,8 +249,6 @@ public class OggVorbisFileTests
 		Assert.AreEqual (192, result.File.Properties.Bitrate);
 	}
 
-	#region Helper Methods
-
 	/// <summary>
 	/// Builds a minimal Ogg Vorbis file with the three required Vorbis header packets:
 	/// 1. Identification header (packet type 1)
@@ -649,5 +647,149 @@ public class OggVorbisFileTests
 		return builder.ToBinaryData ().ToArray ();
 	}
 
-	#endregion
+	[TestMethod]
+	public void Read_WithValidateCrcFalse_AcceptsBadCrc ()
+	{
+		// BuildMinimalOggVorbisFile creates pages with CRC=0 (invalid)
+		var data = BuildMinimalOggVorbisFile ("Test", "Artist");
+
+		// Default validateCrc=false should accept bad CRCs
+		var result = OggVorbisFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.File);
+	}
+
+	[TestMethod]
+	public void Read_WithValidateCrcTrue_RejectsBadCrc ()
+	{
+		// BuildMinimalOggVorbisFile creates pages with CRC=0 (invalid)
+		var data = BuildMinimalOggVorbisFile ("Test", "Artist");
+
+		// With validateCrc=true, should fail on bad CRC
+		var result = OggVorbisFile.Read (data, validateCrc: true);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNotNull (result.Error);
+		Assert.Contains ("CRC", result.Error!, StringComparison.OrdinalIgnoreCase);
+	}
+
+	[TestMethod]
+	public void Read_WithValidateCrcTrue_AcceptsValidCrc ()
+	{
+		// Build a file with correct CRCs
+		var data = BuildMinimalOggVorbisFileWithValidCrc ("Test", "Artist");
+
+		var result = OggVorbisFile.Read (data, validateCrc: true);
+
+		Assert.IsTrue (result.IsSuccess, $"Expected success but got: {result.Error}");
+		Assert.IsNotNull (result.File);
+		Assert.AreEqual ("Test", result.File!.Title);
+	}
+
+	static byte[] BuildMinimalOggVorbisFileWithValidCrc (string title, string artist)
+	{
+		using var builder = new BinaryDataBuilder ();
+
+		// Build identification packet (30 bytes for standard Vorbis ID header)
+		var identPacket = BuildVorbisIdentificationPacket (44100, 2, 128000);
+
+		// Build comment header
+		var comment = new VorbisComment ("TagLibSharp2");
+		comment.SetValue ("TITLE", title);
+		comment.SetValue ("ARTIST", artist);
+		var commentData = comment.Render ();
+		var commentPacket = BuildVorbisCommentPacket (commentData.ToArray ());
+
+		// Build setup header (minimal)
+		var setupPacket = BuildVorbisSetupPacket ();
+
+		// Build pages with proper CRCs
+		var page1 = BuildOggPageWithCrc (
+			flags: OggPageFlags.BeginOfStream,
+			granulePosition: 0,
+			serialNumber: 1,
+			sequenceNumber: 0,
+			data: identPacket);
+		builder.Add (page1);
+
+		var page2 = BuildOggPageWithCrc (
+			flags: OggPageFlags.None,
+			granulePosition: 0,
+			serialNumber: 1,
+			sequenceNumber: 1,
+			data: commentPacket);
+		builder.Add (page2);
+
+		var page3 = BuildOggPageWithCrc (
+			flags: OggPageFlags.EndOfStream,
+			granulePosition: 0,
+			serialNumber: 1,
+			sequenceNumber: 2,
+			data: setupPacket);
+		builder.Add (page3);
+
+		return builder.ToBinaryData ().ToArray ();
+	}
+
+	static byte[] BuildOggPageWithCrc (OggPageFlags flags, ulong granulePosition, uint serialNumber,
+		uint sequenceNumber, byte[] data)
+	{
+		using var builder = new BinaryDataBuilder ();
+
+		// Magic: "OggS"
+		builder.Add (System.Text.Encoding.ASCII.GetBytes ("OggS"));
+
+		// Version: 0
+		builder.Add ((byte)0);
+
+		// Flags
+		builder.Add ((byte)flags);
+
+		// Granule position (8 bytes LE)
+		builder.Add (BitConverter.GetBytes (granulePosition));
+
+		// Serial number (4 bytes LE)
+		builder.Add (BitConverter.GetBytes (serialNumber));
+
+		// Sequence number (4 bytes LE)
+		builder.Add (BitConverter.GetBytes (sequenceNumber));
+
+		// CRC placeholder (4 bytes) - will compute and insert later
+		var crcOffset = builder.Length;
+		builder.Add (new byte[] { 0x00, 0x00, 0x00, 0x00 });
+
+		// Build segment table
+		var segments = new List<byte> ();
+		var remaining = data.Length;
+		while (remaining > 0) {
+			var segSize = Math.Min (remaining, 255);
+			segments.Add ((byte)segSize);
+			remaining -= segSize;
+		}
+
+		// Segment count
+		builder.Add ((byte)segments.Count);
+
+		// Segment table
+		foreach (var seg in segments)
+			builder.Add (seg);
+
+		// Data
+		builder.Add (data);
+
+		// Convert to array and compute CRC
+		var pageData = builder.ToBinaryData ().ToArray ();
+		var crc = ComputeOggCrc (pageData);
+
+		// Insert CRC (little-endian)
+		pageData[crcOffset] = (byte)(crc & 0xFF);
+		pageData[crcOffset + 1] = (byte)((crc >> 8) & 0xFF);
+		pageData[crcOffset + 2] = (byte)((crc >> 16) & 0xFF);
+		pageData[crcOffset + 3] = (byte)((crc >> 24) & 0xFF);
+
+		return pageData;
+	}
+
+	static uint ComputeOggCrc (byte[] data) => OggCrc.Calculate (data);
 }

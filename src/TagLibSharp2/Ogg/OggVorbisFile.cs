@@ -108,15 +108,16 @@ public sealed class OggVorbisFile
 	/// </summary>
 	/// <param name="path">The path to the Ogg Vorbis file.</param>
 	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
+	/// <param name="validateCrc">Whether to validate CRC-32 checksums. Defaults to false for performance.</param>
 	/// <returns>A result indicating success or failure.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is null.</exception>
-	public static OggVorbisFileReadResult ReadFromFile (string path, IFileSystem? fileSystem = null)
+	public static OggVorbisFileReadResult ReadFromFile (string path, IFileSystem? fileSystem = null, bool validateCrc = false)
 	{
 		var readResult = FileHelper.SafeReadAllBytes (path, fileSystem);
 		if (!readResult.IsSuccess)
 			return OggVorbisFileReadResult.Failure (readResult.Error!);
 
-		return Read (readResult.Data!);
+		return Read (readResult.Data!, validateCrc);
 	}
 
 	/// <summary>
@@ -124,12 +125,14 @@ public sealed class OggVorbisFile
 	/// </summary>
 	/// <param name="path">The path to the Ogg Vorbis file.</param>
 	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
+	/// <param name="validateCrc">Whether to validate CRC-32 checksums. Defaults to false for performance.</param>
 	/// <param name="cancellationToken">A token to cancel the operation.</param>
 	/// <returns>A task containing a result indicating success or failure.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is null.</exception>
 	public static async Task<OggVorbisFileReadResult> ReadFromFileAsync (
 		string path,
 		IFileSystem? fileSystem = null,
+		bool validateCrc = false,
 		CancellationToken cancellationToken = default)
 	{
 		var readResult = await FileHelper.SafeReadAllBytesAsync (path, fileSystem, cancellationToken)
@@ -137,15 +140,16 @@ public sealed class OggVorbisFile
 		if (!readResult.IsSuccess)
 			return OggVorbisFileReadResult.Failure (readResult.Error!);
 
-		return Read (readResult.Data!);
+		return Read (readResult.Data!, validateCrc);
 	}
 
 	/// <summary>
 	/// Attempts to read an Ogg Vorbis file from binary data.
 	/// </summary>
 	/// <param name="data">The file data.</param>
+	/// <param name="validateCrc">Whether to validate CRC-32 checksums. Defaults to false for performance.</param>
 	/// <returns>A result indicating success or failure.</returns>
-	public static OggVorbisFileReadResult Read (ReadOnlySpan<byte> data)
+	public static OggVorbisFileReadResult Read (ReadOnlySpan<byte> data, bool validateCrc = false)
 	{
 		var offset = 0;
 		var pageCount = 0;
@@ -165,7 +169,7 @@ public sealed class OggVorbisFile
 
 		// Read Ogg pages until we find the Vorbis comment header
 		while (offset < data.Length && pageCount < 50) { // Limit to prevent infinite loop
-			var pageResult = ReadOggPageWithSegments (data.Slice (offset));
+			var pageResult = ReadOggPageWithSegments (data.Slice (offset), validateCrc);
 			if (!pageResult.IsSuccess) {
 				if (pageCount == 0)
 					return OggVorbisFileReadResult.Failure ($"Invalid Ogg file: {pageResult.Error}");
@@ -348,7 +352,7 @@ public sealed class OggVorbisFile
 	/// <summary>
 	/// Reads an Ogg page and extracts individual packets based on segment table.
 	/// </summary>
-	static OggPageWithSegmentsResult ReadOggPageWithSegments (ReadOnlySpan<byte> data)
+	static OggPageWithSegmentsResult ReadOggPageWithSegments (ReadOnlySpan<byte> data, bool validateCrc = false)
 	{
 		const int minHeaderSize = 27;
 
@@ -356,7 +360,7 @@ public sealed class OggVorbisFile
 			return OggPageWithSegmentsResult.Failure ("Data too short");
 
 		// Read basic page structure
-		var pageResult = OggPage.Read (data);
+		var pageResult = OggPage.Read (data, validateCrc);
 		if (!pageResult.IsSuccess)
 			return OggPageWithSegmentsResult.Failure (pageResult.Error ?? "Unknown error");
 
