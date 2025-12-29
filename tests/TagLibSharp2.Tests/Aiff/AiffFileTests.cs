@@ -65,6 +65,44 @@ public class AiffFileTests
 	}
 
 	[TestMethod]
+	public void AudioProperties_AifcWithCompression_ParsesCompressionType ()
+	{
+		// AIFC with NONE (uncompressed) compression type
+		var data = CreateAifcFileWithCompression (44100, 16, 2, 1000, "NONE", "not compressed");
+
+		AiffFile.TryParse (data, out var file);
+
+		Assert.IsNotNull (file?.AudioProperties);
+		Assert.AreEqual ("NONE", file.AudioProperties.CompressionType);
+		Assert.AreEqual ("not compressed", file.AudioProperties.CompressionName);
+	}
+
+	[TestMethod]
+	public void AudioProperties_AifcWithSowtCompression_ParsesCorrectly ()
+	{
+		// AIFC with sowt (little-endian PCM) compression
+		var data = CreateAifcFileWithCompression (44100, 16, 2, 1000, "sowt", "");
+
+		AiffFile.TryParse (data, out var file);
+
+		Assert.IsNotNull (file?.AudioProperties);
+		Assert.AreEqual ("sowt", file.AudioProperties.CompressionType);
+	}
+
+	[TestMethod]
+	public void AudioProperties_StandardAiff_HasNoCompression ()
+	{
+		// Standard AIFF has no compression fields
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000, isAifc: false);
+
+		AiffFile.TryParse (data, out var file);
+
+		Assert.IsNotNull (file?.AudioProperties);
+		Assert.IsNull (file.AudioProperties.CompressionType);
+		Assert.IsNull (file.AudioProperties.CompressionName);
+	}
+
+	[TestMethod]
 	public void AudioProperties_CommonChunk_ParsedCorrectly ()
 	{
 		var data = CreateMinimalAiffFile (
@@ -214,6 +252,66 @@ public class AiffFileTests
 		builder.Add (ExtendedFloat.FromDouble (sampleRate)); // 10-byte extended float
 
 		return builder.ToArray ();
+	}
+
+	static byte[] CreateAifcCommChunk (int channels, uint sampleFrames, int bitsPerSample, int sampleRate,
+		string compressionType, string compressionName)
+	{
+		var builder = new BinaryDataBuilder ();
+
+		// AIFC COMM data: standard 18 bytes + 4-byte type + Pascal string
+		var nameBytes = System.Text.Encoding.ASCII.GetBytes (compressionName);
+		var pascalStringSize = 1 + nameBytes.Length; // Length byte + string
+		if (pascalStringSize % 2 == 1) pascalStringSize++; // Pad to even
+
+		var dataSize = 18 + 4 + pascalStringSize;
+
+		// COMM chunk header
+		builder.Add (0x43, 0x4F, 0x4D, 0x4D); // "COMM"
+		builder.AddUInt32BE ((uint)dataSize);
+
+		// COMM data - standard AIFF fields
+		builder.AddUInt16BE ((ushort)channels);
+		builder.AddUInt32BE (sampleFrames);
+		builder.AddUInt16BE ((ushort)bitsPerSample);
+		builder.Add (ExtendedFloat.FromDouble (sampleRate)); // 10-byte extended float
+
+		// AIFC additions: compression type (4 bytes)
+		var typeBytes = System.Text.Encoding.ASCII.GetBytes (compressionType.PadRight (4).Substring (0, 4));
+		builder.Add (typeBytes);
+
+		// Pascal string: length byte + string + optional pad
+		builder.Add ((byte)nameBytes.Length);
+		if (nameBytes.Length > 0)
+			builder.Add (nameBytes);
+		if ((1 + nameBytes.Length) % 2 == 1)
+			builder.Add (0x00); // Pad to even
+
+		return builder.ToArray ();
+	}
+
+	static BinaryData CreateAifcFileWithCompression (int sampleRate, int bitsPerSample, int channels, uint sampleFrames,
+		string compressionType, string compressionName)
+	{
+		var builder = new BinaryDataBuilder ();
+
+		// Create AIFC COMM chunk with compression
+		var commChunk = CreateAifcCommChunk (channels, sampleFrames, bitsPerSample, sampleRate, compressionType, compressionName);
+		var ssndChunk = CreateSsndChunk (8);
+
+		// Calculate total size
+		var contentSize = 4 + commChunk.Length + ssndChunk.Length;
+
+		// FORM header
+		builder.Add (0x46, 0x4F, 0x52, 0x4D); // "FORM"
+		builder.AddUInt32BE ((uint)contentSize);
+		builder.Add (0x41, 0x49, 0x46, 0x43); // "AIFC"
+
+		// Add chunks
+		builder.Add (commChunk);
+		builder.Add (ssndChunk);
+
+		return builder.ToBinaryData ();
 	}
 
 	static byte[] CreateSsndChunk (int sampleDataSize)

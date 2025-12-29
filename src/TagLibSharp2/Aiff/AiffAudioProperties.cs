@@ -8,20 +8,34 @@ namespace TagLibSharp2.Aiff;
 /// Audio properties parsed from an AIFF COMM (Common) chunk.
 /// </summary>
 /// <remarks>
-/// COMM chunk structure (18 bytes minimum):
-/// - Bytes 0-1:  Number of channels (16-bit big-endian)
-/// - Bytes 2-5:  Number of sample frames (32-bit big-endian)
-/// - Bytes 6-7:  Bits per sample (16-bit big-endian)
-/// - Bytes 8-17: Sample rate (80-bit extended precision float)
-///
-/// AIFC adds compression type and name after the sample rate.
+/// <para>
+/// COMM chunk structure (18 bytes minimum for AIFF):
+/// </para>
+/// <list type="bullet">
+/// <item>Bytes 0-1:  Number of channels (16-bit big-endian)</item>
+/// <item>Bytes 2-5:  Number of sample frames (32-bit big-endian)</item>
+/// <item>Bytes 6-7:  Bits per sample (16-bit big-endian)</item>
+/// <item>Bytes 8-17: Sample rate (80-bit extended precision float)</item>
+/// </list>
+/// <para>
+/// AIFC extends this with compression fields:
+/// </para>
+/// <list type="bullet">
+/// <item>Bytes 18-21: Compression type (4-char code like "NONE", "sowt", "fl32")</item>
+/// <item>Bytes 22+:   Compression name (Pascal string)</item>
+/// </list>
 /// </remarks>
 public class AiffAudioProperties
 {
 	/// <summary>
-	/// Minimum size of the COMM chunk data.
+	/// Minimum size of the COMM chunk data for AIFF.
 	/// </summary>
 	public const int MinCommSize = 18;
+
+	/// <summary>
+	/// Minimum size of the COMM chunk data for AIFC (with compression fields).
+	/// </summary>
+	public const int MinAifcCommSize = 22;
 
 	/// <summary>
 	/// Gets the number of audio channels.
@@ -53,12 +67,42 @@ public class AiffAudioProperties
 	/// </summary>
 	public int Bitrate { get; }
 
-	AiffAudioProperties (int channels, uint sampleFrames, int bitsPerSample, int sampleRate)
+	/// <summary>
+	/// Gets the AIFC compression type (4-character code).
+	/// </summary>
+	/// <remarks>
+	/// Common values include:
+	/// <list type="bullet">
+	/// <item>"NONE" - Uncompressed</item>
+	/// <item>"sowt" - Little-endian PCM (byte-swapped)</item>
+	/// <item>"fl32" - 32-bit IEEE float</item>
+	/// <item>"fl64" - 64-bit IEEE float</item>
+	/// <item>"alaw" - A-law compression</item>
+	/// <item>"ulaw" - mu-law compression</item>
+	/// </list>
+	/// Null for standard AIFF files (only AIFC has compression fields).
+	/// </remarks>
+	public string? CompressionType { get; }
+
+	/// <summary>
+	/// Gets the AIFC compression name (human-readable description).
+	/// </summary>
+	/// <remarks>
+	/// This is a Pascal string in the file, typically containing a description
+	/// like "not compressed" for NONE compression type.
+	/// Null for standard AIFF files.
+	/// </remarks>
+	public string? CompressionName { get; }
+
+	AiffAudioProperties (int channels, uint sampleFrames, int bitsPerSample, int sampleRate,
+		string? compressionType = null, string? compressionName = null)
 	{
 		Channels = channels;
 		SampleFrames = sampleFrames;
 		BitsPerSample = bitsPerSample;
 		SampleRate = sampleRate;
+		CompressionType = compressionType;
+		CompressionName = compressionName;
 
 		// Calculate duration
 		if (sampleRate > 0 && sampleFrames > 0)
@@ -103,7 +147,27 @@ public class AiffAudioProperties
 		var sampleRateDouble = ExtendedFloat.ToDouble (commData.Slice (8, 10));
 		int sampleRate = (int)Math.Round (sampleRateDouble);
 
-		properties = new AiffAudioProperties (channels, sampleFrames, bitsPerSample, sampleRate);
+		// Parse AIFC compression fields if present
+		string? compressionType = null;
+		string? compressionName = null;
+
+		if (commData.Length >= MinAifcCommSize) {
+			// Compression type: 4-character code at offset 18
+			compressionType = commData.Slice (18, 4).ToStringLatin1 ();
+
+			// Compression name: Pascal string starting at offset 22
+			if (commData.Length > 22) {
+				var nameLength = span[22];
+				if (commData.Length >= 23 + nameLength) {
+					compressionName = nameLength > 0
+						? commData.Slice (23, nameLength).ToStringLatin1 ()
+						: string.Empty;
+				}
+			}
+		}
+
+		properties = new AiffAudioProperties (channels, sampleFrames, bitsPerSample, sampleRate,
+			compressionType, compressionName);
 		return true;
 	}
 }
