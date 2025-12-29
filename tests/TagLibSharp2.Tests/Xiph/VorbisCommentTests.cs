@@ -29,76 +29,48 @@ public class VorbisCommentTests
 	}
 
 	[TestMethod]
-	public void Title_GetSet_Works ()
+	[DataRow ("Title", "My Song", "TITLE")]
+	[DataRow ("Artist", "The Band", "ARTIST")]
+	[DataRow ("Album", "Greatest Hits", "ALBUM")]
+	[DataRow ("Year", "2024", "DATE")]
+	[DataRow ("Genre", "Rock", "GENRE")]
+	[DataRow ("Comment", "A great song", "COMMENT")]
+	[DataRow ("AlbumArtist", "Various Artists", "ALBUMARTIST")]
+	[DataRow ("Composer", "Johann Sebastian Bach", "COMPOSER")]
+	public void StringProperty_GetSet_Works (string propertyName, string value, string expectedField)
 	{
 		var comment = new VorbisComment ();
 
-		comment.Title = "My Song";
-		Assert.AreEqual ("My Song", comment.Title);
+		// Set property using reflection
+		var property = typeof (VorbisComment).GetProperty (propertyName)!;
+		property.SetValue (comment, value);
 
-		// Verify it maps to TITLE field
-		Assert.AreEqual ("My Song", comment.GetValue ("TITLE"));
+		// Verify getter returns same value
+		Assert.AreEqual (value, property.GetValue (comment), $"{propertyName} getter mismatch");
+
+		// Verify it maps to correct Vorbis field
+		Assert.AreEqual (value, comment.GetValue (expectedField), $"{propertyName} should map to {expectedField}");
 	}
 
 	[TestMethod]
-	public void Artist_GetSet_Works ()
+	[DataRow ("Track", 5u, "TRACKNUMBER", "5")]
+	[DataRow ("DiscNumber", 2u, "DISCNUMBER", "2")]
+	[DataRow ("BeatsPerMinute", 140u, "BPM", "140")]
+	[DataRow ("TotalTracks", 12u, "TOTALTRACKS", "12")]
+	[DataRow ("TotalDiscs", 3u, "TOTALDISCS", "3")]
+	public void UIntProperty_GetSet_Works (string propertyName, uint value, string expectedField, string expectedString)
 	{
 		var comment = new VorbisComment ();
 
-		comment.Artist = "The Band";
-		Assert.AreEqual ("The Band", comment.Artist);
-		Assert.AreEqual ("The Band", comment.GetValue ("ARTIST"));
-	}
+		// Set property using reflection
+		var property = typeof (VorbisComment).GetProperty (propertyName)!;
+		property.SetValue (comment, value);
 
-	[TestMethod]
-	public void Album_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
+		// Verify getter returns same value
+		Assert.AreEqual (value, property.GetValue (comment), $"{propertyName} getter mismatch");
 
-		comment.Album = "Greatest Hits";
-		Assert.AreEqual ("Greatest Hits", comment.Album);
-		Assert.AreEqual ("Greatest Hits", comment.GetValue ("ALBUM"));
-	}
-
-	[TestMethod]
-	public void Year_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.Year = "2024";
-		Assert.AreEqual ("2024", comment.Year);
-		Assert.AreEqual ("2024", comment.GetValue ("DATE"));
-	}
-
-	[TestMethod]
-	public void Genre_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.Genre = "Rock";
-		Assert.AreEqual ("Rock", comment.Genre);
-		Assert.AreEqual ("Rock", comment.GetValue ("GENRE"));
-	}
-
-	[TestMethod]
-	public void Track_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.Track = 5;
-		Assert.AreEqual (5u, comment.Track);
-		Assert.AreEqual ("5", comment.GetValue ("TRACKNUMBER"));
-	}
-
-	[TestMethod]
-	public void Comment_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.Comment = "A great song";
-		Assert.AreEqual ("A great song", comment.Comment);
-		// Comment can map to either COMMENT or DESCRIPTION - we use COMMENT
-		Assert.AreEqual ("A great song", comment.GetValue ("COMMENT"));
+		// Verify it maps to correct Vorbis field
+		Assert.AreEqual (expectedString, comment.GetValue (expectedField), $"{propertyName} should map to {expectedField}");
 	}
 
 	[TestMethod]
@@ -299,9 +271,9 @@ public class VorbisCommentTests
 	[TestMethod]
 	public void Render_ProducesValidData ()
 	{
-		var comment = new VorbisComment ("TagLibSharp2");
-		comment.Title = "Test Song";
-		comment.Artist = "Test Artist";
+		var comment = new VorbisComment (TestConstants.Vendors.TagLibSharp2);
+		comment.Title = TestConstants.Metadata.Title;
+		comment.Artist = TestConstants.Metadata.Artist;
 
 		var rendered = comment.Render ();
 
@@ -309,9 +281,9 @@ public class VorbisCommentTests
 		var result = VorbisComment.Read (rendered.ToArray ());
 
 		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("TagLibSharp2", result.Tag!.VendorString);
-		Assert.AreEqual ("Test Song", result.Tag.Title);
-		Assert.AreEqual ("Test Artist", result.Tag.Artist);
+		Assert.AreEqual (TestConstants.Vendors.TagLibSharp2, result.Tag!.VendorString);
+		Assert.AreEqual (TestConstants.Metadata.Title, result.Tag.Title);
+		Assert.AreEqual (TestConstants.Metadata.Artist, result.Tag.Artist);
 	}
 
 	[TestMethod]
@@ -383,26 +355,6 @@ public class VorbisCommentTests
 	}
 
 	[TestMethod]
-	public void AlbumArtist_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.AlbumArtist = "Various Artists";
-		Assert.AreEqual ("Various Artists", comment.AlbumArtist);
-		Assert.AreEqual ("Various Artists", comment.GetValue ("ALBUMARTIST"));
-	}
-
-	[TestMethod]
-	public void DiscNumber_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.DiscNumber = 2;
-		Assert.AreEqual (2u, comment.DiscNumber);
-		Assert.AreEqual ("2", comment.GetValue ("DISCNUMBER"));
-	}
-
-	[TestMethod]
 	public void DiscNumber_WithFormat_ParsesCorrectly ()
 	{
 		var comment = new VorbisComment ();
@@ -412,53 +364,12 @@ public class VorbisCommentTests
 	}
 
 	[TestMethod]
-	public void BeatsPerMinute_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.BeatsPerMinute = 140;
-
-		Assert.AreEqual (140u, comment.BeatsPerMinute);
-		Assert.AreEqual ("140", comment.GetValue ("BPM"));
-	}
-
-	[TestMethod]
-	public void TotalTracks_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.TotalTracks = 12;
-		Assert.AreEqual (12u, comment.TotalTracks);
-		Assert.AreEqual ("12", comment.GetValue ("TOTALTRACKS"));
-	}
-
-	[TestMethod]
 	public void TotalTracks_FromTrackNumber_ParsesCorrectly ()
 	{
 		var comment = new VorbisComment ();
 		comment.SetValue ("TRACKNUMBER", "5/12");
 
 		Assert.AreEqual (12u, comment.TotalTracks);
-	}
-
-	[TestMethod]
-	public void TotalDiscs_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.TotalDiscs = 3;
-		Assert.AreEqual (3u, comment.TotalDiscs);
-		Assert.AreEqual ("3", comment.GetValue ("TOTALDISCS"));
-	}
-
-	[TestMethod]
-	public void Composer_GetSet_Works ()
-	{
-		var comment = new VorbisComment ();
-
-		comment.Composer = "Johann Sebastian Bach";
-		Assert.AreEqual ("Johann Sebastian Bach", comment.Composer);
-		Assert.AreEqual ("Johann Sebastian Bach", comment.GetValue ("COMPOSER"));
 	}
 
 	[TestMethod]

@@ -14,81 +14,143 @@ namespace TagLibSharp2.Tests.Xiph;
 [TestCategory ("Xiph")]
 public class VorbisCommentExtendedMetadataTests
 {
-	// Conductor Tests
+	static readonly string[] SingleTestValue = ["Test Value"];
+
+	// ===========================================
+	// Data-Driven String Property Tests
+	// ===========================================
+	// These tests cover properties that map directly to Vorbis Comment fields.
+	// Each property is tested for get/set, null clearing, and round-trip serialization.
 
 	[TestMethod]
-	public void Conductor_GetSet_Works ()
+	[DataRow (nameof (VorbisComment.Conductor), "Herbert von Karajan", "CONDUCTOR")]
+	[DataRow (nameof (VorbisComment.Copyright), "2024 Acme Records", "COPYRIGHT")]
+	[DataRow (nameof (VorbisComment.Isrc), "USRC17607839", "ISRC")]
+	[DataRow (nameof (VorbisComment.Publisher), "Sub Pop Records", "LABEL")]
+	[DataRow (nameof (VorbisComment.AlbumSort), "White Album, The", "ALBUMSORT")]
+	[DataRow (nameof (VorbisComment.ArtistSort), "Beatles, The", "ARTISTSORT")]
+	[DataRow (nameof (VorbisComment.TitleSort), "Love Is All You Need", "TITLESORT")]
+	[DataRow (nameof (VorbisComment.AlbumArtistSort), "Various", "ALBUMARTISTSORT")]
+	[DataRow (nameof (VorbisComment.Lyrics), "Hello world, these are the lyrics", "LYRICS")]
+	[DataRow (nameof (VorbisComment.EncodedBy), "LAME 3.100", "ENCODED-BY")]
+	[DataRow (nameof (VorbisComment.EncoderSettings), "Lavf58.29.100", "ENCODER")]
+	[DataRow (nameof (VorbisComment.Grouping), "Summer Hits 2024", "GROUPING")]
+	[DataRow (nameof (VorbisComment.Subtitle), "Radio Edit", "SUBTITLE")]
+	[DataRow (nameof (VorbisComment.Remixer), "Tiësto", "REMIXER")]
+	[DataRow (nameof (VorbisComment.InitialKey), "Am", "KEY")]
+	[DataRow (nameof (VorbisComment.Mood), "Energetic", "MOOD")]
+	[DataRow (nameof (VorbisComment.MediaType), "CD", "MEDIA")]
+	[DataRow (nameof (VorbisComment.Language), "eng", "LANGUAGE")]
+	[DataRow (nameof (VorbisComment.Barcode), "012345678901", "BARCODE")]
+	[DataRow (nameof (VorbisComment.CatalogNumber), "WPCR-80001", "CATALOGNUMBER")]
+	[DataRow (nameof (VorbisComment.ComposerSort), "Bach, Johann Sebastian", "COMPOSERSORT")]
+	[DataRow (nameof (VorbisComment.DateTagged), "2025-12-27T10:30:00", "DATETAGGED")]
+	[DataRow (nameof (VorbisComment.Description), "A story about love and loss", "DESCRIPTION")]
+	[DataRow (nameof (VorbisComment.AmazonId), "B000002UAL", "ASIN")]
+	[DataRow (nameof (VorbisComment.MusicBrainzWorkId), "1a2b3c4d-5e6f-7890-abcd-ef1234567890", "MUSICBRAINZ_WORKID")]
+	[DataRow (nameof (VorbisComment.MusicBrainzDiscId), "XHLQnC.F3SJ5XpDPLt7gLfHAy_A-", "MUSICBRAINZ_DISCID")]
+	[DataRow (nameof (VorbisComment.MusicBrainzReleaseStatus), "official", "RELEASESTATUS")]
+	[DataRow (nameof (VorbisComment.MusicBrainzReleaseType), "album", "RELEASETYPE")]
+	[DataRow (nameof (VorbisComment.MusicBrainzReleaseCountry), "US", "RELEASECOUNTRY")]
+	public void StringProperty_GetSet_Works (string propertyName, string testValue, string fieldName)
 	{
 		var comment = new VorbisComment ("test");
+		var property = typeof (VorbisComment).GetProperty (propertyName)!;
 
-		comment.Conductor = "Herbert von Karajan";
+		property.SetValue (comment, testValue);
 
-		Assert.AreEqual ("Herbert von Karajan", comment.Conductor);
-		Assert.AreEqual ("Herbert von Karajan", comment.GetValue ("CONDUCTOR"));
+		Assert.AreEqual (testValue, property.GetValue (comment));
+		Assert.AreEqual (testValue, comment.GetValue (fieldName));
 	}
 
 	[TestMethod]
-	public void Conductor_SetNull_ClearsField ()
+	[DataRow (nameof (VorbisComment.Conductor), "CONDUCTOR")]
+	[DataRow (nameof (VorbisComment.Copyright), "COPYRIGHT")]
+	[DataRow (nameof (VorbisComment.Isrc), "ISRC")]
+	[DataRow (nameof (VorbisComment.Publisher), "LABEL")]
+	[DataRow (nameof (VorbisComment.AlbumSort), "ALBUMSORT")]
+	[DataRow (nameof (VorbisComment.ArtistSort), "ARTISTSORT")]
+	[DataRow (nameof (VorbisComment.TitleSort), "TITLESORT")]
+	[DataRow (nameof (VorbisComment.AlbumArtistSort), "ALBUMARTISTSORT")]
+	[DataRow (nameof (VorbisComment.Lyrics), "LYRICS")]
+	[DataRow (nameof (VorbisComment.EncodedBy), "ENCODED-BY")]
+	[DataRow (nameof (VorbisComment.EncoderSettings), "ENCODER")]
+	[DataRow (nameof (VorbisComment.Grouping), "GROUPING")]
+	[DataRow (nameof (VorbisComment.Subtitle), "SUBTITLE")]
+	[DataRow (nameof (VorbisComment.Remixer), "REMIXER")]
+	[DataRow (nameof (VorbisComment.InitialKey), "KEY")]
+	[DataRow (nameof (VorbisComment.Mood), "MOOD")]
+	[DataRow (nameof (VorbisComment.MediaType), "MEDIA")]
+	[DataRow (nameof (VorbisComment.Language), "LANGUAGE")]
+	[DataRow (nameof (VorbisComment.Barcode), "BARCODE")]
+	[DataRow (nameof (VorbisComment.CatalogNumber), "CATALOGNUMBER")]
+	[DataRow (nameof (VorbisComment.ComposerSort), "COMPOSERSORT")]
+	[DataRow (nameof (VorbisComment.DateTagged), "DATETAGGED")]
+	[DataRow (nameof (VorbisComment.Description), "DESCRIPTION")]
+	[DataRow (nameof (VorbisComment.AmazonId), "ASIN")]
+	[DataRow (nameof (VorbisComment.MusicBrainzWorkId), "MUSICBRAINZ_WORKID")]
+	[DataRow (nameof (VorbisComment.MusicBrainzDiscId), "MUSICBRAINZ_DISCID")]
+	[DataRow (nameof (VorbisComment.MusicBrainzReleaseStatus), "RELEASESTATUS")]
+	[DataRow (nameof (VorbisComment.MusicBrainzReleaseType), "RELEASETYPE")]
+	[DataRow (nameof (VorbisComment.MusicBrainzReleaseCountry), "RELEASECOUNTRY")]
+	public void StringProperty_SetNull_ClearsField (string propertyName, string fieldName)
 	{
 		var comment = new VorbisComment ("test");
-		comment.Conductor = "Herbert von Karajan";
+		var property = typeof (VorbisComment).GetProperty (propertyName)!;
 
-		comment.Conductor = null;
+		property.SetValue (comment, "Test Value");
+		property.SetValue (comment, null);
 
-		Assert.IsNull (comment.Conductor);
-		Assert.IsNull (comment.GetValue ("CONDUCTOR"));
+		Assert.IsNull (property.GetValue (comment));
+		Assert.IsNull (comment.GetValue (fieldName));
 	}
 
 	[TestMethod]
-	public void Conductor_RoundTrip_PreservesValue ()
+	[DataRow (nameof (VorbisComment.Conductor), "Sir Simon Rattle")]
+	[DataRow (nameof (VorbisComment.Copyright), "2025 Independent")]
+	[DataRow (nameof (VorbisComment.Isrc), "GBAYE0000351")]
+	[DataRow (nameof (VorbisComment.Publisher), "4AD Records")]
+	[DataRow (nameof (VorbisComment.AlbumSort), "Abbey Road")]
+	[DataRow (nameof (VorbisComment.ArtistSort), "Radiohead")]
+	[DataRow (nameof (VorbisComment.TitleSort), "Yesterday")]
+	[DataRow (nameof (VorbisComment.AlbumArtistSort), "Compilation Artists")]
+	[DataRow (nameof (VorbisComment.Lyrics), "Verse 1\nChorus\nVerse 2")]
+	[DataRow (nameof (VorbisComment.EncodedBy), "flac 1.4.0")]
+	[DataRow (nameof (VorbisComment.EncoderSettings), "libFLAC 1.3.2")]
+	[DataRow (nameof (VorbisComment.Grouping), "Workout Mix")]
+	[DataRow (nameof (VorbisComment.Subtitle), "Extended Mix")]
+	[DataRow (nameof (VorbisComment.Remixer), "David Guetta")]
+	[DataRow (nameof (VorbisComment.InitialKey), "F#m")]
+	[DataRow (nameof (VorbisComment.Mood), "Melancholic")]
+	[DataRow (nameof (VorbisComment.MediaType), "Vinyl")]
+	[DataRow (nameof (VorbisComment.Language), "jpn")]
+	[DataRow (nameof (VorbisComment.Barcode), "5099749534728")]
+	[DataRow (nameof (VorbisComment.CatalogNumber), "ECM 1064/65")]
+	[DataRow (nameof (VorbisComment.ComposerSort), "Mozart, Wolfgang Amadeus")]
+	[DataRow (nameof (VorbisComment.DateTagged), "2025-12-27")]
+	[DataRow (nameof (VorbisComment.Description), "Epic adventure through space")]
+	[DataRow (nameof (VorbisComment.AmazonId), "B00005NQ6Z")]
+	[DataRow (nameof (VorbisComment.MusicBrainzWorkId), "deadbeef-1234-5678-90ab-cdef12345678")]
+	[DataRow (nameof (VorbisComment.MusicBrainzDiscId), "IbhKz8W2xPbLqA1F5nPKz8xLUBc-")]
+	[DataRow (nameof (VorbisComment.MusicBrainzReleaseStatus), "promotional")]
+	[DataRow (nameof (VorbisComment.MusicBrainzReleaseType), "compilation")]
+	[DataRow (nameof (VorbisComment.MusicBrainzReleaseCountry), "GB")]
+	public void StringProperty_RoundTrip_PreservesValue (string propertyName, string testValue)
 	{
-		var original = new VorbisComment ("test") { Conductor = "Sir Simon Rattle" };
+		var original = new VorbisComment ("test");
+		var property = typeof (VorbisComment).GetProperty (propertyName)!;
+		property.SetValue (original, testValue);
 
 		var rendered = original.Render ();
 		var result = VorbisComment.Read (rendered.Span);
 
 		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Sir Simon Rattle", result.Tag!.Conductor);
+		Assert.AreEqual (testValue, property.GetValue (result.Tag));
 	}
 
-	// Copyright Tests
-
-	[TestMethod]
-	public void Copyright_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.Copyright = "2024 Acme Records";
-
-		Assert.AreEqual ("2024 Acme Records", comment.Copyright);
-		Assert.AreEqual ("2024 Acme Records", comment.GetValue ("COPYRIGHT"));
-	}
-
-	[TestMethod]
-	public void Copyright_SetNull_ClearsField ()
-	{
-		var comment = new VorbisComment ("test");
-		comment.Copyright = "2024 Acme Records";
-
-		comment.Copyright = null;
-
-		Assert.IsNull (comment.Copyright);
-		Assert.IsNull (comment.GetValue ("COPYRIGHT"));
-	}
-
-	[TestMethod]
-	public void Copyright_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Copyright = "2025 Independent" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("2025 Independent", result.Tag!.Copyright);
-	}
-
-	// Compilation Tests
+	// ===========================================
+	// Boolean Property Tests (IsCompilation)
+	// ===========================================
 
 	[TestMethod]
 	public void IsCompilation_GetSet_Works ()
@@ -125,235 +187,45 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.IsTrue (result.Tag!.IsCompilation);
 	}
 
-	// ISRC Tests
+	// ===========================================
+	// Uint Property Tests (TotalTracks, TotalDiscs)
+	// ===========================================
 
 	[TestMethod]
-	public void Isrc_GetSet_Works ()
+	public void TotalTracks_GetSet_Works ()
 	{
 		var comment = new VorbisComment ("test");
 
-		comment.Isrc = "USRC17607839";
+		comment.TotalTracks = 12;
 
-		Assert.AreEqual ("USRC17607839", comment.Isrc);
-		Assert.AreEqual ("USRC17607839", comment.GetValue ("ISRC"));
+		Assert.AreEqual (12u, comment.TotalTracks);
+		Assert.AreEqual ("12", comment.GetValue ("TOTALTRACKS"));
 	}
 
 	[TestMethod]
-	public void Isrc_SetNull_ClearsField ()
+	public void TotalTracks_FromTrackNumber_ParsesSlashFormat ()
 	{
 		var comment = new VorbisComment ("test");
-		comment.Isrc = "USRC17607839";
+		comment.AddField ("TRACKNUMBER", "5/12");
 
-		comment.Isrc = null;
-
-		Assert.IsNull (comment.Isrc);
-		Assert.IsNull (comment.GetValue ("ISRC"));
+		Assert.AreEqual (5u, comment.Track);
+		Assert.AreEqual (12u, comment.TotalTracks);
 	}
 
 	[TestMethod]
-	public void Isrc_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Isrc = "GBAYE0000351" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("GBAYE0000351", result.Tag!.Isrc);
-	}
-
-	// Publisher Tests
-
-	[TestMethod]
-	public void Publisher_GetSet_Works ()
+	public void TotalDiscs_GetSet_Works ()
 	{
 		var comment = new VorbisComment ("test");
 
-		comment.Publisher = "Sub Pop Records";
+		comment.TotalDiscs = 3;
 
-		Assert.AreEqual ("Sub Pop Records", comment.Publisher);
-		Assert.AreEqual ("Sub Pop Records", comment.GetValue ("LABEL"));
+		Assert.AreEqual (3u, comment.TotalDiscs);
+		Assert.AreEqual ("3", comment.GetValue ("TOTALDISCS"));
 	}
 
-	[TestMethod]
-	public void Publisher_SetNull_ClearsField ()
-	{
-		var comment = new VorbisComment ("test");
-		comment.Publisher = "Sub Pop Records";
-
-		comment.Publisher = null;
-
-		Assert.IsNull (comment.Publisher);
-		Assert.IsNull (comment.GetValue ("LABEL"));
-	}
-
-	[TestMethod]
-	public void Publisher_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Publisher = "4AD Records" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("4AD Records", result.Tag!.Publisher);
-	}
-
-	// Sort Tags Tests
-
-	[TestMethod]
-	public void AlbumSort_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.AlbumSort = "White Album, The";
-
-		Assert.AreEqual ("White Album, The", comment.AlbumSort);
-		Assert.AreEqual ("White Album, The", comment.GetValue ("ALBUMSORT"));
-	}
-
-	[TestMethod]
-	public void AlbumSort_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { AlbumSort = "Abbey Road" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Abbey Road", result.Tag!.AlbumSort);
-	}
-
-	[TestMethod]
-	public void ArtistSort_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.ArtistSort = "Beatles, The";
-
-		Assert.AreEqual ("Beatles, The", comment.ArtistSort);
-		Assert.AreEqual ("Beatles, The", comment.GetValue ("ARTISTSORT"));
-	}
-
-	[TestMethod]
-	public void ArtistSort_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { ArtistSort = "Radiohead" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Radiohead", result.Tag!.ArtistSort);
-	}
-
-	[TestMethod]
-	public void TitleSort_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.TitleSort = "Love Is All You Need";
-
-		Assert.AreEqual ("Love Is All You Need", comment.TitleSort);
-		Assert.AreEqual ("Love Is All You Need", comment.GetValue ("TITLESORT"));
-	}
-
-	[TestMethod]
-	public void TitleSort_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { TitleSort = "Yesterday" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Yesterday", result.Tag!.TitleSort);
-	}
-
-	[TestMethod]
-	public void AlbumArtistSort_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.AlbumArtistSort = "Various";
-
-		Assert.AreEqual ("Various", comment.AlbumArtistSort);
-		Assert.AreEqual ("Various", comment.GetValue ("ALBUMARTISTSORT"));
-	}
-
-	[TestMethod]
-	public void AlbumArtistSort_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { AlbumArtistSort = "Compilation Artists" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Compilation Artists", result.Tag!.AlbumArtistSort);
-	}
-
-	// PerformersSort (ARTISTSORT multi-value) Tests
-
-	[TestMethod]
-	public void PerformersSort_SingleValue_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.PerformersSort = ["Beatles, The"];
-
-		Assert.IsNotNull (comment.PerformersSort);
-		Assert.HasCount (1, comment.PerformersSort);
-		Assert.AreEqual ("Beatles, The", comment.PerformersSort[0]);
-	}
-
-	[TestMethod]
-	public void PerformersSort_MultipleValues_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.PerformersSort = ["Beatles, The", "Bowie, David"];
-
-		Assert.IsNotNull (comment.PerformersSort);
-		Assert.HasCount (2, comment.PerformersSort);
-		Assert.AreEqual ("Beatles, The", comment.PerformersSort[0]);
-		Assert.AreEqual ("Bowie, David", comment.PerformersSort[1]);
-		// Verify stored as separate ARTISTSORT fields
-		var values = comment.GetValues ("ARTISTSORT");
-		Assert.HasCount (2, values);
-	}
-
-	[TestMethod]
-	public void PerformersSort_SetNull_ClearsValue ()
-	{
-		var comment = new VorbisComment ("test");
-		comment.PerformersSort = ["Beatles, The"];
-
-		comment.PerformersSort = null;
-
-		Assert.IsNull (comment.PerformersSort);
-		Assert.HasCount (0, comment.GetValues ("ARTISTSORT"));
-	}
-
-	[TestMethod]
-	public void PerformersSort_RoundTrip_PreservesMultipleValues ()
-	{
-		var original = new VorbisComment ("test") {
-			PerformersSort = ["Beatles, The", "Bowie, David", "Mercury, Freddie"]
-		};
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.IsNotNull (result.Tag!.PerformersSort);
-		Assert.HasCount (3, result.Tag.PerformersSort);
-		Assert.AreEqual ("Beatles, The", result.Tag.PerformersSort[0]);
-		Assert.AreEqual ("Bowie, David", result.Tag.PerformersSort[1]);
-		Assert.AreEqual ("Mercury, Freddie", result.Tag.PerformersSort[2]);
-	}
-
-	// Original Release Date (ORIGINALDATE/ORIGINALYEAR) Tests
+	// ===========================================
+	// Original Release Date (with fallback logic)
+	// ===========================================
 
 	[TestMethod]
 	public void OriginalReleaseDate_GetSet_Works ()
@@ -370,7 +242,6 @@ public class VorbisCommentExtendedMetadataTests
 	public void OriginalReleaseDate_FallsBackToOriginalYear ()
 	{
 		var comment = new VorbisComment ("test");
-		// Only set ORIGINALYEAR
 		comment.AddField ("ORIGINALYEAR", "1969");
 
 		Assert.AreEqual ("1969", comment.OriginalReleaseDate);
@@ -380,7 +251,6 @@ public class VorbisCommentExtendedMetadataTests
 	public void OriginalReleaseDate_PrefersOriginalDateOverYear ()
 	{
 		var comment = new VorbisComment ("test");
-		// Set both
 		comment.AddField ("ORIGINALDATE", "1969-09-26");
 		comment.AddField ("ORIGINALYEAR", "1969");
 
@@ -411,743 +281,90 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual ("1969-09-26", result.Tag!.OriginalReleaseDate);
 	}
 
-	// Lyrics Tests
+	// ===========================================
+	// Multi-Value String Array Properties
+	// ===========================================
 
 	[TestMethod]
-	public void Lyrics_GetSet_Works ()
+	[DataRow (nameof (VorbisComment.PerformersSort), "ARTISTSORT")]
+	[DataRow (nameof (VorbisComment.AlbumArtistsSort), "ALBUMARTISTSORT")]
+	[DataRow (nameof (VorbisComment.ComposersSort), "COMPOSERSORT")]
+	public void StringArrayProperty_SingleValue_GetSet_Works (string propertyName, string fieldName)
 	{
 		var comment = new VorbisComment ("test");
+		var property = typeof (VorbisComment).GetProperty (propertyName)!;
+		var testValue = new[] { "Test Value" };
 
-		comment.Lyrics = "Hello world, these are the lyrics";
+		property.SetValue (comment, testValue);
 
-		Assert.AreEqual ("Hello world, these are the lyrics", comment.Lyrics);
-		Assert.AreEqual ("Hello world, these are the lyrics", comment.GetValue ("LYRICS"));
+		var result = (string[]?)property.GetValue (comment);
+		Assert.IsNotNull (result);
+		Assert.HasCount (1, result);
+		Assert.AreEqual ("Test Value", result[0]);
 	}
 
 	[TestMethod]
-	public void Lyrics_SetNull_ClearsField ()
+	[DataRow (nameof (VorbisComment.PerformersSort), "ARTISTSORT")]
+	[DataRow (nameof (VorbisComment.AlbumArtistsSort), "ALBUMARTISTSORT")]
+	[DataRow (nameof (VorbisComment.ComposersSort), "COMPOSERSORT")]
+	public void StringArrayProperty_MultipleValues_GetSet_Works (string propertyName, string fieldName)
 	{
 		var comment = new VorbisComment ("test");
-		comment.Lyrics = "Some lyrics";
+		var property = typeof (VorbisComment).GetProperty (propertyName)!;
+		var testValues = new[] { "Value One", "Value Two" };
 
-		comment.Lyrics = null;
+		property.SetValue (comment, testValues);
 
-		Assert.IsNull (comment.Lyrics);
-		Assert.IsNull (comment.GetValue ("LYRICS"));
+		var result = (string[]?)property.GetValue (comment);
+		Assert.IsNotNull (result);
+		Assert.HasCount (2, result);
+		Assert.AreEqual ("Value One", result[0]);
+		Assert.AreEqual ("Value Two", result[1]);
+		Assert.HasCount (2, comment.GetValues (fieldName));
 	}
 
 	[TestMethod]
-	public void Lyrics_RoundTrip_PreservesValue ()
+	[DataRow (nameof (VorbisComment.PerformersSort), "ARTISTSORT")]
+	[DataRow (nameof (VorbisComment.AlbumArtistsSort), "ALBUMARTISTSORT")]
+	[DataRow (nameof (VorbisComment.ComposersSort), "COMPOSERSORT")]
+	public void StringArrayProperty_SetNull_ClearsValue (string propertyName, string fieldName)
 	{
-		var original = new VorbisComment ("test") {
-			Lyrics = "Verse 1\nChorus\nVerse 2"
-		};
+		var comment = new VorbisComment ("test");
+		var property = typeof (VorbisComment).GetProperty (propertyName)!;
+		property.SetValue (comment, SingleTestValue);
+
+		property.SetValue (comment, null);
+
+		Assert.IsNull (property.GetValue (comment));
+		Assert.HasCount (0, comment.GetValues (fieldName));
+	}
+
+	[TestMethod]
+	[DataRow (nameof (VorbisComment.PerformersSort))]
+	[DataRow (nameof (VorbisComment.AlbumArtistsSort))]
+	[DataRow (nameof (VorbisComment.ComposersSort))]
+	public void StringArrayProperty_RoundTrip_PreservesMultipleValues (string propertyName)
+	{
+		var original = new VorbisComment ("test");
+		var property = typeof (VorbisComment).GetProperty (propertyName)!;
+		var testValues = new[] { "Value One", "Value Two", "Value Three" };
+		property.SetValue (original, testValues);
 
 		var rendered = original.Render ();
 		var result = VorbisComment.Read (rendered.Span);
 
 		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Verse 1\nChorus\nVerse 2", result.Tag!.Lyrics);
+		var resultValues = (string[]?)property.GetValue (result.Tag);
+		Assert.IsNotNull (resultValues);
+		Assert.HasCount (3, resultValues);
+		Assert.AreEqual ("Value One", resultValues[0]);
+		Assert.AreEqual ("Value Two", resultValues[1]);
+		Assert.AreEqual ("Value Three", resultValues[2]);
 	}
 
-	[TestMethod]
-	public void Lyrics_WithUnicode_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") {
-			Lyrics = "日本語の歌詞\n中文歌词\nКириллица"
-		};
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("日本語の歌詞\n中文歌词\nКириллица", result.Tag!.Lyrics);
-	}
-
-	// TotalTracks Tests
-
-	[TestMethod]
-	public void TotalTracks_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.TotalTracks = 12;
-
-		Assert.AreEqual (12u, comment.TotalTracks);
-		Assert.AreEqual ("12", comment.GetValue ("TOTALTRACKS"));
-	}
-
-	[TestMethod]
-	public void TotalTracks_FromTrackNumber_ParsesSlashFormat ()
-	{
-		var comment = new VorbisComment ("test");
-		comment.AddField ("TRACKNUMBER", "5/12");
-
-		Assert.AreEqual (5u, comment.Track);
-		Assert.AreEqual (12u, comment.TotalTracks);
-	}
-
-	// TotalDiscs Tests
-
-	[TestMethod]
-	public void TotalDiscs_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.TotalDiscs = 3;
-
-		Assert.AreEqual (3u, comment.TotalDiscs);
-		Assert.AreEqual ("3", comment.GetValue ("TOTALDISCS"));
-	}
-
-	// EncodedBy (ENCODED-BY) Tests
-
-	[TestMethod]
-	public void EncodedBy_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.EncodedBy = "LAME 3.100";
-
-		Assert.AreEqual ("LAME 3.100", comment.EncodedBy);
-		Assert.AreEqual ("LAME 3.100", comment.GetValue ("ENCODED-BY"));
-	}
-
-	[TestMethod]
-	public void EncodedBy_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { EncodedBy = "flac 1.4.0" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("flac 1.4.0", result.Tag!.EncodedBy);
-	}
-
-	// EncoderSettings (ENCODER) Tests
-
-	[TestMethod]
-	public void EncoderSettings_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.EncoderSettings = "Lavf58.29.100";
-
-		Assert.AreEqual ("Lavf58.29.100", comment.EncoderSettings);
-		Assert.AreEqual ("Lavf58.29.100", comment.GetValue ("ENCODER"));
-	}
-
-	[TestMethod]
-	public void EncoderSettings_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { EncoderSettings = "libFLAC 1.3.2" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("libFLAC 1.3.2", result.Tag!.EncoderSettings);
-	}
-
-	// Grouping Tests
-
-	[TestMethod]
-	public void Grouping_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.Grouping = "Summer Hits 2024";
-
-		Assert.AreEqual ("Summer Hits 2024", comment.Grouping);
-		Assert.AreEqual ("Summer Hits 2024", comment.GetValue ("GROUPING"));
-	}
-
-	[TestMethod]
-	public void Grouping_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Grouping = "Workout Mix" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Workout Mix", result.Tag!.Grouping);
-	}
-
-	// Subtitle Tests
-
-	[TestMethod]
-	public void Subtitle_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.Subtitle = "Radio Edit";
-
-		Assert.AreEqual ("Radio Edit", comment.Subtitle);
-		Assert.AreEqual ("Radio Edit", comment.GetValue ("SUBTITLE"));
-	}
-
-	[TestMethod]
-	public void Subtitle_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Subtitle = "Extended Mix" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Extended Mix", result.Tag!.Subtitle);
-	}
-
-	// Remixer Tests
-
-	[TestMethod]
-	public void Remixer_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.Remixer = "Tiësto";
-
-		Assert.AreEqual ("Tiësto", comment.Remixer);
-		Assert.AreEqual ("Tiësto", comment.GetValue ("REMIXER"));
-	}
-
-	[TestMethod]
-	public void Remixer_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Remixer = "David Guetta" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("David Guetta", result.Tag!.Remixer);
-	}
-
-	// InitialKey (KEY) Tests
-
-	[TestMethod]
-	public void InitialKey_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.InitialKey = "Am";
-
-		Assert.AreEqual ("Am", comment.InitialKey);
-		Assert.AreEqual ("Am", comment.GetValue ("KEY"));
-	}
-
-	[TestMethod]
-	public void InitialKey_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { InitialKey = "F#m" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("F#m", result.Tag!.InitialKey);
-	}
-
-	// Mood Tests
-
-	[TestMethod]
-	public void Mood_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.Mood = "Energetic";
-
-		Assert.AreEqual ("Energetic", comment.Mood);
-		Assert.AreEqual ("Energetic", comment.GetValue ("MOOD"));
-	}
-
-	[TestMethod]
-	public void Mood_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Mood = "Melancholic" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Melancholic", result.Tag!.Mood);
-	}
-
-	// MediaType (MEDIA) Tests
-
-	[TestMethod]
-	public void MediaType_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.MediaType = "CD";
-
-		Assert.AreEqual ("CD", comment.MediaType);
-		Assert.AreEqual ("CD", comment.GetValue ("MEDIA"));
-	}
-
-	[TestMethod]
-	public void MediaType_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { MediaType = "Vinyl" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Vinyl", result.Tag!.MediaType);
-	}
-
-	// Language Tests
-
-	[TestMethod]
-	public void Language_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.Language = "eng";
-
-		Assert.AreEqual ("eng", comment.Language);
-		Assert.AreEqual ("eng", comment.GetValue ("LANGUAGE"));
-	}
-
-	[TestMethod]
-	public void Language_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Language = "jpn" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("jpn", result.Tag!.Language);
-	}
-
-	// Barcode Tests
-
-	[TestMethod]
-	public void Barcode_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.Barcode = "012345678901";
-
-		Assert.AreEqual ("012345678901", comment.Barcode);
-		Assert.AreEqual ("012345678901", comment.GetValue ("BARCODE"));
-	}
-
-	[TestMethod]
-	public void Barcode_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Barcode = "5099749534728" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("5099749534728", result.Tag!.Barcode);
-	}
-
-	// CatalogNumber Tests
-
-	[TestMethod]
-	public void CatalogNumber_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.CatalogNumber = "WPCR-80001";
-
-		Assert.AreEqual ("WPCR-80001", comment.CatalogNumber);
-		Assert.AreEqual ("WPCR-80001", comment.GetValue ("CATALOGNUMBER"));
-	}
-
-	[TestMethod]
-	public void CatalogNumber_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { CatalogNumber = "ECM 1064/65" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("ECM 1064/65", result.Tag!.CatalogNumber);
-	}
-
-	// ComposerSort (COMPOSERSORT) Tests
-
-	[TestMethod]
-	public void ComposerSort_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.ComposerSort = "Bach, Johann Sebastian";
-
-		Assert.AreEqual ("Bach, Johann Sebastian", comment.ComposerSort);
-		Assert.AreEqual ("Bach, Johann Sebastian", comment.GetValue ("COMPOSERSORT"));
-	}
-
-	[TestMethod]
-	public void ComposerSort_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { ComposerSort = "Mozart, Wolfgang Amadeus" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Mozart, Wolfgang Amadeus", result.Tag!.ComposerSort);
-	}
-
-	// DateTagged (DATETAGGED) Tests
-
-	[TestMethod]
-	public void DateTagged_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.DateTagged = "2025-12-27T10:30:00";
-
-		Assert.AreEqual ("2025-12-27T10:30:00", comment.DateTagged);
-		Assert.AreEqual ("2025-12-27T10:30:00", comment.GetValue ("DATETAGGED"));
-	}
-
-	[TestMethod]
-	public void DateTagged_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { DateTagged = "2025-12-27" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("2025-12-27", result.Tag!.DateTagged);
-	}
-
-	// Description (DESCRIPTION) Tests
-
-	[TestMethod]
-	public void Description_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.Description = "A story about love and loss";
-
-		Assert.AreEqual ("A story about love and loss", comment.Description);
-		Assert.AreEqual ("A story about love and loss", comment.GetValue ("DESCRIPTION"));
-	}
-
-	[TestMethod]
-	public void Description_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { Description = "Epic adventure through space" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Epic adventure through space", result.Tag!.Description);
-	}
-
-	// AmazonId (ASIN) Tests
-
-	[TestMethod]
-	public void AmazonId_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.AmazonId = "B000002UAL";
-
-		Assert.AreEqual ("B000002UAL", comment.AmazonId);
-		Assert.AreEqual ("B000002UAL", comment.GetValue ("ASIN"));
-	}
-
-	[TestMethod]
-	public void AmazonId_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { AmazonId = "B00005NQ6Z" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("B00005NQ6Z", result.Tag!.AmazonId);
-	}
-
-	// MusicIpId (MUSICIP_PUID) Tests - Obsolete
-
-#pragma warning disable CS0618 // Type or member is obsolete
-	[TestMethod]
-	public void MusicIpId_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.MusicIpId = "f3b89eb0-c53d-4a0c-b4e8-1a0b9c3e2d4f";
-
-		Assert.AreEqual ("f3b89eb0-c53d-4a0c-b4e8-1a0b9c3e2d4f", comment.MusicIpId);
-		Assert.AreEqual ("f3b89eb0-c53d-4a0c-b4e8-1a0b9c3e2d4f", comment.GetValue ("MUSICIP_PUID"));
-	}
-
-	[TestMethod]
-	public void MusicIpId_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { MusicIpId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", result.Tag!.MusicIpId);
-	}
-#pragma warning restore CS0618
-
-	// MusicBrainzWorkId (MUSICBRAINZ_WORKID) Tests
-
-	[TestMethod]
-	public void MusicBrainzWorkId_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.MusicBrainzWorkId = "1a2b3c4d-5e6f-7890-abcd-ef1234567890";
-
-		Assert.AreEqual ("1a2b3c4d-5e6f-7890-abcd-ef1234567890", comment.MusicBrainzWorkId);
-		Assert.AreEqual ("1a2b3c4d-5e6f-7890-abcd-ef1234567890", comment.GetValue ("MUSICBRAINZ_WORKID"));
-	}
-
-	[TestMethod]
-	public void MusicBrainzWorkId_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { MusicBrainzWorkId = "deadbeef-1234-5678-90ab-cdef12345678" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("deadbeef-1234-5678-90ab-cdef12345678", result.Tag!.MusicBrainzWorkId);
-	}
-
-	// MusicBrainzDiscId (MUSICBRAINZ_DISCID) Tests
-
-	[TestMethod]
-	public void MusicBrainzDiscId_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.MusicBrainzDiscId = "XHLQnC.F3SJ5XpDPLt7gLfHAy_A-";
-
-		Assert.AreEqual ("XHLQnC.F3SJ5XpDPLt7gLfHAy_A-", comment.MusicBrainzDiscId);
-		Assert.AreEqual ("XHLQnC.F3SJ5XpDPLt7gLfHAy_A-", comment.GetValue ("MUSICBRAINZ_DISCID"));
-	}
-
-	[TestMethod]
-	public void MusicBrainzDiscId_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { MusicBrainzDiscId = "IbhKz8W2xPbLqA1F5nPKz8xLUBc-" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("IbhKz8W2xPbLqA1F5nPKz8xLUBc-", result.Tag!.MusicBrainzDiscId);
-	}
-
-	// MusicBrainzReleaseStatus (RELEASESTATUS) Tests
-
-	[TestMethod]
-	public void MusicBrainzReleaseStatus_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.MusicBrainzReleaseStatus = "official";
-
-		Assert.AreEqual ("official", comment.MusicBrainzReleaseStatus);
-		Assert.AreEqual ("official", comment.GetValue ("RELEASESTATUS"));
-	}
-
-	[TestMethod]
-	public void MusicBrainzReleaseStatus_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { MusicBrainzReleaseStatus = "promotional" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("promotional", result.Tag!.MusicBrainzReleaseStatus);
-	}
-
-	// MusicBrainzReleaseType (RELEASETYPE) Tests
-
-	[TestMethod]
-	public void MusicBrainzReleaseType_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.MusicBrainzReleaseType = "album";
-
-		Assert.AreEqual ("album", comment.MusicBrainzReleaseType);
-		Assert.AreEqual ("album", comment.GetValue ("RELEASETYPE"));
-	}
-
-	[TestMethod]
-	public void MusicBrainzReleaseType_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { MusicBrainzReleaseType = "compilation" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("compilation", result.Tag!.MusicBrainzReleaseType);
-	}
-
-	// MusicBrainzReleaseCountry (RELEASECOUNTRY) Tests
-
-	[TestMethod]
-	public void MusicBrainzReleaseCountry_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.MusicBrainzReleaseCountry = "US";
-
-		Assert.AreEqual ("US", comment.MusicBrainzReleaseCountry);
-		Assert.AreEqual ("US", comment.GetValue ("RELEASECOUNTRY"));
-	}
-
-	[TestMethod]
-	public void MusicBrainzReleaseCountry_RoundTrip_PreservesValue ()
-	{
-		var original = new VorbisComment ("test") { MusicBrainzReleaseCountry = "GB" };
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("GB", result.Tag!.MusicBrainzReleaseCountry);
-	}
-
-	// AlbumArtistsSort (ALBUMARTISTSORT multi-value) Tests
-
-	[TestMethod]
-	public void AlbumArtistsSort_SingleValue_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.AlbumArtistsSort = ["Various Artists"];
-
-		Assert.IsNotNull (comment.AlbumArtistsSort);
-		Assert.HasCount (1, comment.AlbumArtistsSort);
-		Assert.AreEqual ("Various Artists", comment.AlbumArtistsSort[0]);
-	}
-
-	[TestMethod]
-	public void AlbumArtistsSort_MultipleValues_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.AlbumArtistsSort = ["Beatles, The", "Stones, The Rolling"];
-
-		Assert.IsNotNull (comment.AlbumArtistsSort);
-		Assert.HasCount (2, comment.AlbumArtistsSort);
-		Assert.AreEqual ("Beatles, The", comment.AlbumArtistsSort[0]);
-		Assert.AreEqual ("Stones, The Rolling", comment.AlbumArtistsSort[1]);
-		// Verify stored as separate ALBUMARTISTSORT fields
-		var values = comment.GetValues ("ALBUMARTISTSORT");
-		Assert.HasCount (2, values);
-	}
-
-	[TestMethod]
-	public void AlbumArtistsSort_SetNull_ClearsValue ()
-	{
-		var comment = new VorbisComment ("test");
-		comment.AlbumArtistsSort = ["Various Artists"];
-
-		comment.AlbumArtistsSort = null;
-
-		Assert.IsNull (comment.AlbumArtistsSort);
-		Assert.HasCount (0, comment.GetValues ("ALBUMARTISTSORT"));
-	}
-
-	[TestMethod]
-	public void AlbumArtistsSort_RoundTrip_PreservesMultipleValues ()
-	{
-		var original = new VorbisComment ("test") {
-			AlbumArtistsSort = ["Beatles, The", "Stones, The Rolling", "Who, The"]
-		};
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.IsNotNull (result.Tag!.AlbumArtistsSort);
-		Assert.HasCount (3, result.Tag.AlbumArtistsSort);
-		Assert.AreEqual ("Beatles, The", result.Tag.AlbumArtistsSort[0]);
-		Assert.AreEqual ("Stones, The Rolling", result.Tag.AlbumArtistsSort[1]);
-		Assert.AreEqual ("Who, The", result.Tag.AlbumArtistsSort[2]);
-	}
-
-	// ComposersSort (COMPOSERSORT multi-value) Tests
-
-	[TestMethod]
-	public void ComposersSort_SingleValue_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.ComposersSort = ["Bach, Johann Sebastian"];
-
-		Assert.IsNotNull (comment.ComposersSort);
-		Assert.HasCount (1, comment.ComposersSort);
-		Assert.AreEqual ("Bach, Johann Sebastian", comment.ComposersSort[0]);
-	}
-
-	[TestMethod]
-	public void ComposersSort_MultipleValues_GetSet_Works ()
-	{
-		var comment = new VorbisComment ("test");
-
-		comment.ComposersSort = ["Lennon, John", "McCartney, Paul"];
-
-		Assert.IsNotNull (comment.ComposersSort);
-		Assert.HasCount (2, comment.ComposersSort);
-		Assert.AreEqual ("Lennon, John", comment.ComposersSort[0]);
-		Assert.AreEqual ("McCartney, Paul", comment.ComposersSort[1]);
-		// Verify stored as separate COMPOSERSORT fields
-		var values = comment.GetValues ("COMPOSERSORT");
-		Assert.HasCount (2, values);
-	}
-
-	[TestMethod]
-	public void ComposersSort_SetNull_ClearsValue ()
-	{
-		var comment = new VorbisComment ("test");
-		comment.ComposersSort = ["Bach, Johann Sebastian"];
-
-		comment.ComposersSort = null;
-
-		Assert.IsNull (comment.ComposersSort);
-		Assert.HasCount (0, comment.GetValues ("COMPOSERSORT"));
-	}
-
-	[TestMethod]
-	public void ComposersSort_RoundTrip_PreservesMultipleValues ()
-	{
-		var original = new VorbisComment ("test") {
-			ComposersSort = ["Mozart, Wolfgang Amadeus", "Beethoven, Ludwig van", "Bach, Johann Sebastian"]
-		};
-
-		var rendered = original.Render ();
-		var result = VorbisComment.Read (rendered.Span);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.IsNotNull (result.Tag!.ComposersSort);
-		Assert.HasCount (3, result.Tag.ComposersSort);
-		Assert.AreEqual ("Mozart, Wolfgang Amadeus", result.Tag.ComposersSort[0]);
-		Assert.AreEqual ("Beethoven, Ludwig van", result.Tag.ComposersSort[1]);
-		Assert.AreEqual ("Bach, Johann Sebastian", result.Tag.ComposersSort[2]);
-	}
-
-	// MusicBrainzRecordingId (MUSICBRAINZ_TRACKID alias) Tests
+	// ===========================================
+	// MusicBrainz Recording ID (alias for TrackId)
+	// ===========================================
 
 	[TestMethod]
 	public void MusicBrainzRecordingId_GetSet_Works ()
@@ -1157,7 +374,6 @@ public class VorbisCommentExtendedMetadataTests
 		comment.MusicBrainzRecordingId = "c6b36210-7812-4b57-a48a-8bf78e0d7f82";
 
 		Assert.AreEqual ("c6b36210-7812-4b57-a48a-8bf78e0d7f82", comment.MusicBrainzRecordingId);
-		// MusicBrainzRecordingId uses the same field as MusicBrainzTrackId
 		Assert.AreEqual ("c6b36210-7812-4b57-a48a-8bf78e0d7f82", comment.GetValue ("MUSICBRAINZ_TRACKID"));
 	}
 
@@ -1166,10 +382,8 @@ public class VorbisCommentExtendedMetadataTests
 	{
 		var comment = new VorbisComment ("test");
 
-		// Set via RecordingId
 		comment.MusicBrainzRecordingId = "c6b36210-7812-4b57-a48a-8bf78e0d7f82";
 
-		// Read via TrackId - should be the same value
 		Assert.AreEqual ("c6b36210-7812-4b57-a48a-8bf78e0d7f82", comment.MusicBrainzTrackId);
 		Assert.AreEqual (comment.MusicBrainzRecordingId, comment.MusicBrainzTrackId);
 	}
@@ -1202,14 +416,45 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.AreEqual ("deadbeef-1234-5678-90ab-cdef12345678", result.Tag.MusicBrainzTrackId);
 	}
 
+	// ===========================================
+	// MusicIpId (Obsolete)
+	// ===========================================
+
+#pragma warning disable CS0618 // Type or member is obsolete
+	[TestMethod]
+	public void MusicIpId_GetSet_Works ()
+	{
+		var comment = new VorbisComment ("test");
+
+		comment.MusicIpId = "f3b89eb0-c53d-4a0c-b4e8-1a0b9c3e2d4f";
+
+		Assert.AreEqual ("f3b89eb0-c53d-4a0c-b4e8-1a0b9c3e2d4f", comment.MusicIpId);
+		Assert.AreEqual ("f3b89eb0-c53d-4a0c-b4e8-1a0b9c3e2d4f", comment.GetValue ("MUSICIP_PUID"));
+	}
+
+	[TestMethod]
+	public void MusicIpId_RoundTrip_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") { MusicIpId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890" };
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", result.Tag!.MusicIpId);
+	}
+#pragma warning restore CS0618
+
+	// ===========================================
 	// PerformersRole Tests
+	// ===========================================
 
 	[TestMethod]
 	public void PerformersRole_GetSet_Works ()
 	{
 		var comment = new VorbisComment ("test");
 
-		comment.PerformersRole = new[] { "lead vocals", "guitar" };
+		comment.PerformersRole = ["lead vocals", "guitar"];
 
 		Assert.IsNotNull (comment.PerformersRole);
 		Assert.HasCount (2, comment.PerformersRole);
@@ -1221,7 +466,7 @@ public class VorbisCommentExtendedMetadataTests
 	public void PerformersRole_SetNull_ClearsField ()
 	{
 		var comment = new VorbisComment ("test");
-		comment.PerformersRole = new[] { "lead vocals" };
+		comment.PerformersRole = ["lead vocals"];
 
 		comment.PerformersRole = null;
 
@@ -1232,9 +477,9 @@ public class VorbisCommentExtendedMetadataTests
 	public void PerformersRole_SetEmpty_ClearsField ()
 	{
 		var comment = new VorbisComment ("test");
-		comment.PerformersRole = new[] { "lead vocals" };
+		comment.PerformersRole = ["lead vocals"];
 
-		comment.PerformersRole = Array.Empty<string> ();
+		comment.PerformersRole = [];
 
 		Assert.IsTrue (comment.PerformersRole is null || comment.PerformersRole.Length == 0);
 	}
@@ -1243,7 +488,7 @@ public class VorbisCommentExtendedMetadataTests
 	public void PerformersRole_RoundTrip_PreservesValue ()
 	{
 		var original = new VorbisComment ("test");
-		original.PerformersRole = new[] { "lead vocals", "rhythm guitar", "bass" };
+		original.PerformersRole = ["lead vocals", "rhythm guitar", "bass"];
 
 		var rendered = original.Render ();
 		var result = VorbisComment.Read (rendered.Span);
@@ -1260,7 +505,7 @@ public class VorbisCommentExtendedMetadataTests
 	public void PerformersRole_UnicodeCharacters_PreservesText ()
 	{
 		var comment = new VorbisComment ("test");
-		comment.PerformersRole = new[] { "ボーカル", "ギター" }; // Japanese: "vocals", "guitar"
+		comment.PerformersRole = ["ボーカル", "ギター"]; // Japanese: "vocals", "guitar"
 
 		var rendered = comment.Render ();
 		var result = VorbisComment.Read (rendered.Span);
@@ -1276,7 +521,7 @@ public class VorbisCommentExtendedMetadataTests
 	public void PerformersRole_SingleValue_Works ()
 	{
 		var comment = new VorbisComment ("test");
-		comment.PerformersRole = new[] { "all instruments" };
+		comment.PerformersRole = ["all instruments"];
 
 		var rendered = comment.Render ();
 		var result = VorbisComment.Read (rendered.Span);
@@ -1285,5 +530,23 @@ public class VorbisCommentExtendedMetadataTests
 		Assert.IsNotNull (result.Tag!.PerformersRole);
 		Assert.HasCount (1, result.Tag.PerformersRole);
 		Assert.AreEqual ("all instruments", result.Tag.PerformersRole[0]);
+	}
+
+	// ===========================================
+	// Lyrics Unicode Test
+	// ===========================================
+
+	[TestMethod]
+	public void Lyrics_WithUnicode_PreservesValue ()
+	{
+		var original = new VorbisComment ("test") {
+			Lyrics = "日本語の歌詞\n中文歌词\nКириллица"
+		};
+
+		var rendered = original.Render ();
+		var result = VorbisComment.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("日本語の歌詞\n中文歌词\nКириллица", result.Tag!.Lyrics);
 	}
 }

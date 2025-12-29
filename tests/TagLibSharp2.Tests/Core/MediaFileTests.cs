@@ -17,8 +17,9 @@ public class MediaFileTests
 	[TestMethod]
 	public void DetectFormat_FlacMagic_ReturnsFlac ()
 	{
-		// "fLaC" magic bytes
-		var data = new byte[] { 0x66, 0x4C, 0x61, 0x43, 0x00, 0x00, 0x00, 0x22 };
+		var data = new byte[8];
+		TestConstants.Magic.Flac.CopyTo (data, 0);
+		data[4] = 0x00; data[5] = 0x00; data[6] = 0x00; data[7] = TestConstants.Flac.StreamInfoSize;
 
 		var format = MediaFile.DetectFormat (data);
 
@@ -28,8 +29,10 @@ public class MediaFileTests
 	[TestMethod]
 	public void DetectFormat_OggMagic_ReturnsOggVorbis ()
 	{
-		// "OggS" magic bytes
-		var data = new byte[] { 0x4F, 0x67, 0x67, 0x53, 0x00, 0x02, 0x00, 0x00 };
+		var data = new byte[8];
+		TestConstants.Magic.Ogg.CopyTo (data, 0);
+		data[4] = 0x00;
+		data[5] = TestConstants.Ogg.FlagBos;
 
 		var format = MediaFile.DetectFormat (data);
 
@@ -39,8 +42,9 @@ public class MediaFileTests
 	[TestMethod]
 	public void DetectFormat_Id3v2Magic_ReturnsMp3 ()
 	{
-		// "ID3" magic bytes
-		var data = new byte[] { 0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00 };
+		var data = new byte[8];
+		TestConstants.Magic.Id3.CopyTo (data, 0);
+		data[3] = TestConstants.Id3v2.Version4;
 
 		var format = MediaFile.DetectFormat (data);
 
@@ -61,12 +65,10 @@ public class MediaFileTests
 	[TestMethod]
 	public void DetectFormat_RiffWaveMagic_ReturnsWav ()
 	{
-		// "RIFF" + size + "WAVE"
-		var data = new byte[] {
-			0x52, 0x49, 0x46, 0x46, // "RIFF"
-			0x00, 0x00, 0x00, 0x00, // size (placeholder)
-			0x57, 0x41, 0x56, 0x45  // "WAVE"
-		};
+		var data = new byte[12];
+		TestConstants.Magic.Riff.CopyTo (data, 0);
+		// bytes 4-7: size placeholder (zeros)
+		TestConstants.Magic.Wave.CopyTo (data, 8);
 
 		var format = MediaFile.DetectFormat (data);
 
@@ -76,12 +78,10 @@ public class MediaFileTests
 	[TestMethod]
 	public void DetectFormat_FormAiffMagic_ReturnsAiff ()
 	{
-		// "FORM" + size + "AIFF"
-		var data = new byte[] {
-			0x46, 0x4F, 0x52, 0x4D, // "FORM"
-			0x00, 0x00, 0x00, 0x00, // size (placeholder)
-			0x41, 0x49, 0x46, 0x46  // "AIFF"
-		};
+		var data = new byte[12];
+		TestConstants.Magic.Form.CopyTo (data, 0);
+		// bytes 4-7: size placeholder (zeros)
+		TestConstants.Magic.Aiff.CopyTo (data, 8);
 
 		var format = MediaFile.DetectFormat (data);
 
@@ -91,12 +91,10 @@ public class MediaFileTests
 	[TestMethod]
 	public void DetectFormat_FormAifcMagic_ReturnsAiff ()
 	{
-		// "FORM" + size + "AIFC"
-		var data = new byte[] {
-			0x46, 0x4F, 0x52, 0x4D, // "FORM"
-			0x00, 0x00, 0x00, 0x00, // size (placeholder)
-			0x41, 0x49, 0x46, 0x43  // "AIFC"
-		};
+		var data = new byte[12];
+		TestConstants.Magic.Form.CopyTo (data, 0);
+		// bytes 4-7: size placeholder (zeros)
+		TestConstants.Magic.Aifc.CopyTo (data, 8);
 
 		var format = MediaFile.DetectFormat (data);
 

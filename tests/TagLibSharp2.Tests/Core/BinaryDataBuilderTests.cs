@@ -92,7 +92,7 @@ public class BinaryDataBuilderTests
 		var builder = new BinaryDataBuilder ();
 		builder.Add (0x01);
 
-		builder.Add (Array.Empty<byte> ());
+		builder.Add ((byte[])[]);
 
 		Assert.AreEqual (1, builder.Length);
 	}

@@ -16,11 +16,11 @@ public class TagCopyTests
 	public void CopyTo_CopiesBasicMetadata ()
 	{
 		var source = new Id3v2Tag {
-			Title = "Test Song",
-			Artist = "Test Artist",
-			Album = "Test Album",
+			Title = TestConstants.Metadata.Title,
+			Artist = TestConstants.Metadata.Artist,
+			Album = TestConstants.Metadata.Album,
 			Year = "2024",
-			Comment = "Test Comment",
+			Comment = TestConstants.Metadata.Comment,
 			Genre = "Rock",
 			Track = 5
 		};
@@ -28,11 +28,11 @@ public class TagCopyTests
 
 		source.CopyTo (target);
 
-		Assert.AreEqual ("Test Song", target.Title);
-		Assert.AreEqual ("Test Artist", target.Artist);
-		Assert.AreEqual ("Test Album", target.Album);
+		Assert.AreEqual (TestConstants.Metadata.Title, target.Title);
+		Assert.AreEqual (TestConstants.Metadata.Artist, target.Artist);
+		Assert.AreEqual (TestConstants.Metadata.Album, target.Album);
 		Assert.AreEqual ("2024", target.Year);
-		Assert.AreEqual ("Test Comment", target.Comment);
+		Assert.AreEqual (TestConstants.Metadata.Comment, target.Comment);
 		Assert.AreEqual ("Rock", target.Genre);
 		Assert.AreEqual ((uint)5, target.Track);
 	}
@@ -157,16 +157,16 @@ public class TagCopyTests
 	public void CopyTo_BasicOnly_OnlyCopiesBasicMetadata ()
 	{
 		var source = new Id3v2Tag {
-			Title = "Test Song",
-			Artist = "Test Artist",
+			Title = TestConstants.Metadata.Title,
+			Artist = TestConstants.Metadata.Artist,
 			Composer = "Should Not Copy"
 		};
 		var target = new Id3v2Tag ();
 
 		source.CopyTo (target, TagCopyOptions.Basic);
 
-		Assert.AreEqual ("Test Song", target.Title);
-		Assert.AreEqual ("Test Artist", target.Artist);
+		Assert.AreEqual (TestConstants.Metadata.Title, target.Title);
+		Assert.AreEqual (TestConstants.Metadata.Artist, target.Artist);
 		Assert.IsNull (target.Composer);
 	}
 
@@ -174,7 +174,7 @@ public class TagCopyTests
 	public void CopyTo_ExcludingPictures_DoesNotCopyPictures ()
 	{
 		var source = new Id3v2Tag {
-			Title = "Test Song"
+			Title = TestConstants.Metadata.Title
 		};
 		source.Pictures = [
 			new PictureFrame ("image/png", PictureType.FrontCover, "", [0x89, 0x50, 0x4E, 0x47])
@@ -183,7 +183,7 @@ public class TagCopyTests
 
 		source.CopyTo (target, TagCopyOptions.Basic | TagCopyOptions.Extended);
 
-		Assert.AreEqual ("Test Song", target.Title);
+		Assert.AreEqual (TestConstants.Metadata.Title, target.Title);
 		Assert.IsEmpty (target.Pictures);
 	}
 
@@ -209,9 +209,9 @@ public class TagCopyTests
 	public void CopyTo_CrossFormat_Id3v2ToVorbis ()
 	{
 		var source = new Id3v2Tag {
-			Title = "Test Song",
-			Artist = "Test Artist",
-			Album = "Test Album",
+			Title = TestConstants.Metadata.Title,
+			Artist = TestConstants.Metadata.Artist,
+			Album = TestConstants.Metadata.Album,
 			Year = "2024",
 			Track = 5,
 			TotalTracks = 12
@@ -220,9 +220,9 @@ public class TagCopyTests
 
 		source.CopyTo (target);
 
-		Assert.AreEqual ("Test Song", target.Title);
-		Assert.AreEqual ("Test Artist", target.Artist);
-		Assert.AreEqual ("Test Album", target.Album);
+		Assert.AreEqual (TestConstants.Metadata.Title, target.Title);
+		Assert.AreEqual (TestConstants.Metadata.Artist, target.Artist);
+		Assert.AreEqual (TestConstants.Metadata.Album, target.Album);
 		Assert.AreEqual ("2024", target.Year);
 		Assert.AreEqual ((uint)5, target.Track);
 		Assert.AreEqual ((uint)12, target.TotalTracks);
@@ -232,11 +232,11 @@ public class TagCopyTests
 	public void CopyTo_CrossFormat_VorbisToId3v2 ()
 	{
 		var source = new VorbisComment ();
-		source.SetValue ("TITLE", "Test Song");
-		source.SetValue ("ARTIST", "Test Artist");
-		source.SetValue ("ALBUM", "Test Album");
-		source.SetValue ("DATE", "2024");
-		source.SetValue ("TRACKNUMBER", "5");
+		source.SetValue (TestConstants.VorbisFields.Title, TestConstants.Metadata.Title);
+		source.SetValue (TestConstants.VorbisFields.Artist, TestConstants.Metadata.Artist);
+		source.SetValue (TestConstants.VorbisFields.Album, TestConstants.Metadata.Album);
+		source.SetValue (TestConstants.VorbisFields.Date, "2024");
+		source.SetValue (TestConstants.VorbisFields.TrackNumber, "5");
 		source.SetValue ("TOTALTRACKS", "12");
 		source.SetValue ("REPLAYGAIN_TRACK_GAIN", "-6.50 dB");
 
@@ -244,9 +244,9 @@ public class TagCopyTests
 
 		source.CopyTo (target);
 
-		Assert.AreEqual ("Test Song", target.Title);
-		Assert.AreEqual ("Test Artist", target.Artist);
-		Assert.AreEqual ("Test Album", target.Album);
+		Assert.AreEqual (TestConstants.Metadata.Title, target.Title);
+		Assert.AreEqual (TestConstants.Metadata.Artist, target.Artist);
+		Assert.AreEqual (TestConstants.Metadata.Album, target.Album);
 		Assert.AreEqual ("2024", target.Year);
 		Assert.AreEqual ((uint)5, target.Track);
 		Assert.AreEqual ((uint)12, target.TotalTracks);
@@ -297,8 +297,8 @@ public class TagCopyTests
 	public void CopyTo_None_CopiesNothing ()
 	{
 		var source = new Id3v2Tag {
-			Title = "Test Song",
-			Artist = "Test Artist"
+			Title = TestConstants.Metadata.Title,
+			Artist = TestConstants.Metadata.Artist
 		};
 		var target = new Id3v2Tag ();
 
@@ -312,7 +312,7 @@ public class TagCopyTests
 	public void CopyTo_MusicBrainzOnly_OnlyCopiesMusicBrainzIds ()
 	{
 		var source = new VorbisComment {
-			Title = "Test Song",
+			Title = TestConstants.Metadata.Title,
 			MusicBrainzTrackId = "track-id-123"
 		};
 		var target = new VorbisComment ();

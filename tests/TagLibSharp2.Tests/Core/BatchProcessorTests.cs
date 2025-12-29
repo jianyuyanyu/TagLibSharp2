@@ -53,19 +53,26 @@ public class BatchProcessorTests
 	public async Task ProcessAsync_ReportsProgress ()
 	{
 		var paths = new[] { "file1.mp3", "file2.mp3", "file3.mp3" };
-		var progressReports = new List<BatchProgress> ();
+		var progressCount = 0;
+		var allReported = new TaskCompletionSource<bool> ();
+
+		var progress = new Progress<BatchProgress> (p => {
+			if (Interlocked.Increment (ref progressCount) >= paths.Length)
+				allReported.TrySetResult (true);
+		});
 
 		var results = await BatchProcessor.ProcessAsync (
 			paths,
 			(path, ct) => Task.FromResult (path),
-			progress: new Progress<BatchProgress> (p => progressReports.Add (p)));
+			progress: progress);
 
-		// Allow time for progress to be reported (Progress<T> uses SynchronizationContext)
-		await Task.Delay (50);
+		// Wait for all progress reports with timeout (avoids flaky Task.Delay)
+		var completed = await Task.WhenAny (allReported.Task, Task.Delay (1000));
 
 		Assert.HasCount (3, results);
-		// Progress reports happen asynchronously; we just verify the mechanism works
 		Assert.IsTrue (results.All (r => r.IsSuccess));
+		// Verify progress was reported (may not always complete in time due to async nature)
+		Assert.IsTrue (progressCount > 0, "Expected at least one progress report");
 	}
 
 	[TestMethod]

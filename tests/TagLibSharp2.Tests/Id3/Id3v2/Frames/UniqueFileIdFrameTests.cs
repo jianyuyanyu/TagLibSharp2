@@ -103,7 +103,7 @@ public class UniqueFileIdFrameTests
 	[TestMethod]
 	public void IdentifierString_EmptyIdentifier_ReturnsNull ()
 	{
-		var frame = new UniqueFileIdFrame ("owner", Array.Empty<byte> ());
+		var frame = new UniqueFileIdFrame ("owner", []);
 
 		Assert.IsNull (frame.IdentifierString);
 	}
@@ -124,7 +124,7 @@ public class UniqueFileIdFrameTests
 		// Build UFID frame: owner (null-terminated) + identifier
 		var owner = "http://musicbrainz.org";
 		var identifier = "12345678-1234-1234-1234-123456789012";
-		var data = BuildFrame (owner, System.Text.Encoding.ASCII.GetBytes (identifier));
+		var data = BuildUfidFrame (owner, identifier);
 
 		var result = UniqueFileIdFrame.Read (data, Id3v2Version.V24);
 
@@ -138,7 +138,7 @@ public class UniqueFileIdFrameTests
 	{
 		var owner = "http://example.com";
 		var identifier = new byte[] { 0x01, 0x02, 0x03, 0x04, 0xFF };
-		var data = BuildFrame (owner, identifier);
+		var data = BuildUfidFrame (owner, identifier);
 
 		var result = UniqueFileIdFrame.Read (data, Id3v2Version.V24);
 
@@ -220,7 +220,7 @@ public class UniqueFileIdFrameTests
 	[TestMethod]
 	public void RenderContent_EmptyIdentifier_RoundTrips ()
 	{
-		var original = new UniqueFileIdFrame ("http://test.com", Array.Empty<byte> ());
+		var original = new UniqueFileIdFrame ("http://test.com", []);
 
 		var rendered = original.RenderContent ();
 		var result = UniqueFileIdFrame.Read (rendered.Span, Id3v2Version.V24);
@@ -362,18 +362,16 @@ public class UniqueFileIdFrameTests
 		Assert.IsNotNull (result.Tag.GetUniqueFileId ("http://cddb.com"));
 	}
 
-
-
-	static byte[] BuildFrame (string owner, byte[] identifier)
+	static byte[] BuildUfidFrame (string owner, byte[] identifier)
 	{
 		var ownerBytes = System.Text.Encoding.ASCII.GetBytes (owner);
 		var result = new byte[ownerBytes.Length + 1 + identifier.Length];
-
 		Array.Copy (ownerBytes, 0, result, 0, ownerBytes.Length);
 		result[ownerBytes.Length] = 0; // Null terminator
 		Array.Copy (identifier, 0, result, ownerBytes.Length + 1, identifier.Length);
-
 		return result;
 	}
 
+	static byte[] BuildUfidFrame (string owner, string identifier)
+		=> BuildUfidFrame (owner, System.Text.Encoding.ASCII.GetBytes (identifier));
 }

@@ -3,26 +3,34 @@
 
 using System.Globalization;
 using TagLibSharp2.Ogg;
+using TagLibSharp2.Tests.Core;
 
 namespace TagLibSharp2.Tests.Ogg;
 
+/// <summary>
+/// Integration tests that require real Ogg Vorbis files.
+/// </summary>
+/// <remarks>
+/// These tests are skipped by default. To run them:
+/// 1. Set the TAGLIB_TEST_OGG environment variable to a path to an Ogg Vorbis file
+/// 2. Run with: dotnet test --filter "TestCategory=Integration"
+///
+/// Example: TAGLIB_TEST_OGG=/path/to/song.ogg dotnet test --filter "TestCategory=Integration"
+/// </remarks>
 [TestClass]
 [TestCategory ("Integration")]
+[TestCategory ("Manual")]
 [TestCategory ("Ogg")]
-public class OggIntegrationTests
+public class OggIntegrationTests : FileFormatTestBase
 {
-	const string MintCarPath = "/Users/sshaw/tmp/Mint_Car.ogg";
-	const string JupiterCrashPath = "/Users/sshaw/tmp/Jupiter_Crash.ogg";
+	const string TestFileEnvVar = "TAGLIB_TEST_OGG";
 
 	[TestMethod]
-	public void Read_MintCar_ParsesMetadata ()
+	public void Read_RealOgg_ParsesMetadata ()
 	{
-		if (!File.Exists (MintCarPath)) {
-			Assert.Inconclusive ($"Test file not found: {MintCarPath}");
-			return;
-		}
+		var path = SkipIfNoTestFile (TestFileEnvVar, "Ogg Vorbis");
 
-		var fileData = File.ReadAllBytes (MintCarPath);
+		var fileData = File.ReadAllBytes (path);
 		var result = OggVorbisFile.Read (fileData);
 
 		Console.WriteLine ($"Ogg Vorbis File Parsed: {result.IsSuccess}");
@@ -49,56 +57,15 @@ public class OggIntegrationTests
 				Console.WriteLine ($"    {field.Name}={field.Value}");
 		}
 
-		// Verify we got some metadata
-		Assert.IsNotNull (file.VorbisComment, "Expected Vorbis Comment to be parsed");
-		Assert.IsFalse (string.IsNullOrEmpty (file.Title), "Expected Title to be present");
-	}
-
-	[TestMethod]
-	public void Read_JupiterCrash_ParsesMetadata ()
-	{
-		if (!File.Exists (JupiterCrashPath)) {
-			Assert.Inconclusive ($"Test file not found: {JupiterCrashPath}");
-			return;
-		}
-
-		var fileData = File.ReadAllBytes (JupiterCrashPath);
-		var result = OggVorbisFile.Read (fileData);
-
-		Console.WriteLine ($"Ogg Vorbis File Parsed: {result.IsSuccess}");
-
-		if (!result.IsSuccess) {
-			Console.WriteLine ($"  Error: {result.Error}");
-			Assert.Fail ($"Failed to parse Ogg Vorbis file: {result.Error}");
-			return;
-		}
-
-		var file = result.File!;
-		Console.WriteLine ($"  Title: {file.Title ?? "(none)"}");
-		Console.WriteLine ($"  Artist: {file.Artist ?? "(none)"}");
-		Console.WriteLine ($"  Album: {file.Album ?? "(none)"}");
-		Console.WriteLine ($"  Year: {file.Year ?? "(none)"}");
-		Console.WriteLine ($"  Genre: {file.Genre ?? "(none)"}");
-		Console.WriteLine ($"  Track: {file.Track?.ToString (CultureInfo.InvariantCulture) ?? "(none)"}");
-
-		if (file.VorbisComment is not null) {
-			Console.WriteLine ($"  Vendor String: {file.VorbisComment.VendorString}");
-			Console.WriteLine ($"  Field Count: {file.VorbisComment.Fields.Count}");
-		}
-
-		// Verify we got some metadata
 		Assert.IsNotNull (file.VorbisComment, "Expected Vorbis Comment to be parsed");
 	}
 
 	[TestMethod]
-	public void Read_MintCar_ValidatesCrcOnRequest ()
+	public void Read_RealOgg_ValidatesCrcOnRequest ()
 	{
-		if (!File.Exists (MintCarPath)) {
-			Assert.Inconclusive ($"Test file not found: {MintCarPath}");
-			return;
-		}
+		var path = SkipIfNoTestFile (TestFileEnvVar, "Ogg Vorbis");
 
-		var fileData = File.ReadAllBytes (MintCarPath);
+		var fileData = File.ReadAllBytes (path);
 
 		// Parse first Ogg page with CRC validation
 		var result = OggPage.Read (fileData, validateCrc: true);
@@ -118,14 +85,11 @@ public class OggIntegrationTests
 	}
 
 	[TestMethod]
-	public void Read_OggFile_FirstPageIsBOS ()
+	public void Read_RealOgg_FirstPageIsBOS ()
 	{
-		if (!File.Exists (MintCarPath)) {
-			Assert.Inconclusive ($"Test file not found: {MintCarPath}");
-			return;
-		}
+		var path = SkipIfNoTestFile (TestFileEnvVar, "Ogg Vorbis");
 
-		var fileData = File.ReadAllBytes (MintCarPath);
+		var fileData = File.ReadAllBytes (path);
 		var result = OggPage.Read (fileData);
 
 		Assert.IsTrue (result.IsSuccess, "Expected to parse first page");
@@ -135,17 +99,14 @@ public class OggIntegrationTests
 	}
 
 	[TestMethod]
-	public void Read_OggFile_ContainsVorbisIdentificationHeader ()
+	public void Read_RealOgg_ContainsVorbisIdentificationHeader ()
 	{
-		if (!File.Exists (MintCarPath)) {
-			Assert.Inconclusive ($"Test file not found: {MintCarPath}");
-			return;
-		}
+		var path = SkipIfNoTestFile (TestFileEnvVar, "Ogg Vorbis");
 
-		var fileData = File.ReadAllBytes (MintCarPath);
+		var fileData = File.ReadAllBytes (path);
 		var result = OggPage.Read (fileData);
 
-		Assert.IsTrue (result.IsSuccess);
+		Assert.IsTrue (result.IsSuccess, "Expected to parse first page");
 
 		// First page data should start with Vorbis identification header
 		var data = result.Page.Data.Span;
@@ -153,12 +114,12 @@ public class OggIntegrationTests
 
 		// Packet type 1 + "vorbis"
 		Assert.AreEqual ((byte)1, data[0], "Expected packet type 1 (identification)");
-		Assert.AreEqual ((byte)'v', data[1]);
-		Assert.AreEqual ((byte)'o', data[2]);
-		Assert.AreEqual ((byte)'r', data[3]);
-		Assert.AreEqual ((byte)'b', data[4]);
-		Assert.AreEqual ((byte)'i', data[5]);
-		Assert.AreEqual ((byte)'s', data[6]);
+		Assert.AreEqual ((byte)'v', data[1], "Expected 'v' in vorbis magic");
+		Assert.AreEqual ((byte)'o', data[2], "Expected 'o' in vorbis magic");
+		Assert.AreEqual ((byte)'r', data[3], "Expected 'r' in vorbis magic");
+		Assert.AreEqual ((byte)'b', data[4], "Expected 'b' in vorbis magic");
+		Assert.AreEqual ((byte)'i', data[5], "Expected 'i' in vorbis magic");
+		Assert.AreEqual ((byte)'s', data[6], "Expected 's' in vorbis magic");
 
 		Console.WriteLine ("Verified Vorbis identification header in first page");
 	}

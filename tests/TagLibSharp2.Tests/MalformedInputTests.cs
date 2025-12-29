@@ -22,36 +22,36 @@ public class MalformedInputTests
 	[TestMethod]
 	public void FlacFile_EmptyInput_ReturnsFailure ()
 	{
-		var result = FlacFile.Read (Array.Empty<byte> ());
-		Assert.IsFalse (result.IsSuccess);
+		var result = FlacFile.Read ([]);
+		Assert.IsFalse (result.IsSuccess, "Empty input should return failure, not crash");
 	}
 
 	[TestMethod]
 	public void OggVorbisFile_EmptyInput_ReturnsFailure ()
 	{
-		var result = OggVorbisFile.Read (Array.Empty<byte> ());
-		Assert.IsFalse (result.IsSuccess);
+		var result = OggVorbisFile.Read ([]);
+		Assert.IsFalse (result.IsSuccess, "Empty input should return failure, not crash");
 	}
 
 	[TestMethod]
 	public void Id3v1Tag_EmptyInput_ReturnsFailure ()
 	{
-		var result = Id3v1Tag.Read (Array.Empty<byte> ());
-		Assert.IsFalse (result.IsSuccess);
+		var result = Id3v1Tag.Read ([]);
+		Assert.IsFalse (result.IsSuccess, "Empty input should return failure, not crash");
 	}
 
 	[TestMethod]
 	public void Id3v2Tag_EmptyInput_ReturnsFailure ()
 	{
-		var result = Id3v2Tag.Read (Array.Empty<byte> ());
-		Assert.IsFalse (result.IsSuccess);
+		var result = Id3v2Tag.Read ([]);
+		Assert.IsFalse (result.IsSuccess, "Empty input should return failure, not crash");
 	}
 
 	[TestMethod]
 	public void VorbisComment_EmptyInput_ReturnsFailure ()
 	{
-		var result = VorbisComment.Read (Array.Empty<byte> ());
-		Assert.IsFalse (result.IsSuccess);
+		var result = VorbisComment.Read ([]);
+		Assert.IsFalse (result.IsSuccess, "Empty input should return failure, not crash");
 	}
 
 
@@ -59,50 +59,57 @@ public class MalformedInputTests
 	[TestMethod]
 	public void FlacFile_TruncatedMagic_ReturnsFailure ()
 	{
-		// Only "fLa" instead of "fLaC"
-		var data = new byte[] { 0x66, 0x4C, 0x61 };
+		// Only "fLa" instead of full FLAC magic
+		var data = TestConstants.Magic.Flac[..3];
 		var result = FlacFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Truncated magic should fail gracefully");
 	}
 
 	[TestMethod]
 	public void FlacFile_TruncatedStreamInfo_ReturnsFailure ()
 	{
 		// Magic + partial STREAMINFO header
-		var data = new byte[] {
-			0x66, 0x4C, 0x61, 0x43, // fLaC
-			0x80, 0x00, 0x00, 0x22, // STREAMINFO header (last, 34 bytes)
-			0x00, 0x00, 0x00, 0x00  // Only 4 bytes of STREAMINFO data
-		};
+		var data = new byte[12];
+		TestConstants.Magic.Flac.CopyTo (data, 0);
+		data[4] = TestConstants.Flac.LastBlockFlag | TestConstants.Flac.BlockTypeStreamInfo;
+		data[5] = 0x00; data[6] = 0x00; data[7] = TestConstants.Flac.StreamInfoSize;
+		// Only 4 bytes of STREAMINFO data instead of required 34
 		var result = FlacFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Truncated STREAMINFO should fail gracefully");
 	}
 
 	[TestMethod]
 	public void Id3v2Tag_TruncatedHeader_ReturnsFailure ()
 	{
-		// Only "ID3" + version, no size
-		var data = new byte[] { 0x49, 0x44, 0x33, 0x04, 0x00 };
+		// Only "ID3" + version, no size (missing last 5 bytes of header)
+		var data = new byte[5];
+		TestConstants.Magic.Id3.CopyTo (data, 0);
+		data[3] = TestConstants.Id3v2.Version4;
+		data[4] = TestConstants.Id3v2.MinorVersion;
 		var result = Id3v2Tag.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Truncated header should fail gracefully");
 	}
 
 	[TestMethod]
 	public void Id3v1Tag_TruncatedTag_ReturnsFailure ()
 	{
-		// Only "TAG" + partial data (less than 128 bytes)
-		var data = new byte[] { 0x54, 0x41, 0x47, 0x00, 0x00, 0x00 };
+		// Only "TAG" + partial data (less than required 128 bytes)
+		var data = new byte[6];
+		TestConstants.Id3v1.Signature.CopyTo (data, 0);
 		var result = Id3v1Tag.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Truncated tag should fail gracefully");
 	}
 
 	[TestMethod]
 	public void OggVorbisFile_TruncatedPageHeader_ReturnsFailure ()
 	{
-		// "OggS" + partial header
-		var data = new byte[] { 0x4F, 0x67, 0x67, 0x53, 0x00, 0x02 };
+		// "OggS" + partial header (missing most of required 27-byte header)
+		var data = new byte[6];
+		TestConstants.Magic.Ogg.CopyTo (data, 0);
+		data[4] = 0x00;
+		data[5] = TestConstants.Ogg.FlagBos;
 		var result = OggVorbisFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Truncated page header should fail gracefully");
 	}
 
 
@@ -112,8 +119,8 @@ public class MalformedInputTests
 	{
 		var data = new byte[] { 0x00, 0x00, 0x00, 0x00 };
 		var result = FlacFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
-		Assert.Contains ("fLaC", result.Error!);
+		Assert.IsFalse (result.IsSuccess, "Wrong magic should be rejected");
+		Assert.Contains ("fLaC", result.Error!, "Error should mention expected magic");
 	}
 
 	[TestMethod]
@@ -121,16 +128,16 @@ public class MalformedInputTests
 	{
 		var data = new byte[] { 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 		var result = Id3v2Tag.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Wrong magic should be rejected");
 	}
 
 	[TestMethod]
 	public void Id3v1Tag_WrongMagic_ReturnsFailure ()
 	{
-		var data = new byte[128];
-		data[0] = 0x00; // Not "TAG"
+		var data = new byte[TestConstants.Id3v1.TagSize];
+		data[0] = 0x00; // Not "TAG" signature
 		var result = Id3v1Tag.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Wrong magic should be rejected");
 	}
 
 	[TestMethod]
@@ -139,7 +146,7 @@ public class MalformedInputTests
 		var data = new byte[100];
 		data[0] = 0x00; // Not "OggS"
 		var result = OggVorbisFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Wrong magic should be rejected");
 	}
 
 
@@ -153,7 +160,7 @@ public class MalformedInputTests
 			0x00, 0x00, 0x00, 0x00
 		};
 		var result = VorbisComment.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Integer overflow in vendor length should fail safely");
 	}
 
 	[TestMethod]
@@ -165,7 +172,7 @@ public class MalformedInputTests
 			0x00, 0x00, 0x00, 0x00  // Only 4 bytes available
 		};
 		var result = VorbisComment.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Vendor length exceeding data should fail safely");
 	}
 
 	[TestMethod]
@@ -179,7 +186,7 @@ public class MalformedInputTests
 			0xFF, 0x00, 0x00, 0x00, // Field length = 255 (but no data follows)
 		};
 		var result = VorbisComment.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Field length exceeding data should fail safely");
 	}
 
 	[TestMethod]
@@ -209,7 +216,7 @@ public class MalformedInputTests
 	{
 		var data = new byte[1000];
 		var result = FlacFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "All zeros should be rejected as invalid FLAC");
 	}
 
 	[TestMethod]
@@ -217,7 +224,7 @@ public class MalformedInputTests
 	{
 		var data = new byte[1000];
 		var result = OggVorbisFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "All zeros should be rejected as invalid Ogg");
 	}
 
 	[TestMethod]
@@ -225,7 +232,7 @@ public class MalformedInputTests
 	{
 		var data = new byte[1000];
 		var result = Id3v2Tag.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "All zeros should be rejected as invalid ID3v2");
 	}
 
 
@@ -236,7 +243,7 @@ public class MalformedInputTests
 		var data = new byte[1000];
 		Array.Fill (data, (byte)0xFF);
 		var result = FlacFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "All 0xFF bytes should be rejected as invalid FLAC");
 	}
 
 	[TestMethod]
@@ -245,7 +252,7 @@ public class MalformedInputTests
 		var data = new byte[1000];
 		Array.Fill (data, (byte)0xFF);
 		var result = OggVorbisFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "All 0xFF bytes should be rejected as invalid Ogg");
 	}
 
 	[TestMethod]
@@ -254,7 +261,7 @@ public class MalformedInputTests
 		var data = new byte[1000];
 		Array.Fill (data, (byte)0xFF);
 		var result = Id3v2Tag.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "All 0xFF bytes should be rejected as invalid ID3v2");
 	}
 
 
@@ -268,7 +275,7 @@ public class MalformedInputTests
 
 		// Should not throw, just return failure
 		var result = FlacFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Random data should fail without crashing");
 	}
 
 	[TestMethod]
@@ -279,7 +286,7 @@ public class MalformedInputTests
 		random.NextBytes (data);
 
 		var result = OggVorbisFile.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Random data should fail without crashing");
 	}
 
 	[TestMethod]
@@ -290,7 +297,7 @@ public class MalformedInputTests
 		random.NextBytes (data);
 
 		var result = Id3v2Tag.Read (data);
-		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsSuccess, "Random data should fail without crashing");
 	}
 
 	[TestMethod]
@@ -300,9 +307,9 @@ public class MalformedInputTests
 		var data = new byte[1000];
 		random.NextBytes (data);
 
-		var result = VorbisComment.Read (data);
 		// May succeed with garbage data or fail, but should not crash
-		_ = result.IsSuccess; // Access result to ensure it was computed
+		var result = VorbisComment.Read (data);
+		Assert.IsNotNull (result, "Should return a result without crashing");
 	}
 
 
@@ -315,9 +322,9 @@ public class MalformedInputTests
 		data[0] = 0x66; data[1] = 0x4C; data[2] = 0x61; data[3] = 0x43; // fLaC
 		data[4] = 0x80; data[5] = 0x00; data[6] = 0x00; data[7] = 0x00; // Header
 
-		var result = FlacFile.Read (data);
 		// Will fail but should not crash
-		_ = result.IsSuccess;
+		var result = FlacFile.Read (data);
+		Assert.IsNotNull (result, "Minimum size input should return a result without crashing");
 	}
 
 	[TestMethod]
@@ -332,7 +339,7 @@ public class MalformedInputTests
 		};
 
 		var result = Id3v2Tag.Read (data);
-		_ = result.IsSuccess;
+		Assert.IsNotNull (result, "Minimum size input should return a result without crashing");
 	}
 
 	[TestMethod]
@@ -380,7 +387,7 @@ public class MalformedInputTests
 
 		// Should not throw, may produce replacement characters
 		var result = VorbisComment.Read (data);
-		_ = result.IsSuccess;
+		Assert.IsNotNull (result, "Invalid UTF-8 should return a result without crashing");
 	}
 
 	[TestMethod]
@@ -397,7 +404,7 @@ public class MalformedInputTests
 		};
 
 		var result = VorbisComment.Read (data);
-		_ = result.IsSuccess;
+		Assert.IsNotNull (result, "Invalid UTF-8 in field should return a result without crashing");
 	}
 
 }

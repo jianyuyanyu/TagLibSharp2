@@ -8,7 +8,7 @@ namespace TagLibSharp2.Tests.Core;
 /// <summary>
 /// Mock file system for testing.
 /// </summary>
-internal sealed class MockFileSystem : IFileSystem
+public sealed class MockFileSystem : IFileSystem
 {
 	readonly Dictionary<string, byte[]> _files = new (StringComparer.OrdinalIgnoreCase);
 	readonly HashSet<string> _inaccessibleFiles = new (StringComparer.OrdinalIgnoreCase);
@@ -48,7 +48,7 @@ internal sealed class MockFileSystem : IFileSystem
 		if (_inaccessibleFiles.Contains (path))
 			throw new UnauthorizedAccessException ("Access denied");
 		var stream = new MemoryStream ();
-		_files[path] = Array.Empty<byte> ();
+		_files[path] = [];
 		return stream;
 	}
 
@@ -125,7 +125,7 @@ public sealed class FileSystemTests
 	public void MockFileSystem_FileExists_ReturnsTrueForAddedFile ()
 	{
 		var fs = new MockFileSystem ();
-		fs.AddFile ("/test.txt", new byte[] { 1, 2, 3 });
+		fs.AddFile ("/test.txt", [1, 2, 3]);
 
 		Assert.IsTrue (fs.FileExists ("/test.txt"));
 		Assert.IsFalse (fs.FileExists ("/other.txt"));
@@ -135,7 +135,7 @@ public sealed class FileSystemTests
 	public void MockFileSystem_ReadAllBytes_ReturnsData ()
 	{
 		var fs = new MockFileSystem ();
-		var data = new byte[] { 1, 2, 3, 4, 5 };
+		byte[] data = [1, 2, 3, 4, 5];
 		fs.AddFile ("/test.bin", data);
 
 		var result = fs.ReadAllBytes ("/test.bin");
@@ -147,7 +147,7 @@ public sealed class FileSystemTests
 	public void MockFileSystem_ReadAllBytes_ThrowsForInaccessible ()
 	{
 		var fs = new MockFileSystem ();
-		fs.AddFile ("/test.bin", new byte[] { 1 });
+		fs.AddFile ("/test.bin", [1]);
 		fs.MarkInaccessible ("/test.bin");
 
 		Assert.ThrowsExactly<UnauthorizedAccessException> (() => fs.ReadAllBytes ("/test.bin"));
@@ -173,7 +173,7 @@ public sealed class FileHelperTests
 	public void SafeReadAllBytes_Success_ReturnsData ()
 	{
 		var fs = new MockFileSystem ();
-		var data = new byte[] { 0x66, 0x4C, 0x61, 0x43 }; // fLaC
+		byte[] data = [0x66, 0x4C, 0x61, 0x43]; // fLaC
 		fs.AddFile ("/test.flac", data);
 
 		var result = FileHelper.SafeReadAllBytes ("/test.flac", fs);
@@ -187,7 +187,7 @@ public sealed class FileHelperTests
 	public void SafeReadAllBytes_AccessDenied_ReturnsFailure ()
 	{
 		var fs = new MockFileSystem ();
-		fs.AddFile ("/protected.txt", new byte[] { 1, 2, 3 });
+		fs.AddFile ("/protected.txt", [1, 2, 3]);
 		fs.MarkInaccessible ("/protected.txt");
 
 		var result = FileHelper.SafeReadAllBytes ("/protected.txt", fs);
@@ -219,7 +219,7 @@ public sealed class FileHelperTests
 	public async Task SafeReadAllBytesAsync_Success_ReturnsData ()
 	{
 		var fs = new MockFileSystem ();
-		var data = new byte[] { 0x66, 0x4C, 0x61, 0x43 }; // fLaC
+		byte[] data = [0x66, 0x4C, 0x61, 0x43]; // fLaC
 		fs.AddFile ("/test.flac", data);
 
 		var result = await FileHelper.SafeReadAllBytesAsync ("/test.flac", fs);
@@ -233,7 +233,7 @@ public sealed class FileHelperTests
 	public async Task SafeReadAllBytesAsync_AccessDenied_ReturnsFailure ()
 	{
 		var fs = new MockFileSystem ();
-		fs.AddFile ("/protected.txt", new byte[] { 1, 2, 3 });
+		fs.AddFile ("/protected.txt", [1, 2, 3]);
 		fs.MarkInaccessible ("/protected.txt");
 
 		var result = await FileHelper.SafeReadAllBytesAsync ("/protected.txt", fs);
@@ -247,7 +247,7 @@ public sealed class FileHelperTests
 	public async Task SafeReadAllBytesAsync_Cancellation_ReturnsFailure ()
 	{
 		var fs = new MockFileSystem ();
-		fs.AddFile ("/test.txt", new byte[] { 1, 2, 3 });
+		fs.AddFile ("/test.txt", [1, 2, 3]);
 		var cts = new CancellationTokenSource ();
 		cts.Cancel ();
 
@@ -265,7 +265,7 @@ public sealed class FileReadResultTests
 	[TestMethod]
 	public void Success_HasCorrectProperties ()
 	{
-		var data = new byte[] { 1, 2, 3 };
+		byte[] data = [1, 2, 3];
 		var result = FileReadResult.Success (data);
 
 		Assert.IsTrue (result.IsSuccess);
@@ -286,7 +286,7 @@ public sealed class FileReadResultTests
 	[TestMethod]
 	public void Equals_SameData_ReturnsTrue ()
 	{
-		var data = new byte[] { 1, 2, 3 };
+		byte[] data = [1, 2, 3];
 		var result1 = FileReadResult.Success (data);
 		var result2 = FileReadResult.Success (data);
 
@@ -303,7 +303,7 @@ public sealed class AtomicFileWriterTests
 	public void Write_NewFile_CreatesFile ()
 	{
 		var fs = new MockFileSystem ();
-		var data = new byte[] { 1, 2, 3, 4, 5 };
+		byte[] data = [1, 2, 3, 4, 5];
 
 		var result = AtomicFileWriter.Write ("/dir/test.bin", data, fs);
 
@@ -317,8 +317,8 @@ public sealed class AtomicFileWriterTests
 	public void Write_ExistingFile_OverwritesFile ()
 	{
 		var fs = new MockFileSystem ();
-		fs.AddFile ("/test.bin", new byte[] { 9, 9, 9 });
-		var newData = new byte[] { 1, 2, 3 };
+		fs.AddFile ("/test.bin", [9, 9, 9]);
+		byte[] newData = [1, 2, 3];
 
 		var result = AtomicFileWriter.Write ("/test.bin", newData, fs);
 
@@ -330,7 +330,7 @@ public sealed class AtomicFileWriterTests
 	public void Write_TempFileCleanedUp_OnSuccess ()
 	{
 		var fs = new MockFileSystem ();
-		var data = new byte[] { 1, 2, 3 };
+		byte[] data = [1, 2, 3];
 
 		AtomicFileWriter.Write ("/test.bin", data, fs);
 
@@ -345,7 +345,7 @@ public sealed class AtomicFileWriterTests
 	{
 		var fs = new MockFileSystem ();
 		fs.MarkInaccessible ("/test.bin");
-		var data = new byte[] { 1, 2, 3 };
+		byte[] data = [1, 2, 3];
 
 		var result = AtomicFileWriter.Write ("/test.bin", data, fs);
 
@@ -358,7 +358,7 @@ public sealed class AtomicFileWriterTests
 	public async Task WriteAsync_NewFile_CreatesFile ()
 	{
 		var fs = new MockFileSystem ();
-		var data = new byte[] { 1, 2, 3, 4, 5 };
+		byte[] data = [1, 2, 3, 4, 5];
 
 		var result = await AtomicFileWriter.WriteAsync ("/dir/test.bin", data, fs);
 
@@ -372,7 +372,7 @@ public sealed class AtomicFileWriterTests
 	public async Task WriteAsync_Cancellation_ReturnsFailure ()
 	{
 		var fs = new MockFileSystem ();
-		var data = new byte[] { 1, 2, 3 };
+		byte[] data = [1, 2, 3];
 		var cts = new CancellationTokenSource ();
 		cts.Cancel ();
 

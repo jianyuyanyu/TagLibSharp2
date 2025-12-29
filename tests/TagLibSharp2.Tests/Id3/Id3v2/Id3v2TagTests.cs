@@ -29,7 +29,7 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_ValidV24Tag_ParsesHeader ()
 	{
-		var data = CreateMinimalTag (version: 4, size: 0);
+		var data = TestBuilders.Id3v2.CreateHeader (TestConstants.Id3v2.Version4, 0);
 
 		var result = Id3v2Tag.Read (data);
 
@@ -40,7 +40,7 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_ValidV23Tag_ParsesHeader ()
 	{
-		var data = CreateMinimalTag (version: 3, size: 0);
+		var data = TestBuilders.Id3v2.CreateHeader (TestConstants.Id3v2.Version3, 0);
 
 		var result = Id3v2Tag.Read (data);
 
@@ -51,40 +51,43 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_TagWithTitleFrame_ParsesTitle ()
 	{
-		var data = CreateTagWithTextFrame ("TIT2", "Test Title", version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.Title, TestConstants.Metadata.Title, TestConstants.Id3v2.Version4);
 
 		var result = Id3v2Tag.Read (data);
 
 		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Test Title", result.Tag!.Title);
+		Assert.AreEqual (TestConstants.Metadata.Title, result.Tag!.Title);
 	}
 
 	[TestMethod]
 	public void Read_TagWithArtistFrame_ParsesArtist ()
 	{
-		var data = CreateTagWithTextFrame ("TPE1", "Test Artist", version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.Artist, TestConstants.Metadata.Artist, TestConstants.Id3v2.Version4);
 
 		var result = Id3v2Tag.Read (data);
 
 		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Test Artist", result.Tag!.Artist);
+		Assert.AreEqual (TestConstants.Metadata.Artist, result.Tag!.Artist);
 	}
 
 	[TestMethod]
 	public void Read_TagWithAlbumFrame_ParsesAlbum ()
 	{
-		var data = CreateTagWithTextFrame ("TALB", "Test Album", version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.Album, TestConstants.Metadata.Album, TestConstants.Id3v2.Version4);
 
 		var result = Id3v2Tag.Read (data);
 
 		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Test Album", result.Tag!.Album);
+		Assert.AreEqual (TestConstants.Metadata.Album, result.Tag!.Album);
 	}
 
 	[TestMethod]
 	public void Read_TagWithMultipleFrames_ParsesAll ()
 	{
-		var data = CreateTagWithMultipleFrames (version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithFrames (TestConstants.Id3v2.Version4,
+			(TestConstants.FrameIds.Title, "Title"),
+			(TestConstants.FrameIds.Artist, "Artist"),
+			(TestConstants.FrameIds.Album, "Album"));
 
 		var result = Id3v2Tag.Read (data);
 
@@ -98,14 +101,14 @@ public class Id3v2TagTests
 	public void Read_TagWithYear_ParsesYear ()
 	{
 		// v2.3 uses TYER
-		var dataV23 = CreateTagWithTextFrame ("TYER", "2024", version: 3);
+		var dataV23 = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.Year, "2024", TestConstants.Id3v2.Version3);
 		var resultV23 = Id3v2Tag.Read (dataV23);
 
 		Assert.IsTrue (resultV23.IsSuccess);
 		Assert.AreEqual ("2024", resultV23.Tag!.Year);
 
 		// v2.4 uses TDRC
-		var dataV24 = CreateTagWithTextFrame ("TDRC", "2024", version: 4);
+		var dataV24 = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.RecordingTime, "2024", TestConstants.Id3v2.Version4);
 		var resultV24 = Id3v2Tag.Read (dataV24);
 
 		Assert.IsTrue (resultV24.IsSuccess);
@@ -115,7 +118,7 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_TagWithTrack_ParsesTrack ()
 	{
-		var data = CreateTagWithTextFrame ("TRCK", "5/12", version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.Track, "5/12", TestConstants.Id3v2.Version4);
 
 		var result = Id3v2Tag.Read (data);
 
@@ -126,7 +129,7 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_TagWithGenre_ParsesGenre ()
 	{
-		var data = CreateTagWithTextFrame ("TCON", "Rock", version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.Genre, "Rock", TestConstants.Id3v2.Version4);
 
 		var result = Id3v2Tag.Read (data);
 
@@ -158,9 +161,15 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_TagWithPadding_StopsAtPadding ()
 	{
-		var data = CreateTagWithPadding (version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithPadding (TestConstants.Id3v2.Version4, 50);
+		// Add a frame before the padding
+		var frame = TestBuilders.Id3v2.CreateTextFrame (TestConstants.FrameIds.Title, "Title", TestConstants.Id3v2.Version4);
+		var header = TestBuilders.Id3v2.CreateHeader (TestConstants.Id3v2.Version4, (uint)(frame.Length + 50));
+		var fullData = new byte[header.Length + frame.Length + 50];
+		Array.Copy (header, fullData, header.Length);
+		Array.Copy (frame, 0, fullData, header.Length, frame.Length);
 
-		var result = Id3v2Tag.Read (data);
+		var result = Id3v2Tag.Read (fullData);
 
 		Assert.IsTrue (result.IsSuccess);
 		Assert.AreEqual ("Title", result.Tag!.Title);
@@ -171,7 +180,7 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_V23_UsesBigEndianFrameSize ()
 	{
-		var data = CreateTagWithTextFrame ("TIT2", "Test", version: 3);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.Title, "Test", TestConstants.Id3v2.Version3);
 
 		var result = Id3v2Tag.Read (data);
 
@@ -182,7 +191,7 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_V24_UsesSyncsafeFrameSize ()
 	{
-		var data = CreateTagWithTextFrame ("TIT2", "Test", version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.Title, "Test", TestConstants.Id3v2.Version4);
 
 		var result = Id3v2Tag.Read (data);
 
@@ -195,7 +204,10 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Frames_ReturnsAllFrames ()
 	{
-		var data = CreateTagWithMultipleFrames (version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithFrames (TestConstants.Id3v2.Version4,
+			(TestConstants.FrameIds.Title, "Title"),
+			(TestConstants.FrameIds.Artist, "Artist"),
+			(TestConstants.FrameIds.Album, "Album"));
 
 		var result = Id3v2Tag.Read (data);
 
@@ -206,23 +218,23 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void GetTextFrame_ExistingFrame_ReturnsValue ()
 	{
-		var data = CreateTagWithTextFrame ("TIT2", "Test Title", version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.Title, TestConstants.Metadata.Title, TestConstants.Id3v2.Version4);
 
 		var result = Id3v2Tag.Read (data);
 
 		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("Test Title", result.Tag!.GetTextFrame ("TIT2"));
+		Assert.AreEqual (TestConstants.Metadata.Title, result.Tag!.GetTextFrame (TestConstants.FrameIds.Title));
 	}
 
 	[TestMethod]
 	public void GetTextFrame_NonExistingFrame_ReturnsNull ()
 	{
-		var data = CreateMinimalTag (version: 4, size: 0);
+		var data = TestBuilders.Id3v2.CreateHeader (TestConstants.Id3v2.Version4, 0);
 
 		var result = Id3v2Tag.Read (data);
 
 		Assert.IsTrue (result.IsSuccess);
-		Assert.IsNull (result.Tag!.GetTextFrame ("TIT2"));
+		Assert.IsNull (result.Tag!.GetTextFrame (TestConstants.FrameIds.Title));
 	}
 
 
@@ -234,7 +246,7 @@ public class Id3v2TagTests
 		tag.Title = "New Title";
 
 		Assert.AreEqual ("New Title", tag.Title);
-		Assert.AreEqual ("New Title", tag.GetTextFrame ("TIT2"));
+		Assert.AreEqual ("New Title", tag.GetTextFrame (TestConstants.FrameIds.Title));
 	}
 
 	[TestMethod]
@@ -244,7 +256,7 @@ public class Id3v2TagTests
 		tag.Artist = "New Artist";
 
 		Assert.AreEqual ("New Artist", tag.Artist);
-		Assert.AreEqual ("New Artist", tag.GetTextFrame ("TPE1"));
+		Assert.AreEqual ("New Artist", tag.GetTextFrame (TestConstants.FrameIds.Artist));
 	}
 
 	[TestMethod]
@@ -296,9 +308,9 @@ public class Id3v2TagTests
 	public void Render_RoundTrip_PreservesData ()
 	{
 		var original = new Id3v2Tag (Id3v2Version.V24) {
-			Title = "Test Title",
-			Artist = "Test Artist",
-			Album = "Test Album"
+			Title = TestConstants.Metadata.Title,
+			Artist = TestConstants.Metadata.Artist,
+			Album = TestConstants.Metadata.Album
 		};
 
 		var rendered = original.Render ();
@@ -331,13 +343,13 @@ public class Id3v2TagTests
 		tag.AlbumArtist = "Various Artists";
 
 		Assert.AreEqual ("Various Artists", tag.AlbumArtist);
-		Assert.AreEqual ("Various Artists", tag.GetTextFrame ("TPE2"));
+		Assert.AreEqual ("Various Artists", tag.GetTextFrame (TestConstants.FrameIds.AlbumArtist));
 	}
 
 	[TestMethod]
 	public void AlbumArtist_FromFile_ParsesCorrectly ()
 	{
-		var data = CreateTagWithTextFrame ("TPE2", "Compilation Artist", version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.AlbumArtist, "Compilation Artist", TestConstants.Id3v2.Version4);
 
 		var result = Id3v2Tag.Read (data);
 
@@ -353,13 +365,13 @@ public class Id3v2TagTests
 		tag.DiscNumber = 2;
 
 		Assert.AreEqual (2u, tag.DiscNumber);
-		Assert.AreEqual ("2", tag.GetTextFrame ("TPOS"));
+		Assert.AreEqual ("2", tag.GetTextFrame (TestConstants.FrameIds.DiscNumber));
 	}
 
 	[TestMethod]
 	public void DiscNumber_WithSlashFormat_ParsesCorrectly ()
 	{
-		var data = CreateTagWithTextFrame ("TPOS", "2/3", version: 4);
+		var data = TestBuilders.Id3v2.CreateTagWithTextFrame (TestConstants.FrameIds.DiscNumber, "2/3", TestConstants.Id3v2.Version4);
 
 		var result = Id3v2Tag.Read (data);
 
@@ -376,7 +388,7 @@ public class Id3v2TagTests
 		tag.DiscNumber = null;
 
 		Assert.IsNull (tag.DiscNumber);
-		Assert.IsNull (tag.GetTextFrame ("TPOS"));
+		Assert.IsNull (tag.GetTextFrame (TestConstants.FrameIds.DiscNumber));
 	}
 
 	[TestMethod]
@@ -387,7 +399,7 @@ public class Id3v2TagTests
 		tag.Composer = "Johann Sebastian Bach";
 
 		Assert.AreEqual ("Johann Sebastian Bach", tag.Composer);
-		Assert.AreEqual ("Johann Sebastian Bach", tag.GetTextFrame ("TCOM"));
+		Assert.AreEqual ("Johann Sebastian Bach", tag.GetTextFrame (TestConstants.FrameIds.Composer));
 	}
 
 	[TestMethod]
@@ -398,7 +410,7 @@ public class Id3v2TagTests
 		tag.BeatsPerMinute = 120;
 
 		Assert.AreEqual (120u, tag.BeatsPerMinute);
-		Assert.AreEqual ("120", tag.GetTextFrame ("TBPM"));
+		Assert.AreEqual ("120", tag.GetTextFrame (TestConstants.FrameIds.Bpm));
 	}
 
 
@@ -407,7 +419,6 @@ public class Id3v2TagTests
 	public void Read_V24_WithExtendedHeader_SkipsExtendedHeader ()
 	{
 		// Create a v2.4 tag with extended header flag set
-		// Extended header format in v2.4: syncsafe size (includes size field)
 		var header = new byte[10];
 		header[0] = (byte)'I';
 		header[1] = (byte)'D';
@@ -417,7 +428,6 @@ public class Id3v2TagTests
 		header[5] = 0x40; // Extended header flag
 
 		// Extended header: 6 bytes total (syncsafe size includes itself)
-		// Size = 6 in syncsafe = 0x00 0x00 0x00 0x06
 		var extHeader = new byte[6];
 		extHeader[0] = 0x00;
 		extHeader[1] = 0x00;
@@ -427,9 +437,9 @@ public class Id3v2TagTests
 		extHeader[5] = 0x00; // flags
 
 		// Frame: TIT2 with "Test"
-		var frame = CreateFrameBytes ("TIT2", "Test", version: 4);
+		var frame = TestBuilders.Id3v2.CreateTextFrame (TestConstants.FrameIds.Title, "Test", TestConstants.Id3v2.Version4);
 
-		// Tag size (syncsafe): extended header + frame = 6 + frame.Length
+		// Tag size (syncsafe): extended header + frame
 		var tagSize = (uint)(extHeader.Length + frame.Length);
 		header[6] = (byte)((tagSize >> 21) & 0x7F);
 		header[7] = (byte)((tagSize >> 14) & 0x7F);
@@ -451,7 +461,6 @@ public class Id3v2TagTests
 	public void Read_V23_WithExtendedHeader_SkipsExtendedHeader ()
 	{
 		// Create a v2.3 tag with extended header flag set
-		// Extended header format in v2.3: big-endian size (excludes size field) + 6 bytes min
 		var header = new byte[10];
 		header[0] = (byte)'I';
 		header[1] = (byte)'D';
@@ -461,7 +470,6 @@ public class Id3v2TagTests
 		header[5] = 0x40; // Extended header flag
 
 		// Extended header: size(4) + flags(2) + padding(4) = 10 bytes
-		// Size field = 6 (excludes the 4-byte size field itself)
 		var extHeader = new byte[10];
 		extHeader[0] = 0x00;
 		extHeader[1] = 0x00;
@@ -475,7 +483,7 @@ public class Id3v2TagTests
 		extHeader[9] = 0x00;
 
 		// Frame: TIT2 with "Test"
-		var frame = CreateFrameBytes ("TIT2", "Test", version: 3);
+		var frame = TestBuilders.Id3v2.CreateTextFrame (TestConstants.FrameIds.Title, "Test", TestConstants.Id3v2.Version3);
 
 		// Tag size (syncsafe): extended header + frame
 		var tagSize = (uint)(extHeader.Length + frame.Length);
@@ -500,15 +508,10 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_V23_FrameSizeWithHighByte0x80_DoesNotOverflow ()
 	{
-		// This test specifically verifies the fix for integer overflow bug.
+		// This test verifies the fix for integer overflow bug.
 		// When data[0] = 0x80, the expression (data[0] << 24) produces -2147483648
 		// (negative) instead of 2147483648 (positive) due to signed integer promotion.
-		// The size 0x80000005 = 2147483653 bytes, which exceeds available data.
-		// With the bug: Frame size becomes negative → comparison logic breaks
-		// With the fix: Frame size is positive but exceeds remaining → parsing stops gracefully
-
-		var tagSize = (uint)20; // Small tag
-		var header = CreateMinimalTag (version: 3, size: tagSize);
+		var header = TestBuilders.Id3v2.CreateHeader (TestConstants.Id3v2.Version3, 20);
 		var frame = new byte[20];
 
 		// Frame ID "TIT2"
@@ -518,8 +521,7 @@ public class Id3v2TagTests
 		frame[3] = (byte)'2';
 
 		// Frame size with MSB set: 0x80 0x00 0x00 0x05 = 2,147,483,653 bytes
-		// This would be -2,147,483,643 with the bug (signed overflow)
-		frame[4] = 0x80;  // High byte >= 0x80 triggers the overflow bug
+		frame[4] = 0x80;
 		frame[5] = 0x00;
 		frame[6] = 0x00;
 		frame[7] = 0x05;
@@ -538,8 +540,7 @@ public class Id3v2TagTests
 
 		var result = Id3v2Tag.Read (data);
 
-		// The frame size (2GB+) exceeds remaining data, so parsing stops gracefully.
-		// Key assertion: Should succeed with no frames parsed, NOT crash or throw.
+		// Should succeed with no frames parsed, NOT crash or throw.
 		Assert.IsTrue (result.IsSuccess);
 		Assert.IsEmpty (result.Tag!.Frames);
 	}
@@ -547,9 +548,8 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_V23_FrameSizeWithHighByte0xFF_DoesNotOverflow ()
 	{
-		// Test with highest possible byte value (0xFF) to ensure no overflow
-		var tagSize = (uint)20;
-		var header = CreateMinimalTag (version: 3, size: tagSize);
+		// Test with highest possible byte value (0xFF)
+		var header = TestBuilders.Id3v2.CreateHeader (TestConstants.Id3v2.Version3, 20);
 		var frame = new byte[20];
 
 		frame[0] = (byte)'T';
@@ -557,8 +557,7 @@ public class Id3v2TagTests
 		frame[2] = (byte)'T';
 		frame[3] = (byte)'2';
 
-		// Frame size: 0xFF 0xFF 0xFF 0x05 = 4,294,967,045 (max with 0xFF high byte)
-		// Without fix: This becomes -251 (negative) due to overflow
+		// Frame size: 0xFF 0xFF 0xFF 0x05 = 4,294,967,045
 		frame[4] = 0xFF;
 		frame[5] = 0xFF;
 		frame[6] = 0xFF;
@@ -584,7 +583,7 @@ public class Id3v2TagTests
 	public void Read_V23_NormalFrameSize_ParsesCorrectly ()
 	{
 		// Baseline test: Normal frame size should still work
-		var header = CreateMinimalTag (version: 3, size: 20);
+		var header = TestBuilders.Id3v2.CreateHeader (TestConstants.Id3v2.Version3, 20);
 		var frame = new byte[20];
 
 		frame[0] = (byte)'T';
@@ -622,13 +621,10 @@ public class Id3v2TagTests
 	public void Read_TruncatedFile_HandlesGracefully ()
 	{
 		// Create a tag that claims to be 1000 bytes but only has 50 bytes of data.
-		// This simulates a truncated file. The parser should handle this gracefully
-		// by parsing what's available without throwing exceptions.
-		var claimedSize = (uint)1000;
-		var header = CreateMinimalTag (version: 4, size: claimedSize);
+		var header = TestBuilders.Id3v2.CreateHeader (TestConstants.Id3v2.Version4, 1000);
 
 		// Add a valid frame that fits in the truncated data
-		var frame = CreateFrameBytes ("TIT2", "Test", version: 4);
+		var frame = TestBuilders.Id3v2.CreateTextFrame (TestConstants.FrameIds.Title, "Test", TestConstants.Id3v2.Version4);
 
 		// Total data is header (10) + frame (~16), but header claims 1000 bytes
 		var data = new byte[header.Length + frame.Length];
@@ -645,9 +641,8 @@ public class Id3v2TagTests
 	[TestMethod]
 	public void Read_HeaderClaimsLargeSize_NoFramesAvailable ()
 	{
-		// Header claims 10000 bytes but there's no frame data at all (just header)
-		var claimedSize = (uint)10000;
-		var data = CreateMinimalTag (version: 4, size: claimedSize);
+		// Header claims 10000 bytes but there's no frame data at all
+		var data = TestBuilders.Id3v2.CreateHeader (TestConstants.Id3v2.Version4, 10000);
 
 		var result = Id3v2Tag.Read (data);
 
@@ -655,142 +650,4 @@ public class Id3v2TagTests
 		Assert.IsTrue (result.IsSuccess);
 		Assert.IsEmpty (result.Tag!.Frames);
 	}
-
-
-
-	static byte[] CreateMinimalTag (byte version, uint size)
-	{
-		var data = new byte[10];
-		data[0] = (byte)'I';
-		data[1] = (byte)'D';
-		data[2] = (byte)'3';
-		data[3] = version;
-		data[4] = 0; // revision
-		data[5] = 0; // flags
-
-		// Syncsafe size
-		data[6] = (byte)((size >> 21) & 0x7F);
-		data[7] = (byte)((size >> 14) & 0x7F);
-		data[8] = (byte)((size >> 7) & 0x7F);
-		data[9] = (byte)(size & 0x7F);
-
-		return data;
-	}
-
-	static byte[] CreateTagWithTextFrame (string frameId, string text, byte version)
-	{
-		// Frame content: encoding (1) + text
-		var textBytes = System.Text.Encoding.Latin1.GetBytes (text);
-		var frameContent = new byte[1 + textBytes.Length];
-		frameContent[0] = 0; // Latin-1 encoding
-		Array.Copy (textBytes, 0, frameContent, 1, textBytes.Length);
-
-		// Frame header (10 bytes) + content
-		var frameSize = frameContent.Length;
-		var frame = new byte[10 + frameSize];
-
-		// Frame ID
-		var idBytes = System.Text.Encoding.ASCII.GetBytes (frameId);
-		Array.Copy (idBytes, 0, frame, 0, 4);
-
-		// Size (big-endian for v2.3, syncsafe for v2.4)
-		if (version == 4) {
-			// Syncsafe
-			frame[4] = (byte)((frameSize >> 21) & 0x7F);
-			frame[5] = (byte)((frameSize >> 14) & 0x7F);
-			frame[6] = (byte)((frameSize >> 7) & 0x7F);
-			frame[7] = (byte)(frameSize & 0x7F);
-		} else {
-			// Big-endian
-			frame[4] = (byte)((frameSize >> 24) & 0xFF);
-			frame[5] = (byte)((frameSize >> 16) & 0xFF);
-			frame[6] = (byte)((frameSize >> 8) & 0xFF);
-			frame[7] = (byte)(frameSize & 0xFF);
-		}
-
-		// Flags (2 bytes, zeroes)
-		frame[8] = 0;
-		frame[9] = 0;
-
-		// Content
-		Array.Copy (frameContent, 0, frame, 10, frameSize);
-
-		// Combine header + frame
-		var totalSize = (uint)frame.Length;
-		var header = CreateMinimalTag (version, totalSize);
-
-		var result = new byte[header.Length + frame.Length];
-		Array.Copy (header, result, header.Length);
-		Array.Copy (frame, 0, result, header.Length, frame.Length);
-
-		return result;
-	}
-
-	static byte[] CreateTagWithMultipleFrames (byte version)
-	{
-		var frames = new List<byte[]> {
-			CreateFrameBytes ("TIT2", "Title", version),
-			CreateFrameBytes ("TPE1", "Artist", version),
-			CreateFrameBytes ("TALB", "Album", version)
-		};
-
-		var framesData = frames.SelectMany (f => f).ToArray ();
-		var totalSize = (uint)framesData.Length;
-		var header = CreateMinimalTag (version, totalSize);
-
-		var result = new byte[header.Length + framesData.Length];
-		Array.Copy (header, result, header.Length);
-		Array.Copy (framesData, 0, result, header.Length, framesData.Length);
-
-		return result;
-	}
-
-	static byte[] CreateTagWithPadding (byte version)
-	{
-		var frame = CreateFrameBytes ("TIT2", "Title", version);
-		var padding = new byte[50]; // 50 bytes of padding
-
-		var totalSize = (uint)(frame.Length + padding.Length);
-		var header = CreateMinimalTag (version, totalSize);
-
-		var result = new byte[header.Length + frame.Length + padding.Length];
-		Array.Copy (header, result, header.Length);
-		Array.Copy (frame, 0, result, header.Length, frame.Length);
-		// padding is already zeros
-
-		return result;
-	}
-
-	static byte[] CreateFrameBytes (string frameId, string text, byte version)
-	{
-		var textBytes = System.Text.Encoding.Latin1.GetBytes (text);
-		var frameContent = new byte[1 + textBytes.Length];
-		frameContent[0] = 0; // Latin-1
-		Array.Copy (textBytes, 0, frameContent, 1, textBytes.Length);
-
-		var frameSize = frameContent.Length;
-		var frame = new byte[10 + frameSize];
-
-		var idBytes = System.Text.Encoding.ASCII.GetBytes (frameId);
-		Array.Copy (idBytes, 0, frame, 0, 4);
-
-		if (version == 4) {
-			frame[4] = (byte)((frameSize >> 21) & 0x7F);
-			frame[5] = (byte)((frameSize >> 14) & 0x7F);
-			frame[6] = (byte)((frameSize >> 7) & 0x7F);
-			frame[7] = (byte)(frameSize & 0x7F);
-		} else {
-			frame[4] = (byte)((frameSize >> 24) & 0xFF);
-			frame[5] = (byte)((frameSize >> 16) & 0xFF);
-			frame[6] = (byte)((frameSize >> 8) & 0xFF);
-			frame[7] = (byte)(frameSize & 0xFF);
-		}
-
-		frame[8] = 0;
-		frame[9] = 0;
-
-		Array.Copy (frameContent, 0, frame, 10, frameSize);
-		return frame;
-	}
-
 }

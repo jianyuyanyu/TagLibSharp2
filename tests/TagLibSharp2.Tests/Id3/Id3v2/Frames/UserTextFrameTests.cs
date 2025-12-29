@@ -73,7 +73,7 @@ public sealed class UserTextFrameTests
 	[TestMethod]
 	public void Read_EmptyData_ReturnsFailure ()
 	{
-		var result = UserTextFrame.Read (Array.Empty<byte> (), Id3v2Version.V24);
+		var result = UserTextFrame.Read ([], Id3v2Version.V24);
 
 		Assert.IsFalse (result.IsSuccess);
 	}

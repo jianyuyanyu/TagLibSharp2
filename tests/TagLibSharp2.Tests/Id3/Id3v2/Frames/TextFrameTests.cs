@@ -6,6 +6,8 @@ using TagLibSharp2.Id3.Id3v2.Frames;
 
 namespace TagLibSharp2.Tests.Id3.Id3v2.Frames;
 
+// Uses TestBuilders.Id3v2.CreateTextFrameData for encoding-specific frame data
+
 [TestClass]
 [TestCategory ("Unit")]
 [TestCategory ("Id3")]
@@ -17,59 +19,21 @@ public class TextFrameTests
 	// 0       1     Text encoding (0=Latin-1, 1=UTF-16 w/BOM, 2=UTF-16BE, 3=UTF-8)
 	// 1       n     Text content (may be null-terminated)
 
-
 	[TestMethod]
-	public void Read_Latin1Encoding_ParsesCorrectly ()
+	[DataRow (TextEncodingType.Latin1, "Test Title")]
+	[DataRow (TextEncodingType.Utf16WithBom, "Unicode: Test")]
+	[DataRow (TextEncodingType.Utf16BE, "Big Endian Test")]
+	[DataRow (TextEncodingType.Utf8, "UTF-8: Test")]
+	public void Read_AllEncodings_ParsesCorrectly (TextEncodingType encoding, string text)
 	{
-		// Encoding byte (0x00 = Latin-1) + "Test Title" in Latin-1
-		var data = CreateTextFrameData (TextEncodingType.Latin1, "Test Title");
+		var data = TestBuilders.Id3v2.CreateTextFrameData (encoding, text);
 
 		var result = TextFrame.Read ("TIT2", data, Id3v2Version.V24);
 
-		Assert.IsTrue (result.IsSuccess);
+		Assert.IsTrue (result.IsSuccess, $"Failed for encoding {encoding}");
 		Assert.AreEqual ("TIT2", result.Frame!.Id);
-		Assert.AreEqual ("Test Title", result.Frame.Text);
-		Assert.AreEqual (TextEncodingType.Latin1, result.Frame.Encoding);
-	}
-
-	[TestMethod]
-	public void Read_Utf16WithBom_ParsesCorrectly ()
-	{
-		// UTF-16 LE with BOM (0xFF 0xFE)
-		var text = "Unicode: Привет";
-		var data = CreateTextFrameData (TextEncodingType.Utf16WithBom, text);
-
-		var result = TextFrame.Read ("TIT2", data, Id3v2Version.V24);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual (text, result.Frame!.Text);
-		Assert.AreEqual (TextEncodingType.Utf16WithBom, result.Frame.Encoding);
-	}
-
-	[TestMethod]
-	public void Read_Utf16BE_ParsesCorrectly ()
-	{
-		var text = "Big Endian Test";
-		var data = CreateTextFrameData (TextEncodingType.Utf16BE, text);
-
-		var result = TextFrame.Read ("TIT2", data, Id3v2Version.V24);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual (text, result.Frame!.Text);
-		Assert.AreEqual (TextEncodingType.Utf16BE, result.Frame.Encoding);
-	}
-
-	[TestMethod]
-	public void Read_Utf8_ParsesCorrectly ()
-	{
-		var text = "UTF-8: 日本語テスト";
-		var data = CreateTextFrameData (TextEncodingType.Utf8, text);
-
-		var result = TextFrame.Read ("TIT2", data, Id3v2Version.V24);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual (text, result.Frame!.Text);
-		Assert.AreEqual (TextEncodingType.Utf8, result.Frame.Encoding);
+		Assert.AreEqual (text, result.Frame.Text);
+		Assert.AreEqual (encoding, result.Frame.Encoding);
 	}
 
 	[TestMethod]
@@ -86,103 +50,35 @@ public class TextFrameTests
 
 
 	[TestMethod]
-	public void Read_TIT2_ParsesTitle ()
+	[DataRow ("TIT2", "Song Title", Id3v2Version.V24)]
+	[DataRow ("TPE1", "Artist Name", Id3v2Version.V24)]
+	[DataRow ("TALB", "Album Name", Id3v2Version.V24)]
+	[DataRow ("TYER", "2024", Id3v2Version.V23)]
+	[DataRow ("TDRC", "2024-12-25", Id3v2Version.V24)]
+	[DataRow ("TCON", "Rock", Id3v2Version.V24)]
+	[DataRow ("TRCK", "5/12", Id3v2Version.V24)]
+	public void Read_StandardFrames_ParsesCorrectly (string frameId, string text, Id3v2Version version)
 	{
-		var data = CreateTextFrameData (TextEncodingType.Latin1, "Song Title");
+		var data = TestBuilders.Id3v2.CreateTextFrameData (TextEncodingType.Latin1, text);
 
-		var result = TextFrame.Read ("TIT2", data, Id3v2Version.V24);
+		var result = TextFrame.Read (frameId, data, version);
 
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("TIT2", result.Frame!.Id);
-		Assert.AreEqual ("Song Title", result.Frame.Text);
-	}
-
-	[TestMethod]
-	public void Read_TPE1_ParsesArtist ()
-	{
-		var data = CreateTextFrameData (TextEncodingType.Latin1, "Artist Name");
-
-		var result = TextFrame.Read ("TPE1", data, Id3v2Version.V24);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("TPE1", result.Frame!.Id);
-		Assert.AreEqual ("Artist Name", result.Frame.Text);
-	}
-
-	[TestMethod]
-	public void Read_TALB_ParsesAlbum ()
-	{
-		var data = CreateTextFrameData (TextEncodingType.Latin1, "Album Name");
-
-		var result = TextFrame.Read ("TALB", data, Id3v2Version.V24);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("TALB", result.Frame!.Id);
-		Assert.AreEqual ("Album Name", result.Frame.Text);
-	}
-
-	[TestMethod]
-	public void Read_TYER_ParsesYear ()
-	{
-		var data = CreateTextFrameData (TextEncodingType.Latin1, "2024");
-
-		var result = TextFrame.Read ("TYER", data, Id3v2Version.V23);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("TYER", result.Frame!.Id);
-		Assert.AreEqual ("2024", result.Frame.Text);
-	}
-
-	[TestMethod]
-	public void Read_TDRC_ParsesRecordingDate ()
-	{
-		// TDRC is the v2.4 replacement for TYER
-		var data = CreateTextFrameData (TextEncodingType.Latin1, "2024-12-25");
-
-		var result = TextFrame.Read ("TDRC", data, Id3v2Version.V24);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("TDRC", result.Frame!.Id);
-		Assert.AreEqual ("2024-12-25", result.Frame.Text);
-	}
-
-	[TestMethod]
-	public void Read_TCON_ParsesGenre ()
-	{
-		var data = CreateTextFrameData (TextEncodingType.Latin1, "Rock");
-
-		var result = TextFrame.Read ("TCON", data, Id3v2Version.V24);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("TCON", result.Frame!.Id);
-		Assert.AreEqual ("Rock", result.Frame.Text);
+		Assert.IsTrue (result.IsSuccess, $"Failed for frame {frameId}");
+		Assert.AreEqual (frameId, result.Frame!.Id);
+		Assert.AreEqual (text, result.Frame.Text);
 	}
 
 	[TestMethod]
 	public void Read_TCON_NumericGenre_ParsesCorrectly ()
 	{
 		// ID3v2 can encode genres as "(17)" meaning genre index 17 (Rock)
-		var data = CreateTextFrameData (TextEncodingType.Latin1, "(17)");
+		var data = TestBuilders.Id3v2.CreateTextFrameData (TextEncodingType.Latin1, "(17)");
 
 		var result = TextFrame.Read ("TCON", data, Id3v2Version.V24);
 
 		Assert.IsTrue (result.IsSuccess);
 		Assert.AreEqual ("(17)", result.Frame!.Text);
 	}
-
-	[TestMethod]
-	public void Read_TRCK_ParsesTrack ()
-	{
-		var data = CreateTextFrameData (TextEncodingType.Latin1, "5/12");
-
-		var result = TextFrame.Read ("TRCK", data, Id3v2Version.V24);
-
-		Assert.IsTrue (result.IsSuccess);
-		Assert.AreEqual ("TRCK", result.Frame!.Id);
-		Assert.AreEqual ("5/12", result.Frame.Text);
-	}
-
-
 
 	[TestMethod]
 	public void Read_EmptyText_ReturnsEmptyString ()
@@ -210,7 +106,7 @@ public class TextFrameTests
 	[TestMethod]
 	public void Read_TooShort_ReturnsFailure ()
 	{
-		var data = Array.Empty<byte> ();
+		byte[] data = [];
 
 		var result = TextFrame.Read ("TIT2", data, Id3v2Version.V24);
 
@@ -282,32 +178,6 @@ public class TextFrameTests
 
 		Assert.IsTrue (result.IsSuccess);
 		Assert.AreEqual (original.Text, result.Frame!.Text);
-	}
-
-
-
-	static byte[] CreateTextFrameData (TextEncodingType encoding, string text)
-	{
-		var bytes = new List<byte> { (byte)encoding };
-
-		switch (encoding) {
-			case TextEncodingType.Latin1:
-				bytes.AddRange (System.Text.Encoding.Latin1.GetBytes (text));
-				break;
-			case TextEncodingType.Utf16WithBom:
-				bytes.Add (0xFF); // BOM LE
-				bytes.Add (0xFE);
-				bytes.AddRange (System.Text.Encoding.Unicode.GetBytes (text));
-				break;
-			case TextEncodingType.Utf16BE:
-				bytes.AddRange (System.Text.Encoding.BigEndianUnicode.GetBytes (text));
-				break;
-			case TextEncodingType.Utf8:
-				bytes.AddRange (System.Text.Encoding.UTF8.GetBytes (text));
-				break;
-		}
-
-		return bytes.ToArray ();
 	}
 
 }

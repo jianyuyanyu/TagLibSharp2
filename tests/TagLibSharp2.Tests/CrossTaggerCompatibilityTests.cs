@@ -235,10 +235,10 @@ public sealed class CrossTaggerCompatibilityTests
 	public void Id3v2_BasicMetadata_UsesStandardFrameIds ()
 	{
 		var tag = new Id3v2Tag ();
-		tag.Title = "Test Song";
-		tag.Artist = "Test Artist";
-		tag.Album = "Test Album";
-		tag.Year = "2025";
+		tag.Title = TestConstants.Metadata.Title;
+		tag.Artist = TestConstants.Metadata.Artist;
+		tag.Album = TestConstants.Metadata.Album;
+		tag.Year = TestConstants.Metadata.Year;
 		tag.Genre = "Classical";
 		tag.Track = 5;
 		tag.Composer = "Test Composer";
@@ -247,10 +247,10 @@ public sealed class CrossTaggerCompatibilityTests
 		var parsed = Id3v2Tag.Read (rendered.Span);
 
 		Assert.IsTrue (parsed.IsSuccess);
-		Assert.AreEqual ("Test Song", parsed.Tag!.Title);
-		Assert.AreEqual ("Test Artist", parsed.Tag.Artist);
-		Assert.AreEqual ("Test Album", parsed.Tag.Album);
-		Assert.AreEqual ("2025", parsed.Tag.Year);
+		Assert.AreEqual (TestConstants.Metadata.Title, parsed.Tag!.Title);
+		Assert.AreEqual (TestConstants.Metadata.Artist, parsed.Tag.Artist);
+		Assert.AreEqual (TestConstants.Metadata.Album, parsed.Tag.Album);
+		Assert.AreEqual (TestConstants.Metadata.Year, parsed.Tag.Year);
 		Assert.AreEqual ("Classical", parsed.Tag.Genre);
 		Assert.AreEqual (5u, parsed.Tag.Track);
 		Assert.AreEqual ("Test Composer", parsed.Tag.Composer);
@@ -262,11 +262,11 @@ public sealed class CrossTaggerCompatibilityTests
 	[TestMethod]
 	public void VorbisComment_BasicMetadata_UsesUppercaseNames ()
 	{
-		var comment = new VorbisComment ("TagLibSharp2");
-		comment.Title = "Test Song";
-		comment.Artist = "Test Artist";
-		comment.Album = "Test Album";
-		comment.Year = "2025";
+		var comment = new VorbisComment (TestConstants.Vendors.TagLibSharp2);
+		comment.Title = TestConstants.Metadata.Title;
+		comment.Artist = TestConstants.Metadata.Artist;
+		comment.Album = TestConstants.Metadata.Album;
+		comment.Year = TestConstants.Metadata.Year;
 		comment.Genre = "Classical";
 		comment.Track = 5;
 
@@ -276,11 +276,11 @@ public sealed class CrossTaggerCompatibilityTests
 		Assert.IsTrue (parsed.IsSuccess);
 
 		// Verify uppercase field names per Vorbis Comment spec
-		Assert.AreEqual ("Test Song", parsed.Tag!.GetValue ("TITLE"));
-		Assert.AreEqual ("Test Artist", parsed.Tag.GetValue ("ARTIST"));
-		Assert.AreEqual ("Test Album", parsed.Tag.GetValue ("ALBUM"));
-		Assert.AreEqual ("2025", parsed.Tag.GetValue ("DATE"));
-		Assert.AreEqual ("Classical", parsed.Tag.GetValue ("GENRE"));
+		Assert.AreEqual (TestConstants.Metadata.Title, parsed.Tag!.GetValue (TestConstants.VorbisFields.Title));
+		Assert.AreEqual (TestConstants.Metadata.Artist, parsed.Tag.GetValue (TestConstants.VorbisFields.Artist));
+		Assert.AreEqual (TestConstants.Metadata.Album, parsed.Tag.GetValue (TestConstants.VorbisFields.Album));
+		Assert.AreEqual (TestConstants.Metadata.Year, parsed.Tag.GetValue (TestConstants.VorbisFields.Date));
+		Assert.AreEqual ("Classical", parsed.Tag.GetValue (TestConstants.VorbisFields.Genre));
 		Assert.AreEqual ("5", parsed.Tag.GetValue ("TRACKNUMBER"));
 	}
 

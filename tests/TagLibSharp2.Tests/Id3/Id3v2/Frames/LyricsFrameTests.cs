@@ -50,7 +50,7 @@ public class LyricsFrameTests
 	{
 		// Build a USLT frame: encoding(1) + language(3) + description + null + lyrics
 		var lyrics = "Hello, world!";
-		var data = BuildFrame (TextEncodingType.Latin1, "eng", "Desc", lyrics);
+		var data = BuildLyricsFrame (TextEncodingType.Latin1, "eng", "Desc", lyrics);
 
 		var result = LyricsFrame.Read (data, Id3v2Version.V24);
 
@@ -64,7 +64,7 @@ public class LyricsFrameTests
 	public void Read_ValidUtf8Frame_ParsesCorrectly ()
 	{
 		var lyrics = "日本語の歌詞";
-		var data = BuildFrame (TextEncodingType.Utf8, "jpn", "", lyrics);
+		var data = BuildLyricsFrame (TextEncodingType.Utf8, "jpn", "", lyrics);
 
 		var result = LyricsFrame.Read (data, Id3v2Version.V24);
 
@@ -77,7 +77,7 @@ public class LyricsFrameTests
 	public void Read_EmptyDescription_ParsesCorrectly ()
 	{
 		var lyrics = "Verse 1\nChorus\nVerse 2";
-		var data = BuildFrame (TextEncodingType.Utf8, "eng", "", lyrics);
+		var data = BuildLyricsFrame (TextEncodingType.Utf8, "eng", "", lyrics);
 
 		var result = LyricsFrame.Read (data, Id3v2Version.V24);
 
@@ -289,44 +289,33 @@ public class LyricsFrameTests
 		Assert.IsEmpty (tag.LyricsFrames);
 	}
 
-
-
-	static byte[] BuildFrame (TextEncodingType encoding, string language, string description, string text)
+	static byte[] BuildLyricsFrame (TextEncodingType encoding, string language, string description, string text)
 	{
-		using var ms = new MemoryStream ();
-
-		// Encoding byte
+		using var ms = new System.IO.MemoryStream ();
 		ms.WriteByte ((byte)encoding);
 
-		// Language (3 bytes ASCII)
-		var langBytes = System.Text.Encoding.ASCII.GetBytes (language.PadRight (3).Substring (0, 3));
+		var langBytes = System.Text.Encoding.ASCII.GetBytes (language.PadRight (3)[..3]);
 		ms.Write (langBytes, 0, 3);
 
-		// Description + null terminator
 		var descBytes = EncodeString (description, encoding);
 		ms.Write (descBytes, 0, descBytes.Length);
 		WriteNullTerminator (ms, encoding);
 
-		// Text
 		var textBytes = EncodeString (text, encoding);
 		ms.Write (textBytes, 0, textBytes.Length);
 
 		return ms.ToArray ();
 	}
 
-	static byte[] EncodeString (string text, TextEncodingType encoding)
-	{
-		return encoding switch {
-			TextEncodingType.Latin1 => System.Text.Encoding.Latin1.GetBytes (text),
-			TextEncodingType.Utf8 => System.Text.Encoding.UTF8.GetBytes (text),
-			TextEncodingType.Utf16WithBom => System.Text.Encoding.Unicode.GetPreamble ()
-				.Concat (System.Text.Encoding.Unicode.GetBytes (text)).ToArray (),
-			TextEncodingType.Utf16BE => System.Text.Encoding.BigEndianUnicode.GetBytes (text),
-			_ => Array.Empty<byte> ()
-		};
-	}
+	static byte[] EncodeString (string text, TextEncodingType encoding) => encoding switch {
+		TextEncodingType.Latin1 => System.Text.Encoding.Latin1.GetBytes (text),
+		TextEncodingType.Utf8 => System.Text.Encoding.UTF8.GetBytes (text),
+		TextEncodingType.Utf16WithBom => [.. System.Text.Encoding.Unicode.GetPreamble (), .. System.Text.Encoding.Unicode.GetBytes (text)],
+		TextEncodingType.Utf16BE => System.Text.Encoding.BigEndianUnicode.GetBytes (text),
+		_ => []
+	};
 
-	static void WriteNullTerminator (MemoryStream ms, TextEncodingType encoding)
+	static void WriteNullTerminator (System.IO.MemoryStream ms, TextEncodingType encoding)
 	{
 		if (encoding == TextEncodingType.Utf16WithBom || encoding == TextEncodingType.Utf16BE) {
 			ms.WriteByte (0);
@@ -335,5 +324,4 @@ public class LyricsFrameTests
 			ms.WriteByte (0);
 		}
 	}
-
 }

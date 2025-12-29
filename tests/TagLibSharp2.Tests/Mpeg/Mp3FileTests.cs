@@ -1,9 +1,11 @@
 // Copyright (c) 2025 Stephen Shaw and contributors
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
+using TagLibSharp2.Core;
 using TagLibSharp2.Id3;
 using TagLibSharp2.Id3.Id3v2;
 using TagLibSharp2.Mpeg;
+using TagLibSharp2.Tests.Core;
 
 namespace TagLibSharp2.Tests.Mpeg;
 
@@ -18,7 +20,7 @@ public sealed class Mp3FileTests
 	[TestMethod]
 	public void Read_EmptyData_ReturnsFailure ()
 	{
-		var result = Mp3File.Read (Array.Empty<byte> ());
+		var result = Mp3File.Read ([]);
 
 		Assert.IsFalse (result.IsSuccess);
 	}
@@ -36,9 +38,10 @@ public sealed class Mp3FileTests
 	public void Read_Id3v2Only_ParsesTag ()
 	{
 		// Create minimal ID3v2.4 tag
-		var tag = new Id3v2Tag ();
-		tag.Title = "Test Song";
-		tag.Artist = "Test Artist";
+		var tag = new Id3v2Tag {
+			Title = TestConstants.Metadata.Title,
+			Artist = TestConstants.Metadata.Artist
+		};
 
 		var tagData = tag.Render ();
 
@@ -51,8 +54,8 @@ public sealed class Mp3FileTests
 
 		Assert.IsTrue (result.IsSuccess);
 		Assert.IsNotNull (result.File!.Id3v2Tag);
-		Assert.AreEqual ("Test Song", result.File.Id3v2Tag.Title);
-		Assert.AreEqual ("Test Artist", result.File.Id3v2Tag.Artist);
+		Assert.AreEqual (TestConstants.Metadata.Title, result.File.Id3v2Tag.Title);
+		Assert.AreEqual (TestConstants.Metadata.Artist, result.File.Id3v2Tag.Artist);
 		Assert.IsNull (result.File.Id3v1Tag);
 	}
 
@@ -60,9 +63,10 @@ public sealed class Mp3FileTests
 	public void Read_Id3v1Only_ParsesTag ()
 	{
 		// Create ID3v1 tag at end of file
-		var tag = new Id3v1Tag ();
-		tag.Title = "Test Song";
-		tag.Artist = "Test Artist";
+		var tag = new Id3v1Tag {
+			Title = TestConstants.Metadata.Title,
+			Artist = TestConstants.Metadata.Artist
+		};
 
 		var tagData = tag.Render ();
 
@@ -76,8 +80,8 @@ public sealed class Mp3FileTests
 		Assert.IsTrue (result.IsSuccess);
 		Assert.IsNull (result.File!.Id3v2Tag);
 		Assert.IsNotNull (result.File.Id3v1Tag);
-		Assert.AreEqual ("Test Song", result.File.Id3v1Tag.Title);
-		Assert.AreEqual ("Test Artist", result.File.Id3v1Tag.Artist);
+		Assert.AreEqual (TestConstants.Metadata.Title, result.File.Id3v1Tag.Title);
+		Assert.AreEqual (TestConstants.Metadata.Artist, result.File.Id3v1Tag.Artist);
 	}
 
 	[TestMethod]
@@ -311,6 +315,81 @@ public sealed class Mp3FileTests
 		var reRead = Mp3File.Read (rendered.Span);
 		Assert.IsTrue (reRead.IsSuccess);
 		Assert.AreEqual ("Modified Title", reRead.File!.Title);
+	}
+
+
+
+	[TestMethod]
+	public async Task ReadFromFileAsync_WithMockFileSystem_ParsesTag ()
+	{
+		var fs = new MockFileSystem ();
+
+		// Create minimal MP3 with ID3v2 tag
+		var tag = new Id3v2Tag { Title = TestConstants.Metadata.Title };
+		var tagData = tag.Render ();
+		var audioData = new byte[256];
+		var fullData = new byte[tagData.Length + audioData.Length];
+		tagData.Span.CopyTo (fullData);
+
+		fs.AddFile ("/test.mp3", fullData);
+
+		var result = await Mp3File.ReadFromFileAsync ("/test.mp3", fs);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (TestConstants.Metadata.Title, result.File!.Title);
+	}
+
+	[TestMethod]
+	public async Task ReadFromFileAsync_FileNotFound_ReturnsFailure ()
+	{
+		var fs = new MockFileSystem ();
+
+		var result = await Mp3File.ReadFromFileAsync ("/nonexistent.mp3", fs);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNotNull (result.Error);
+	}
+
+	[TestMethod]
+	public async Task ReadFromFileAsync_Cancellation_ReturnsFailure ()
+	{
+		var fs = new MockFileSystem ();
+		var tag = new Id3v2Tag { Title = "Test" };
+		var tagData = tag.Render ();
+		fs.AddFile ("/test.mp3", tagData.ToArray ());
+
+		var cts = new CancellationTokenSource ();
+		cts.Cancel ();
+
+		var result = await Mp3File.ReadFromFileAsync ("/test.mp3", fs, cts.Token);
+
+		Assert.IsFalse (result.IsSuccess);
+	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_WithMockFileSystem_WritesData ()
+	{
+		var fs = new MockFileSystem ();
+
+		// Create and modify MP3
+		var tag = new Id3v2Tag { Title = "Original" };
+		var tagData = tag.Render ();
+		var audioData = new byte[256];
+		var originalData = new byte[tagData.Length + audioData.Length];
+		tagData.Span.CopyTo (originalData);
+
+		var result = Mp3File.Read (originalData);
+		result.File!.Title = "Modified";
+
+		var writeResult = await result.File.SaveToFileAsync ("/output.mp3", originalData, fs);
+
+		Assert.IsTrue (writeResult.IsSuccess);
+		Assert.IsTrue (fs.FileExists ("/output.mp3"));
+
+		// Verify the saved file
+		var savedData = fs.ReadAllBytes ("/output.mp3");
+		var reRead = Mp3File.Read (savedData);
+		Assert.AreEqual ("Modified", reRead.File!.Title);
 	}
 
 }
