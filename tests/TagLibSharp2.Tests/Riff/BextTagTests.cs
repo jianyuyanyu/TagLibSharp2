@@ -146,7 +146,7 @@ public class BextTagTests
 	{
 		var data = CreateMinimalBextChunk ();
 		data[346] = 0x01; // Version 1
-		// UMID at offset 348, 64 bytes
+						  // UMID at offset 348, 64 bytes
 		for (int i = 0; i < 64; i++)
 			data[348 + i] = (byte)(i + 1);
 

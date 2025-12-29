@@ -2,8 +2,8 @@
 
 using TagLibSharp2.Core;
 using TagLibSharp2.Mpeg;
-using TagLibSharp2.Xiph;
 using TagLibSharp2.Ogg;
+using TagLibSharp2.Xiph;
 
 namespace TagLibSharp2.Tests.Core;
 
@@ -50,7 +50,7 @@ public class SaveToFileConvenienceTests
 		builder.Add (new byte[] { 0x10, 0x00 }); // max block size
 		builder.Add (new byte[] { 0x00, 0x00, 0x00 }); // min frame size
 		builder.Add (new byte[] { 0x00, 0x00, 0x00 }); // max frame size
-		// sample rate (20 bits) = 44100, channels (3 bits) = 2-1, bps (5 bits) = 16-1, samples (36 bits)
+													   // sample rate (20 bits) = 44100, channels (3 bits) = 2-1, bps (5 bits) = 16-1, samples (36 bits)
 		builder.Add (new byte[] { 0x0A, 0xC4, 0x42, 0xF0, 0x00, 0x00, 0x00, 0x00 });
 		builder.AddZeros (16); // MD5
 

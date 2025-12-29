@@ -224,20 +224,20 @@ public sealed class MpegFrame
 		int coefficient;
 
 		switch (layer) {
-		case MpegLayer.Layer1:
-			// Layer 1: frame size = (12 * bitrate / sampleRate + padding) * 4
-			paddingSize = hasPadding ? 4 : 0;
-			return ((12 * bitrate * 1000 / sampleRate) + (hasPadding ? 1 : 0)) * 4;
+			case MpegLayer.Layer1:
+				// Layer 1: frame size = (12 * bitrate / sampleRate + padding) * 4
+				paddingSize = hasPadding ? 4 : 0;
+				return ((12 * bitrate * 1000 / sampleRate) + (hasPadding ? 1 : 0)) * 4;
 
-		case MpegLayer.Layer2:
-		case MpegLayer.Layer3:
-			// Layer 2/3: frame size = 144 * bitrate / sampleRate + padding
-			paddingSize = hasPadding ? 1 : 0;
-			coefficient = 144;
-			return (coefficient * bitrate * 1000 / sampleRate) + paddingSize;
+			case MpegLayer.Layer2:
+			case MpegLayer.Layer3:
+				// Layer 2/3: frame size = 144 * bitrate / sampleRate + padding
+				paddingSize = hasPadding ? 1 : 0;
+				coefficient = 144;
+				return (coefficient * bitrate * 1000 / sampleRate) + paddingSize;
 
-		default:
-			return 0;
+			default:
+				return 0;
 		}
 	}
 

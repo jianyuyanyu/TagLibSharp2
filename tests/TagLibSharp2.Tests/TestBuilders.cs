@@ -146,8 +146,7 @@ public static class TestBuilders
 		/// <param name="encoding">Text encoding type.</param>
 		/// <param name="text">Text content.</param>
 		/// <returns>Frame content bytes (encoding byte + encoded text).</returns>
-		public static byte[] CreateTextFrameData (TextEncodingType encoding, string text) => encoding switch
-		{
+		public static byte[] CreateTextFrameData (TextEncodingType encoding, string text) => encoding switch {
 			TextEncodingType.Latin1 => [(byte)encoding, .. Encoding.Latin1.GetBytes (text)],
 			TextEncodingType.Utf16WithBom => [(byte)encoding, 0xFF, 0xFE, .. Encoding.Unicode.GetBytes (text)],
 			TextEncodingType.Utf16BE => [(byte)encoding, .. Encoding.BigEndianUnicode.GetBytes (text)],

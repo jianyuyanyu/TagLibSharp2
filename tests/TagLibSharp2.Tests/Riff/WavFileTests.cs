@@ -281,7 +281,7 @@ public class WavFileTests
 		builder.AddStringLatin1 ("cue ");
 		builder.AddUInt32LE (28);  // size: 4 (count) + 24 (one cue point)
 		builder.AddUInt32LE (1);   // 1 cue point
-		// Cue point: ID(4) + Position(4) + ChunkID(4) + ChunkStart(4) + BlockStart(4) + SampleOffset(4)
+								   // Cue point: ID(4) + Position(4) + ChunkID(4) + ChunkStart(4) + BlockStart(4) + SampleOffset(4)
 		builder.AddUInt32LE (1);   // ID
 		builder.AddUInt32LE (0);   // Position
 		builder.AddStringLatin1 ("data"); // Chunk ID
@@ -490,7 +490,7 @@ public class WavFileTests
 		builder.AddUInt16LE (22);     // cbSize
 		builder.AddUInt16LE (16);     // Valid bits per sample
 		builder.AddUInt32LE (0x3F);   // Channel mask (5.1: FL|FR|FC|LFE|BL|BR)
-		// SubFormat GUID for PCM
+									  // SubFormat GUID for PCM
 		byte[] subFormat = [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
 			0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71];
 		builder.Add (subFormat);

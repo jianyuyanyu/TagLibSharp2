@@ -178,13 +178,13 @@ public class AiffFile
 	void ProcessChunk (AiffChunk chunk)
 	{
 		switch (chunk.FourCC) {
-		case "COMM":
-			ParseCommChunk (chunk);
-			break;
-		case "ID3 ":
-		case "ID3":
-			ParseId3Chunk (chunk);
-			break;
+			case "COMM":
+				ParseCommChunk (chunk);
+				break;
+			case "ID3 ":
+			case "ID3":
+				ParseId3Chunk (chunk);
+				break;
 		}
 	}
 

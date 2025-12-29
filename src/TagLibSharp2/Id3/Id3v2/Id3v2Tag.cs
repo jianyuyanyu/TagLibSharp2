@@ -2383,7 +2383,7 @@ public sealed class Id3v2Tag : Tag
 			if (content.Length < offset + 4)
 				return content;
 			decompressedSize = (content[offset] << 24) | (content[offset + 1] << 16) |
-			                   (content[offset + 2] << 8) | content[offset + 3];
+							   (content[offset + 2] << 8) | content[offset + 3];
 			offset += 4;
 		}
 
@@ -2413,9 +2413,9 @@ public sealed class Id3v2Tag : Tag
 	static int ReadSyncsafeInt32 (ReadOnlySpan<byte> data)
 	{
 		return ((data[0] & 0x7F) << 21) |
-		       ((data[1] & 0x7F) << 14) |
-		       ((data[2] & 0x7F) << 7) |
-		       (data[3] & 0x7F);
+			   ((data[1] & 0x7F) << 14) |
+			   ((data[2] & 0x7F) << 7) |
+			   (data[3] & 0x7F);
 	}
 
 	/// <summary>

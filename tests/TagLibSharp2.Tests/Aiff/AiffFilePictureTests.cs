@@ -27,7 +27,7 @@ public class AiffFilePictureTests
 		builder.AddUInt16BE (2);      // channels
 		builder.AddUInt32BE (0);      // sample frames
 		builder.AddUInt16BE (16);     // bits per sample
-		// 80-bit extended sample rate (44100 Hz)
+									  // 80-bit extended sample rate (44100 Hz)
 		builder.Add (new byte[] { 0x40, 0x0E, 0xAC, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
 
 		// SSND chunk (empty)

@@ -104,25 +104,21 @@ public class RiffInfoTag : Tag
 	public override TagTypes TagType => TagTypes.RiffInfo;
 
 	/// <inheritdoc />
-	public override string? Title
-	{
+	public override string? Title {
 		get => GetField (INAM);
 		set => SetField (INAM, value);
 	}
 
 	/// <inheritdoc />
-	public override string? Artist
-	{
+	public override string? Artist {
 		get => GetField (IART);
 		set => SetField (IART, value);
 	}
 
 	/// <inheritdoc />
 #pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
-	public override string[] Performers
-	{
-		get
-		{
+	public override string[] Performers {
+		get {
 			var artist = GetField (IART);
 			return string.IsNullOrEmpty (artist)
 				? []
@@ -133,32 +129,27 @@ public class RiffInfoTag : Tag
 #pragma warning restore CA1819
 
 	/// <inheritdoc />
-	public override string? Album
-	{
+	public override string? Album {
 		get => GetField (IPRD);
 		set => SetField (IPRD, value);
 	}
 
 	/// <inheritdoc />
-	public override string? Comment
-	{
+	public override string? Comment {
 		get => GetField (ICMT);
 		set => SetField (ICMT, value);
 	}
 
 	/// <inheritdoc />
-	public override string? Genre
-	{
+	public override string? Genre {
 		get => GetField (IGNR);
 		set => SetField (IGNR, value);
 	}
 
 	/// <inheritdoc />
 #pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
-	public override string[] Genres
-	{
-		get
-		{
+	public override string[] Genres {
+		get {
 			var genre = GetField (IGNR);
 			return string.IsNullOrEmpty (genre)
 				? []
@@ -169,10 +160,8 @@ public class RiffInfoTag : Tag
 #pragma warning restore CA1819
 
 	/// <inheritdoc />
-	public override string? Year
-	{
-		get
-		{
+	public override string? Year {
+		get {
 			var icrd = GetField (ICRD);
 			if (string.IsNullOrEmpty (icrd))
 				return null;
@@ -184,10 +173,8 @@ public class RiffInfoTag : Tag
 	}
 
 	/// <inheritdoc />
-	public override uint? Track
-	{
-		get
-		{
+	public override uint? Track {
+		get {
 			var track = GetField (ITRK);
 			if (string.IsNullOrEmpty (track))
 				return null;
@@ -198,8 +185,7 @@ public class RiffInfoTag : Tag
 	}
 
 	/// <inheritdoc />
-	public override string? Copyright
-	{
+	public override string? Copyright {
 		get => GetField (ICOP);
 		set => SetField (ICOP, value);
 	}
@@ -207,8 +193,7 @@ public class RiffInfoTag : Tag
 	/// <summary>
 	/// Gets or sets the software field.
 	/// </summary>
-	public string? Software
-	{
+	public string? Software {
 		get => GetField (ISFT);
 		set => SetField (ISFT, value);
 	}

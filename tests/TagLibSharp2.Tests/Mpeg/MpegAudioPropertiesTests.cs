@@ -296,7 +296,7 @@ public class MpegAudioPropertiesTests
 		builder.Add (0x49, 0x44, 0x33);  // "ID3"
 		builder.Add (0x04, 0x00);         // Version 2.4
 		builder.Add (0x00);               // Flags
-		// Syncsafe size (without header)
+										  // Syncsafe size (without header)
 		var payloadSize = id3Size - 10;
 		builder.AddSyncSafeUInt32 ((uint)payloadSize);
 

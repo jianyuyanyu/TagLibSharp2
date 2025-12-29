@@ -5,9 +5,46 @@ All notable changes to TagLibSharp2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2025-12-29
 
 ### Added
+
+#### ID3v2.2 Legacy Support
+- Full ID3v2.2 (3-character frame ID) parsing support
+- Complete v2.2 → v2.3/v2.4 frame ID mapping (66 mappings)
+- Proper 3-byte big-endian size handling for v2.2 frames
+
+#### ID3v2 Unsynchronization
+- Global unsynchronization support (tag-level, v2.3/v2.4)
+- Per-frame unsynchronization support (v2.4 frame flag)
+- Proper 0xFF 0x00 byte sequence removal during parsing
+- Two-pass algorithm for efficient memory usage
+
+#### ID3v2 Frame Flags Processing
+- Compression support with zlib decompression (v2.3 and v2.4)
+- Grouping identity flag handling (skips group ID byte)
+- Data length indicator parsing (v2.4 syncsafe 4-byte prefix)
+- Encryption flag detection (content preserved as-is)
+
+#### FLAC MD5 Audio Signature
+- `FlacFile.AudioMd5Signature` property for 128-bit MD5 hash of unencoded audio
+- `FlacFile.AudioMd5SignatureHex` for hex string representation
+- `FlacFile.HasAudioMd5Signature` to detect if encoder computed the hash
+- Essential for bit-perfect archive verification
+
+#### Picture Support for WAV and AIFF
+- `WavFile.Pictures` and `WavFile.HasPictures` via embedded ID3v2 tag
+- `AiffFile.Pictures` and `AiffFile.HasPictures` via embedded ID3v2 tag
+- `CoverArt` convenience property for primary album art
+- Full PictureType support (FrontCover, BackCover, etc.)
+
+#### SaveToFile Convenience Overloads
+- `Mp3File.SaveToFile(path)` - saves to specified path
+- `FlacFile.SaveToFile(path)` - saves to specified path
+- `OggVorbisFile.SaveToFile(path)` - saves to specified path
+- `WavFile.SaveToFile(path)` - saves to specified path
+- `AiffFile.SaveToFile(path)` - saves to specified path
+- All with async variants accepting CancellationToken
 
 #### AIFF Write Support
 - `AiffFile.Render` for serializing AIFF files to binary data
@@ -64,7 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Defense-in-depth checks added to AiffChunk, RiffChunk, and RiffInfoTag
 
 ### Changed
-- Test count increased from 1528 to 1564
+- Test count increased from 1528 to 1658 (+130 tests)
 
 ## [0.1.0] - 2025-12-26
 
@@ -226,4 +263,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `BinaryData(byte[])` constructor now copies the array to ensure true immutability
 
+[0.2.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.2.0
 [0.1.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.1.0
