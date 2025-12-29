@@ -25,7 +25,7 @@ See the [Migration Guide](docs/MIGRATION-FROM-TAGLIB.md) for detailed comparison
 - **Performance-First**: Zero-allocation parsing with `Span<T>` and `ArrayPool<T>`
 - **Multi-Target**: Supports .NET Standard 2.0/2.1, .NET 8.0, and .NET 10.0
 - **Format Support**:
-  - Audio: MP3 (ID3v1/ID3v2), FLAC, OGG Vorbis, WAV (RIFF INFO/ID3v2), AIFF (read)
+  - Audio: MP3 (ID3v1/ID3v2), FLAC, OGG Vorbis, WAV (RIFF INFO/ID3v2), AIFF (ID3v2)
   - Planned: MP4/M4A, ASF/WMA, APE, Opus, DSF
 
 ## Installation
@@ -71,9 +71,11 @@ var ogg = OggVorbisFile.ReadFromFile("song.ogg").File;
 WavFile.TryParse(new BinaryData(File.ReadAllBytes("song.wav")), out var wav);
 Console.WriteLine($"WAV: {wav.Title} - {wav.AudioProperties?.Duration}");
 
-// AIFF files (read-only, includes audio properties)
+// AIFF files (read and write, includes audio properties)
 AiffFile.TryParse(new BinaryData(File.ReadAllBytes("song.aiff")), out var aiff);
 Console.WriteLine($"AIFF: {aiff.AudioProperties?.SampleRate}Hz");
+aiff.Tag = new Id3v2Tag { Title = "Updated Title" };
+aiff.SaveToFile("song.aiff");
 
 // Async support for high-throughput scenarios
 var asyncResult = await Mp3File.ReadFromFileAsync("song.mp3");
@@ -159,6 +161,12 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 - [x] ID3 chunk support for metadata
 - [x] AIFC (compressed) format detection
 - [x] ExtendedFloat utility for 80-bit IEEE 754
+- [x] AIFF file write operations with ID3v2 support
+
+### Phase 9: Stability & Preservation ✅
+- [x] FLAC metadata block preservation (SEEKTABLE, APPLICATION blocks)
+- [x] WAV chunk preservation (fact, cue, smpl and other chunks)
+- [x] All formats preserve unknown/unrecognized data during round-trip
 
 ### Future
 - [ ] MP4/M4A (AAC/ALAC) with iTunes atoms
@@ -166,7 +174,6 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 - [ ] DSF (DSD) format
 - [ ] ASF/WMA format
 - [ ] APE tags for WavPack/Musepack
-- [ ] AIFF write support
 
 ## Documentation
 

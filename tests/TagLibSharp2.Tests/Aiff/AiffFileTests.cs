@@ -2,6 +2,7 @@
 
 using TagLibSharp2.Aiff;
 using TagLibSharp2.Core;
+using TagLibSharp2.Tests.Core;
 
 namespace TagLibSharp2.Tests.Aiff;
 
@@ -331,5 +332,105 @@ public class AiffFileTests
 		builder.Add (ssndChunk);
 
 		return builder.ToBinaryData ();
+	}
+
+	// Write support tests
+
+	[TestMethod]
+	public void Render_ProducesValidAiff ()
+	{
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
+		AiffFile.TryParse (data, out var file);
+
+		var rendered = file!.Render ();
+
+		Assert.AreEqual ((byte)'F', rendered[0]);
+		Assert.AreEqual ((byte)'O', rendered[1]);
+		Assert.AreEqual ((byte)'R', rendered[2]);
+		Assert.AreEqual ((byte)'M', rendered[3]);
+		Assert.AreEqual ((byte)'A', rendered[8]);
+		Assert.AreEqual ((byte)'I', rendered[9]);
+		Assert.AreEqual ((byte)'F', rendered[10]);
+		Assert.AreEqual ((byte)'F', rendered[11]);
+	}
+
+	[TestMethod]
+	public void Render_RoundTrip_PreservesAudioProperties ()
+	{
+		var data = CreateMinimalAiffFile (48000, 24, 2, 96000);
+		AiffFile.TryParse (data, out var file);
+
+		var rendered = file!.Render ();
+		AiffFile.TryParse (rendered, out var roundTripped);
+
+		Assert.IsNotNull (roundTripped?.AudioProperties);
+		Assert.AreEqual (48000, roundTripped.AudioProperties.SampleRate);
+		Assert.AreEqual (24, roundTripped.AudioProperties.BitsPerSample);
+		Assert.AreEqual (2, roundTripped.AudioProperties.Channels);
+	}
+
+	[TestMethod]
+	public void Render_WithId3Tag_IncludesId3Chunk ()
+	{
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
+		AiffFile.TryParse (data, out var file);
+
+		file!.Tag = new TagLibSharp2.Id3.Id3v2.Id3v2Tag { Title = "Test Title" };
+
+		var rendered = file.Render ();
+		AiffFile.TryParse (rendered, out var roundTripped);
+
+		Assert.IsNotNull (roundTripped?.Tag);
+		Assert.AreEqual ("Test Title", roundTripped.Tag.Title);
+	}
+
+	[TestMethod]
+	public void Render_WithAnnoChunk_PreservesAnnoChunk ()
+	{
+		var data = CreateAiffWithOddChunk ();
+		AiffFile.TryParse (data, out var file);
+
+		var rendered = file!.Render ();
+
+		// Verify ANNO chunk was preserved
+		Assert.IsTrue (rendered.ToStringLatin1 ().Contains ("ANNO"));
+	}
+
+	[TestMethod]
+	public void Render_AifcFile_PreservesFormType ()
+	{
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000, isAifc: true);
+		AiffFile.TryParse (data, out var file);
+
+		var rendered = file!.Render ();
+		AiffFile.TryParse (rendered, out var roundTripped);
+
+		Assert.AreEqual ("AIFC", roundTripped!.FormType);
+	}
+
+	[TestMethod]
+	public void SaveToFile_WithMockFileSystem_WritesData ()
+	{
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
+		AiffFile.TryParse (data, out var file);
+
+		var mockFs = new MockFileSystem ();
+		var result = file!.SaveToFile ("/test/output.aiff", mockFs);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsTrue (mockFs.FileExists ("/test/output.aiff"));
+	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_WithMockFileSystem_WritesData ()
+	{
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
+		AiffFile.TryParse (data, out var file);
+
+		var mockFs = new MockFileSystem ();
+		var result = await file!.SaveToFileAsync ("/test/output.aiff", mockFs);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsTrue (mockFs.FileExists ("/test/output.aiff"));
 	}
 }

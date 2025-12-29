@@ -51,6 +51,43 @@ public class AiffChunk
 	}
 
 	/// <summary>
+	/// Creates a new AiffChunk with the specified FourCC and data.
+	/// </summary>
+	/// <param name="fourCC">The 4-character chunk identifier.</param>
+	/// <param name="data">The chunk data.</param>
+	public AiffChunk (string fourCC, BinaryData data)
+	{
+		FourCC = fourCC;
+		Size = (uint)data.Length;
+		Data = data;
+	}
+
+	/// <summary>
+	/// Renders the chunk to binary data.
+	/// </summary>
+	/// <returns>The complete chunk including header and padding.</returns>
+	public BinaryData Render ()
+	{
+		var needsPadding = Size % 2 == 1;
+		using var builder = new BinaryDataBuilder (HeaderSize + (int)Size + (needsPadding ? 1 : 0));
+
+		// Write FourCC
+		builder.AddStringLatin1 (FourCC);
+
+		// Write size (big-endian)
+		builder.AddUInt32BE (Size);
+
+		// Write data
+		builder.Add (Data);
+
+		// Pad to even boundary if needed
+		if (needsPadding)
+			builder.Add (0x00);
+
+		return builder.ToBinaryData ();
+	}
+
+	/// <summary>
 	/// Attempts to parse a chunk at the specified offset.
 	/// </summary>
 	/// <param name="data">The binary data containing the chunk.</param>

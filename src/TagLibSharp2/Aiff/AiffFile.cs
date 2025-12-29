@@ -63,9 +63,9 @@ public class AiffFile
 	public AiffAudioProperties? AudioProperties { get; private set; }
 
 	/// <summary>
-	/// Gets the ID3v2 tag if present.
+	/// Gets or sets the ID3v2 tag.
 	/// </summary>
-	public Id3v2Tag? Tag { get; private set; }
+	public Id3v2Tag? Tag { get; set; }
 
 	/// <summary>
 	/// Gets all parsed chunks in order.
@@ -174,5 +174,92 @@ public class AiffFile
 		var result = Id3v2Tag.Read (chunk.Data.Span);
 		if (result.IsSuccess)
 			Tag = result.Tag;
+	}
+
+	/// <summary>
+	/// Renders the AIFF file to binary data.
+	/// </summary>
+	/// <returns>The complete AIFF file as binary data.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if the file is not valid.</exception>
+	public BinaryData Render ()
+	{
+		if (!IsValid)
+			throw new InvalidOperationException ("Cannot render invalid AIFF file");
+
+		// Calculate total size of all chunks
+		var chunksSize = 0;
+		foreach (var chunk in _chunks) {
+			// Skip existing ID3 chunks - we'll add updated version if needed
+			if (chunk.FourCC is "ID3 " or "ID3")
+				continue;
+			chunksSize += chunk.TotalSize;
+		}
+
+		// Add ID3 tag if present
+		BinaryData id3Data = BinaryData.Empty;
+		if (Tag is not null && !Tag.IsEmpty) {
+			id3Data = Tag.Render ();
+			if (id3Data.Length > 0) {
+				// ID3 chunk: header (8) + data + padding if odd
+				var id3ChunkSize = AiffChunk.HeaderSize + id3Data.Length;
+				if (id3Data.Length % 2 == 1)
+					id3ChunkSize++;
+				chunksSize += id3ChunkSize;
+			}
+		}
+
+		// Total size = form type (4) + all chunks
+		var contentSize = 4 + chunksSize;
+		var totalSize = HeaderSize + chunksSize;
+
+		using var builder = new BinaryDataBuilder (totalSize);
+
+		// FORM header
+		builder.AddStringLatin1 ("FORM");
+		builder.AddUInt32BE ((uint)contentSize);
+		builder.AddStringLatin1 (FormType);
+
+		// Write all chunks except ID3 (which we'll add at the end)
+		foreach (var chunk in _chunks) {
+			if (chunk.FourCC is "ID3 " or "ID3")
+				continue;
+			builder.Add (chunk.Render ());
+		}
+
+		// Add ID3 chunk if present
+		if (id3Data.Length > 0) {
+			var id3Chunk = new AiffChunk ("ID3 ", id3Data);
+			builder.Add (id3Chunk.Render ());
+		}
+
+		return builder.ToBinaryData ();
+	}
+
+	/// <summary>
+	/// Saves the AIFF file to the specified path.
+	/// </summary>
+	/// <param name="path">The file path.</param>
+	/// <param name="fileSystem">Optional file system abstraction.</param>
+	/// <returns>The write result.</returns>
+	public FileWriteResult SaveToFile (string path, IFileSystem? fileSystem = null)
+	{
+		var data = Render ();
+		return AtomicFileWriter.Write (path, data.Span, fileSystem);
+	}
+
+	/// <summary>
+	/// Saves the AIFF file to the specified path asynchronously.
+	/// </summary>
+	/// <param name="path">The file path.</param>
+	/// <param name="fileSystem">Optional file system abstraction.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The write result.</returns>
+	public Task<FileWriteResult> SaveToFileAsync (
+		string path,
+		IFileSystem? fileSystem = null,
+		CancellationToken cancellationToken = default)
+	{
+		var data = Render ();
+		return AtomicFileWriter.WriteAsync (path, data.Memory, fileSystem, cancellationToken);
 	}
 }

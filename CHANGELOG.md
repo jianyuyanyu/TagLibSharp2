@@ -5,6 +5,27 @@ All notable changes to TagLibSharp2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### AIFF Write Support
+- `AiffFile.Render` for serializing AIFF files to binary data
+- `AiffFile.SaveToFile` and `SaveToFileAsync` for atomic file saves
+- `AiffChunk.Render` for chunk serialization with proper padding
+- Settable `Tag` property on `AiffFile` for modifying ID3v2 metadata
+- All existing chunks preserved during render (COMM, SSND, ANNO, etc.)
+
+#### Metadata Preservation
+- FLAC: Preserve SEEKTABLE and APPLICATION blocks during render
+  - `FlacPreservedBlock` struct for block storage
+  - `PreservedBlocks` property on `FlacFile`
+- WAV: Preserve all unknown chunks (fact, cue, smpl, etc.) during render
+  - Only LIST INFO and id3 chunks are replaced; all others preserved
+
+### Changed
+- Test count increased from 1512 to 1528
+
 ## [0.1.0] - 2025-12-26
 
 ### Added
