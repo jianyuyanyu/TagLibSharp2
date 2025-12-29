@@ -170,6 +170,111 @@ public static class TestBuilders
 			Array.Copy (header, result, header.Length);
 			return result;
 		}
+
+		/// <summary>
+		/// Creates a minimal valid ID3v2 header with flags.
+		/// </summary>
+		public static byte[] CreateHeaderWithFlags (byte version, uint size, byte flags)
+		{
+			var data = CreateHeader (version, size);
+			data[5] = flags;
+			return data;
+		}
+
+		/// <summary>
+		/// Creates an ID3v2.2 text frame (3-byte ID, 3-byte size).
+		/// </summary>
+		/// <param name="frameId">3-character frame ID (e.g., "TT2").</param>
+		/// <param name="text">Text content.</param>
+		/// <returns>Complete frame bytes (6-byte header + content).</returns>
+		public static byte[] CreateTextFrameV22 (string frameId, string text)
+		{
+			var textBytes = Encoding.Latin1.GetBytes (text);
+			var frameContent = new byte[1 + textBytes.Length];
+			frameContent[0] = TestConstants.Id3v2.EncodingLatin1;
+			Array.Copy (textBytes, 0, frameContent, 1, textBytes.Length);
+
+			return CreateFrameV22 (frameId, frameContent);
+		}
+
+		/// <summary>
+		/// Creates a raw ID3v2.2 frame (6-byte header).
+		/// </summary>
+		public static byte[] CreateFrameV22 (string frameId, byte[] content)
+		{
+			var frameSize = content.Length;
+			var frame = new byte[TestConstants.Id3v2.FrameHeaderSizeV22 + frameSize];
+
+			// Frame ID (3 bytes)
+			Encoding.ASCII.GetBytes (frameId).CopyTo (frame, 0);
+
+			// Size (3-byte big-endian)
+			frame[3] = (byte)((frameSize >> 16) & 0xFF);
+			frame[4] = (byte)((frameSize >> 8) & 0xFF);
+			frame[5] = (byte)(frameSize & 0xFF);
+
+			// Content
+			Array.Copy (content, 0, frame, TestConstants.Id3v2.FrameHeaderSizeV22, frameSize);
+
+			return frame;
+		}
+
+		/// <summary>
+		/// Creates a complete ID3v2.2 tag with a single text frame.
+		/// </summary>
+		public static byte[] CreateTagWithTextFrameV22 (string frameId, string text)
+		{
+			var frame = CreateTextFrameV22 (frameId, text);
+			var header = CreateHeader (TestConstants.Id3v2.Version2, (uint)frame.Length);
+
+			var result = new byte[header.Length + frame.Length];
+			Array.Copy (header, result, header.Length);
+			Array.Copy (frame, 0, result, header.Length, frame.Length);
+
+			return result;
+		}
+
+		/// <summary>
+		/// Applies unsynchronization to data (inserts 0x00 after each 0xFF).
+		/// </summary>
+		public static byte[] ApplyUnsynchronization (byte[] data)
+		{
+			// Count how many 0xFF bytes need unsync
+			var count = 0;
+			foreach (var b in data) {
+				if (b == 0xFF)
+					count++;
+			}
+
+			if (count == 0)
+				return data;
+
+			// Create unsynchronized output
+			var output = new byte[data.Length + count];
+			var outIndex = 0;
+			foreach (var b in data) {
+				output[outIndex++] = b;
+				if (b == 0xFF)
+					output[outIndex++] = 0x00;
+			}
+
+			return output;
+		}
+
+		/// <summary>
+		/// Creates an ID3v2 tag with unsynchronization applied.
+		/// </summary>
+		public static byte[] CreateTagWithUnsynchronization (byte version, byte[] frameData)
+		{
+			var unsyncData = ApplyUnsynchronization (frameData);
+			var header = CreateHeaderWithFlags (version, (uint)unsyncData.Length, TestConstants.Id3v2.FlagUnsynchronization);
+
+			var result = new byte[header.Length + unsyncData.Length];
+			Array.Copy (header, result, header.Length);
+			Array.Copy (unsyncData, 0, result, header.Length, unsyncData.Length);
+
+			return result;
+		}
 	}
 
 	/// <summary>
@@ -291,6 +396,41 @@ public static class TestBuilders
 
 			// MD5 signature (16 bytes - all zeros)
 			builder.AddZeros (16);
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates a FLAC file with a specific MD5 signature.
+		/// </summary>
+		/// <param name="md5">16-byte MD5 signature, or null for all zeros.</param>
+		public static byte[] CreateWithMd5 (byte[]? md5 = null)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Magic: "fLaC"
+			builder.Add (TestConstants.Magic.Flac);
+
+			// STREAMINFO block header: last=true, type=0, size=34
+			builder.Add (StreamInfoHeaderLast);
+
+			// min/max block size: 4096
+			builder.Add (DefaultBlockSizes);
+			// min/max frame size: 0 (unknown)
+			builder.Add (ZeroFrameSizes);
+
+			// Sample rate, channels, bps, total samples (using defaults)
+			builder.Add ((byte)0xAC); // 44100 Hz upper
+			builder.Add ((byte)0x44);
+			builder.Add ((byte)0xF0); // 44100 lower + 2 channels
+			builder.Add ((byte)0x00); // 16 bits + 0 samples upper
+			builder.AddZeros (4); // total samples lower
+
+			// MD5 signature (16 bytes)
+			if (md5 is { Length: 16 })
+				builder.Add (md5);
+			else
+				builder.AddZeros (16);
 
 			return builder.ToArray ();
 		}

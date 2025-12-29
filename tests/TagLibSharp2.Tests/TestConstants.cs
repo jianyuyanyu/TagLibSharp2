@@ -164,6 +164,9 @@ public static class TestConstants
 		/// <summary>Size of ID3v2 header in bytes.</summary>
 		public const int HeaderSize = 10;
 
+		/// <summary>Major version for ID3v2.2.</summary>
+		public const byte Version2 = 2;
+
 		/// <summary>Major version for ID3v2.3.</summary>
 		public const byte Version3 = 3;
 
@@ -176,6 +179,9 @@ public static class TestConstants
 		/// <summary>Size of frame header in ID3v2.3/2.4.</summary>
 		public const int FrameHeaderSize = 10;
 
+		/// <summary>Size of frame header in ID3v2.2.</summary>
+		public const int FrameHeaderSizeV22 = 6;
+
 		/// <summary>Latin-1 text encoding byte.</summary>
 		public const byte EncodingLatin1 = 0x00;
 
@@ -187,6 +193,33 @@ public static class TestConstants
 
 		/// <summary>UTF-8 text encoding byte (ID3v2.4 only).</summary>
 		public const byte EncodingUtf8 = 0x03;
+
+		/// <summary>Unsynchronization flag (bit 7 of flags byte).</summary>
+		public const byte FlagUnsynchronization = 0x80;
+	}
+
+	/// <summary>
+	/// ID3v2.2 3-character frame identifiers.
+	/// </summary>
+	public static class FrameIdsV22
+	{
+		/// <summary>Title/songname/content description (v2.2).</summary>
+		public const string Title = "TT2";
+
+		/// <summary>Lead performer(s)/Soloist(s) (v2.2).</summary>
+		public const string Artist = "TP1";
+
+		/// <summary>Album/Movie/Show title (v2.2).</summary>
+		public const string Album = "TAL";
+
+		/// <summary>Track number (v2.2).</summary>
+		public const string Track = "TRK";
+
+		/// <summary>Year (v2.2).</summary>
+		public const string Year = "TYE";
+
+		/// <summary>Content type/genre (v2.2).</summary>
+		public const string Genre = "TCO";
 	}
 
 	/// <summary>
