@@ -281,10 +281,14 @@ public class RiffInfoTag : Tag
 			var fieldSize = data.ToUInt32LE (offset);
 			offset += 4;
 
+			// Overflow protection: reject fields claiming > int.MaxValue size
+			if (fieldSize > int.MaxValue)
+				break;
+
 			if (offset + fieldSize > data.Length)
 				break;
 
-			// Read field value (null-terminated string)
+			// Read field value (null-terminated string, safe cast after overflow check)
 			var fieldData = data.Slice (offset, (int)fieldSize);
 			var value = fieldData.ToStringLatin1NullTerminated ();
 

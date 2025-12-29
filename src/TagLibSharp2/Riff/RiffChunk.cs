@@ -91,6 +91,10 @@ public readonly struct RiffChunk : IEquatable<RiffChunk>
 		// Read chunk data size (32-bit little-endian)
 		var dataSize = data.ToUInt32LE (offset + 4);
 
+		// Overflow protection: reject chunks claiming > int.MaxValue size
+		if (dataSize > int.MaxValue)
+			return false;
+
 		// Validate that we have enough data
 		// Note: We don't require padding byte to be present in source data
 		var availableData = data.Length - offset - HeaderSize;

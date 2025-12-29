@@ -147,4 +147,35 @@ public class AiffChunkTests
 	{
 		Assert.AreEqual (8, AiffChunk.HeaderSize);
 	}
+
+	[TestMethod]
+	public void TryParse_SizeExceedsIntMax_ReturnsFalse ()
+	{
+		// Size claims to be 0x80000000 (2GB+) - would overflow int
+		byte[] data = [
+			0x43, 0x4F, 0x4D, 0x4D, // "COMM"
+			0x80, 0x00, 0x00, 0x00, // Size = 2147483648 (> int.MaxValue)
+			0x01, 0x02              // Minimal data
+		];
+
+		var result = AiffChunk.TryParse (new BinaryData (data), 0, out _);
+
+		Assert.IsFalse (result);
+	}
+
+	[TestMethod]
+	public void TryParse_SizeAtIntMaxBoundary_ReturnsFalse ()
+	{
+		// Size just over int.MaxValue
+		byte[] data = [
+			0x43, 0x4F, 0x4D, 0x4D, // "COMM"
+			0x7F, 0xFF, 0xFF, 0xFF, // Size = 2147483647 (int.MaxValue)
+			0x01, 0x02              // Minimal data (not enough)
+		];
+
+		// Should return false because we don't have enough data
+		var result = AiffChunk.TryParse (new BinaryData (data), 0, out _);
+
+		Assert.IsFalse (result);
+	}
 }

@@ -114,11 +114,15 @@ public class AiffChunk
 			(span[offset + 6] << 8) |
 			span[offset + 7]);
 
+		// Overflow protection: reject chunks claiming > int.MaxValue size
+		if (size > int.MaxValue)
+			return false;
+
 		// Verify we have enough data
 		if (data.Length < offset + HeaderSize + size)
 			return false;
 
-		// Extract chunk data
+		// Extract chunk data (safe cast after overflow check)
 		var chunkData = data.Slice (offset + HeaderSize, (int)size);
 
 		chunk = new AiffChunk (fourCC, size, chunkData);
