@@ -120,10 +120,28 @@ internal static class Polyfills
 	/// <summary>
 	/// Polyfill for string.Replace with StringComparison (available in .NET Standard 2.1+).
 	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This polyfill only supports <see cref="StringComparison.Ordinal"/>. All other comparison
+	/// types will throw <see cref="NotSupportedException"/>. This limitation exists because
+	/// implementing culture-aware string replacement correctly on .NET Standard 2.0 requires
+	/// complex logic that is not needed for the library's internal use cases.
+	/// </para>
+	/// <para>
+	/// If you need culture-aware replacement on .NET Standard 2.0, use the native
+	/// <see cref="string.Replace(string, string)"/> method or upgrade to .NET Standard 2.1+.
+	/// </para>
+	/// </remarks>
+	/// <param name="str">The string to search within.</param>
+	/// <param name="oldValue">The string to replace.</param>
+	/// <param name="newValue">The replacement string.</param>
+	/// <param name="comparison">The comparison type. Only <see cref="StringComparison.Ordinal"/> is supported.</param>
+	/// <returns>A new string with all occurrences replaced.</returns>
+	/// <exception cref="NotSupportedException">Thrown when <paramref name="comparison"/> is not <see cref="StringComparison.Ordinal"/>.</exception>
 	public static string Replace (string str, string oldValue, string newValue, StringComparison comparison)
 	{
 		if (comparison != StringComparison.Ordinal)
-			throw new NotSupportedException ("Only Ordinal comparison is supported in polyfill");
+			throw new NotSupportedException ($"StringComparison.{comparison} is not supported in this polyfill. Only StringComparison.Ordinal is supported.");
 
 		return str.Replace (oldValue, newValue);
 	}

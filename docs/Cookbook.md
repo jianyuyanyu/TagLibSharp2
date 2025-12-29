@@ -468,8 +468,8 @@ var chapters = tag.GetChapters();
 foreach (var chapter in chapters)
 {
     Console.WriteLine($"Chapter: {chapter.ElementId}");
-    Console.WriteLine($"  Start: {chapter.StartTime}ms");
-    Console.WriteLine($"  End: {chapter.EndTime}ms");
+    Console.WriteLine($"  Start: {chapter.StartTimeMs}ms");
+    Console.WriteLine($"  End: {chapter.EndTimeMs}ms");
     if (chapter.Title is not null)
         Console.WriteLine($"  Title: {chapter.Title}");
 }
@@ -477,10 +477,8 @@ foreach (var chapter in chapters)
 // Add a chapter
 var newChapter = new ChapterFrame(
     elementId: "chp01",
-    startTime: 0,
-    endTime: 300000,  // 5 minutes
-    startByteOffset: null,
-    endByteOffset: null);
+    startTimeMs: 0,
+    endTimeMs: 300000);  // 5 minutes
 
 // Add title to chapter
 newChapter.AddSubFrame(new TextFrame("TIT2", "Introduction"));
@@ -498,21 +496,23 @@ var tag = mp3.Id3v2Tag!;
 var syncLyrics = tag.GetSyncLyrics();
 if (syncLyrics is not null)
 {
-    foreach (var entry in syncLyrics.Entries)
+    foreach (var item in syncLyrics.SyncItems)
     {
-        Console.WriteLine($"[{entry.Time}ms] {entry.Text}");
+        Console.WriteLine($"[{item.Timestamp}ms] {item.Text}");
     }
 }
 
 // Add synchronized lyrics
-var newLyrics = new SyncLyricsFrame(
-    encoding: TextEncoding.Utf8,
-    language: "eng",
-    contentType: SyncLyricsContentType.Lyrics,
-    description: "Lyrics");
+var newLyrics = new SyncLyricsFrame
+{
+    Encoding = TextEncodingType.Utf8,
+    Language = "eng",
+    ContentType = SyncLyricsType.Lyrics,
+    Description = "Lyrics"
+};
 
-newLyrics.AddEntry(new SyncLyricsEntry(0, "First line"));
-newLyrics.AddEntry(new SyncLyricsEntry(3000, "Second line"));
+newLyrics.AddSyncItem("First line", 0);
+newLyrics.AddSyncItem("Second line", 3000);
 tag.AddFrame(newLyrics);
 ```
 

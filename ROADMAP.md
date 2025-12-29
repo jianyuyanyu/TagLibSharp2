@@ -45,6 +45,7 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 | Feature | Status |
 |---------|--------|
 | Header parsing | ✅ |
+| v2.2 support (3-char frames) | ✅ |
 | v2.3 support | ✅ |
 | v2.4 support | ✅ |
 | Extended header parsing | ✅ |
@@ -62,10 +63,13 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 | General object (GEOB) | ✅ |
 | Chapter frame (CHAP) | ✅ |
 | Table of contents (CTOC) | ✅ |
-| Unsync decoding | 🔶 | May need verification |
+| Global unsync (tag-level) | ✅ |
+| Frame-level unsync (v2.4) | ✅ |
+| Compression (zlib) | ✅ |
+| Grouping identity | ✅ |
+| Data length indicator | ✅ |
 | Footer support | ❌ |
-| Compression support | ❌ |
-| Encryption support | ❌ |
+| Encryption support | ❌ (detected, content preserved) |
 
 ### Vorbis Comments (Xiph)
 | Feature | Status |
@@ -136,32 +140,38 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 | VORBIS_COMMENT | ✅ |
 | PICTURE block | ✅ |
 | CUESHEET | ✅ |
-| SEEKTABLE | 🔶 |
-| Write/save | ❌ |
+| SEEKTABLE | ✅ (preserved during write) |
+| APPLICATION | ✅ (preserved during write) |
+| MD5 audio signature | ✅ |
+| Write/save | ✅ |
+| Padding management | ✅ |
 | Metadata block reordering | ❌ |
 
 ### OGG Vorbis
 | Feature | Status |
 |---------|--------|
 | Page parsing | ✅ |
-| CRC validation | ✅ |
+| CRC validation | ✅ (optional, off by default) |
 | Identification header | ✅ |
 | Comment header | ✅ |
 | Read | ✅ |
 | Write | ✅ |
-| Duration from granule | 🔶 |
+| Duration from granule | ✅ |
 
 ### WAV ✅ Complete
 | Feature | Status |
 |---------|--------|
 | RIFF container | ✅ |
 | fmt chunk (audio properties) | ✅ |
+| WAVEFORMATEXTENSIBLE | ✅ |
 | data chunk | ✅ |
 | LIST INFO tags | ✅ |
 | ID3v2 chunk | ✅ |
+| bext chunk (BWF) | ✅ |
+| Pictures (via ID3v2) | ✅ |
 | Write | ✅ |
 
-### AIFF ✅ Complete (Read)
+### AIFF ✅ Complete
 | Feature | Status |
 |---------|--------|
 | FORM container | ✅ |
@@ -169,7 +179,9 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 | Extended float parsing | ✅ |
 | ID3 chunk | ✅ |
 | AIFC format detection | ✅ |
-| Write | ❌ |
+| AIFC compression info | ✅ |
+| Pictures (via ID3v2) | ✅ |
+| Write | ✅ |
 
 ### AAC/ALAC (M4A/MP4)
 | Feature | Status |
@@ -318,15 +330,15 @@ Consider adding compatibility shim for TagLib# consumers:
 
 | Phase | Files | Complexity | Notes |
 |-------|-------|------------|-------|
-| WAV | ✅ | ✅ | Complete with RIFF container + INFO + ID3v2 |
-| AIFF | 3-4 | Medium | 80-bit float is tricky |
+| WAV | ✅ | ✅ | Complete with RIFF + INFO + ID3v2 + BWF + WAVEFORMATEXTENSIBLE |
+| AIFF | ✅ | ✅ | Complete with FORM + COMM + ID3 + AIFC |
+| VBR Headers | ✅ | ✅ | Complete with Xing/VBRI parsing |
 | MP4/M4A | 6-8 | High | Complex atom tree navigation |
 | DSF | 3-4 | Low | Simple chunk format |
 | Opus | 2-3 | Low | Similar to Vorbis |
 | APE Tags | 2-3 | Medium | Needed for multiple formats |
-| VBR Headers | 2 | Medium | Xing/VBRI parsing |
 | ASF/WMA | 5-6 | High | GUID-based, complex |
 
 ---
 
-*Generated: 2025-12-28*
+*Last Updated: 2025-12-29 (v0.2.1)*

@@ -128,17 +128,21 @@ public class WavFileTests
 	}
 
 	[TestMethod]
-	public void ReadFromFile_NonExistentFile_ReturnsNull ()
+	public void ReadFromFile_NonExistentFile_ReturnsFailure ()
 	{
-		var wav = WavFile.ReadFromFile ("/nonexistent/path/file.wav");
-		Assert.IsNull (wav);
+		var result = WavFile.ReadFromFile ("/nonexistent/path/file.wav");
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNull (result.File);
+		Assert.IsNotNull (result.Error);
 	}
 
 	[TestMethod]
-	public async Task ReadFromFileAsync_NonExistentFile_ReturnsNull ()
+	public async Task ReadFromFileAsync_NonExistentFile_ReturnsFailure ()
 	{
-		var wav = await WavFile.ReadFromFileAsync ("/nonexistent/path/file.wav");
-		Assert.IsNull (wav);
+		var result = await WavFile.ReadFromFileAsync ("/nonexistent/path/file.wav");
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNull (result.File);
+		Assert.IsNotNull (result.Error);
 	}
 
 	[TestMethod]

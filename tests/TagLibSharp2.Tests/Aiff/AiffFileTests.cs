@@ -531,4 +531,120 @@ public class AiffFileTests
 		Assert.IsTrue (result.IsSuccess);
 		Assert.IsTrue (mockFs.FileExists ("/test/output.aiff"));
 	}
+
+	// ReadFromFile tests
+
+	[TestMethod]
+	public void ReadFromFile_ValidFile_ReturnsSuccess ()
+	{
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/test.aiff", data.ToArray ());
+
+		var result = AiffFile.ReadFromFile ("/test.aiff", mockFs);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.File);
+		Assert.IsTrue (result.File.IsValid);
+		Assert.AreEqual ("AIFF", result.File.FormType);
+	}
+
+	[TestMethod]
+	public void ReadFromFile_FileNotFound_ReturnsFailure ()
+	{
+		var mockFs = new MockFileSystem ();
+
+		var result = AiffFile.ReadFromFile ("/nonexistent.aiff", mockFs);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNull (result.File);
+		Assert.IsNotNull (result.Error);
+		StringAssert.Contains (result.Error, "not found");
+	}
+
+	[TestMethod]
+	public void ReadFromFile_AccessDenied_ReturnsFailure ()
+	{
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/test.aiff", data.ToArray ());
+		mockFs.MarkInaccessible ("/test.aiff");
+
+		var result = AiffFile.ReadFromFile ("/test.aiff", mockFs);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNull (result.File);
+		Assert.IsNotNull (result.Error);
+		StringAssert.Contains (result.Error, "Access denied");
+	}
+
+	[TestMethod]
+	public void ReadFromFile_InvalidData_ReturnsFailure ()
+	{
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/invalid.aiff", [0x00, 0x01, 0x02, 0x03]); // Invalid AIFF data
+
+		var result = AiffFile.ReadFromFile ("/invalid.aiff", mockFs);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNull (result.File);
+		Assert.IsNotNull (result.Error);
+	}
+
+	[TestMethod]
+	public async Task ReadFromFileAsync_ValidFile_ReturnsSuccess ()
+	{
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/test.aiff", data.ToArray ());
+
+		var result = await AiffFile.ReadFromFileAsync ("/test.aiff", mockFs);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.File);
+		Assert.IsTrue (result.File.IsValid);
+	}
+
+	[TestMethod]
+	public async Task ReadFromFileAsync_FileNotFound_ReturnsFailure ()
+	{
+		var mockFs = new MockFileSystem ();
+
+		var result = await AiffFile.ReadFromFileAsync ("/nonexistent.aiff", mockFs);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNull (result.File);
+		Assert.IsNotNull (result.Error);
+	}
+
+	[TestMethod]
+	public async Task ReadFromFileAsync_Cancellation_ReturnsFailure ()
+	{
+		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/test.aiff", data.ToArray ());
+		var cts = new CancellationTokenSource ();
+		cts.Cancel ();
+
+		var result = await AiffFile.ReadFromFileAsync ("/test.aiff", mockFs, cts.Token);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNotNull (result.Error);
+		StringAssert.Contains (result.Error, "cancelled");
+	}
+
+	[TestMethod]
+	public void ReadFromFile_WithId3Tag_ParsesTag ()
+	{
+		var data = CreateAiffWithId3Tag ("Test Title", "Test Artist");
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/tagged.aiff", data.ToArray ());
+
+		var result = AiffFile.ReadFromFile ("/tagged.aiff", mockFs);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.File?.Tag);
+		Assert.AreEqual ("Test Title", result.File.Tag.Title);
+		Assert.AreEqual ("Test Artist", result.File.Tag.Artist);
+	}
 }

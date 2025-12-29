@@ -122,14 +122,74 @@ public class AiffFile
 	/// <returns>True if parsing succeeded; otherwise, false.</returns>
 	public static bool TryParse (BinaryData data, out AiffFile? file)
 	{
-		file = new AiffFile ();
+		var result = Read (data.Span);
+		file = result.File;
+		return result.IsSuccess;
+	}
 
-		if (!file.Parse (data)) {
-			file = null;
-			return false;
-		}
+	/// <summary>
+	/// Reads an AIFF file from binary data with detailed error information.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <returns>A result containing the parsed file or error information.</returns>
+	public static AiffFileReadResult Read (ReadOnlySpan<byte> data)
+	{
+		if (data.Length < HeaderSize)
+			return AiffFileReadResult.Failure ("Data too short for AIFF header");
 
-		return true;
+		// Check FORM magic
+		if (data[0] != 'F' || data[1] != 'O' || data[2] != 'R' || data[3] != 'M')
+			return AiffFileReadResult.Failure ("Invalid AIFF magic (expected 'FORM')");
+
+		// Read form type
+		var formType = new BinaryData (data.Slice (8, 4).ToArray ()).ToStringLatin1 ();
+
+		// Validate form type
+		if (formType != "AIFF" && formType != "AIFC")
+			return AiffFileReadResult.Failure ($"Invalid form type (expected 'AIFF' or 'AIFC', got '{formType}')");
+
+		// Use internal parsing from here
+		var file = new AiffFile ();
+		if (!file.Parse (new BinaryData (data.ToArray ())))
+			return AiffFileReadResult.Failure ("Failed to parse AIFF file structure");
+
+		return AiffFileReadResult.Success (file);
+	}
+
+	/// <summary>
+	/// Reads an AIFF file from a file path.
+	/// </summary>
+	/// <param name="path">The file path.</param>
+	/// <param name="fileSystem">Optional file system abstraction.</param>
+	/// <returns>A result containing the parsed file or error information.</returns>
+	public static AiffFileReadResult ReadFromFile (string path, IFileSystem? fileSystem = null)
+	{
+		var readResult = FileHelper.SafeReadAllBytes (path, fileSystem);
+		if (!readResult.IsSuccess)
+			return AiffFileReadResult.Failure (readResult.Error!);
+
+		return Read (readResult.Data!);
+	}
+
+	/// <summary>
+	/// Reads an AIFF file from a file path asynchronously.
+	/// </summary>
+	/// <param name="path">The file path.</param>
+	/// <param name="fileSystem">Optional file system abstraction.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>A result containing the parsed file or error information.</returns>
+	public static async Task<AiffFileReadResult> ReadFromFileAsync (
+		string path,
+		IFileSystem? fileSystem = null,
+		CancellationToken cancellationToken = default)
+	{
+		var readResult = await FileHelper.SafeReadAllBytesAsync (path, fileSystem, cancellationToken)
+			.ConfigureAwait (false);
+
+		if (!readResult.IsSuccess)
+			return AiffFileReadResult.Failure (readResult.Error!);
+
+		return Read (readResult.Data!);
 	}
 
 	bool Parse (BinaryData data)
@@ -288,4 +348,65 @@ public class AiffFile
 		var data = Render ();
 		return AtomicFileWriter.WriteAsync (path, data.Memory, fileSystem, cancellationToken);
 	}
+}
+
+/// <summary>
+/// Represents the result of reading an AIFF file.
+/// </summary>
+public readonly struct AiffFileReadResult : IEquatable<AiffFileReadResult>
+{
+	/// <summary>
+	/// Gets the parsed AIFF file, or null if parsing failed.
+	/// </summary>
+	public AiffFile? File { get; }
+
+	/// <summary>
+	/// Gets the error message if parsing failed.
+	/// </summary>
+	public string? Error { get; }
+
+	/// <summary>
+	/// Gets whether the parsing was successful.
+	/// </summary>
+	public bool IsSuccess => File is not null;
+
+	AiffFileReadResult (AiffFile? file, string? error)
+	{
+		File = file;
+		Error = error;
+	}
+
+	/// <summary>
+	/// Creates a successful result.
+	/// </summary>
+	public static AiffFileReadResult Success (AiffFile file) => new (file, null);
+
+	/// <summary>
+	/// Creates a failure result.
+	/// </summary>
+	public static AiffFileReadResult Failure (string error) => new (null, error);
+
+	/// <inheritdoc/>
+	public bool Equals (AiffFileReadResult other) =>
+		ReferenceEquals (File, other.File) && Error == other.Error;
+
+	/// <inheritdoc/>
+	public override bool Equals (object? obj) =>
+		obj is AiffFileReadResult other && Equals (other);
+
+	/// <inheritdoc/>
+	public override int GetHashCode () =>
+		HashCode.Combine (File, Error);
+
+	/// <summary>
+	/// Determines whether two results are equal.
+	/// </summary>
+	public static bool operator == (AiffFileReadResult left, AiffFileReadResult right) =>
+		left.Equals (right);
+
+	/// <summary>
+	/// Determines whether two results are not equal.
+	/// </summary>
+	public static bool operator != (AiffFileReadResult left, AiffFileReadResult right) =>
+		!left.Equals (right);
 }

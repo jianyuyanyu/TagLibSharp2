@@ -174,13 +174,21 @@ public sealed class WavFile
 	/// </summary>
 	/// <param name="data">The file data.</param>
 	/// <returns>The parsed WAV file, or null if invalid.</returns>
-	public static WavFile? ReadFromData (BinaryData data)
+	public static WavFile? ReadFromData (BinaryData data) =>
+		Read (data.Span).File;
+
+	/// <summary>
+	/// Reads a WAV file from binary data with detailed error information.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <returns>A result containing the parsed file or error information.</returns>
+	public static WavFileReadResult Read (ReadOnlySpan<byte> data)
 	{
-		if (!RiffFile.TryParse (data, out var riff))
-			return null;
+		if (!RiffFile.TryParse (new BinaryData (data.ToArray ()), out var riff))
+			return WavFileReadResult.Failure ("Invalid RIFF file structure");
 
 		if (riff.FormType != "WAVE")
-			return null;
+			return WavFileReadResult.Failure ($"Invalid form type (expected 'WAVE', got '{riff.FormType}')");
 
 		var wav = new WavFile (riff);
 
@@ -221,7 +229,7 @@ public sealed class WavFile
 		if (bextChunk.HasValue && bextChunk.Value.Data.Length >= BextTag.MinimumSize)
 			wav.BextTag = Riff.BextTag.Parse (bextChunk.Value.Data);
 
-		return wav;
+		return WavFileReadResult.Success (wav);
 	}
 
 	/// <summary>
@@ -229,14 +237,14 @@ public sealed class WavFile
 	/// </summary>
 	/// <param name="path">The file path.</param>
 	/// <param name="fileSystem">Optional file system abstraction.</param>
-	/// <returns>The parsed WAV file, or null on error.</returns>
-	public static WavFile? ReadFromFile (string path, IFileSystem? fileSystem = null)
+	/// <returns>A result containing the parsed file or error information.</returns>
+	public static WavFileReadResult ReadFromFile (string path, IFileSystem? fileSystem = null)
 	{
-		var result = FileHelper.SafeReadAllBytes (path, fileSystem);
-		if (!result.IsSuccess || result.Data is null)
-			return null;
+		var readResult = FileHelper.SafeReadAllBytes (path, fileSystem);
+		if (!readResult.IsSuccess)
+			return WavFileReadResult.Failure (readResult.Error!);
 
-		return ReadFromData (new BinaryData (result.Data));
+		return Read (readResult.Data!);
 	}
 
 	/// <summary>
@@ -245,19 +253,19 @@ public sealed class WavFile
 	/// <param name="path">The file path.</param>
 	/// <param name="fileSystem">Optional file system abstraction.</param>
 	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <returns>The parsed WAV file, or null on error.</returns>
-	public static async Task<WavFile?> ReadFromFileAsync (
+	/// <returns>A result containing the parsed file or error information.</returns>
+	public static async Task<WavFileReadResult> ReadFromFileAsync (
 		string path,
 		IFileSystem? fileSystem = null,
 		CancellationToken cancellationToken = default)
 	{
-		var result = await FileHelper.SafeReadAllBytesAsync (path, fileSystem, cancellationToken)
+		var readResult = await FileHelper.SafeReadAllBytesAsync (path, fileSystem, cancellationToken)
 			.ConfigureAwait (false);
 
-		if (!result.IsSuccess || result.Data is null)
-			return null;
+		if (!readResult.IsSuccess)
+			return WavFileReadResult.Failure (readResult.Error!);
 
-		return ReadFromData (new BinaryData (result.Data));
+		return Read (readResult.Data!);
 	}
 
 	/// <summary>
@@ -339,4 +347,65 @@ public sealed class WavFile
 		var data = Render ();
 		return AtomicFileWriter.WriteAsync (path, data.Memory, fileSystem, cancellationToken);
 	}
+}
+
+/// <summary>
+/// Represents the result of reading a WAV file.
+/// </summary>
+public readonly struct WavFileReadResult : IEquatable<WavFileReadResult>
+{
+	/// <summary>
+	/// Gets the parsed WAV file, or null if parsing failed.
+	/// </summary>
+	public WavFile? File { get; }
+
+	/// <summary>
+	/// Gets the error message if parsing failed.
+	/// </summary>
+	public string? Error { get; }
+
+	/// <summary>
+	/// Gets whether the parsing was successful.
+	/// </summary>
+	public bool IsSuccess => File is not null;
+
+	WavFileReadResult (WavFile? file, string? error)
+	{
+		File = file;
+		Error = error;
+	}
+
+	/// <summary>
+	/// Creates a successful result.
+	/// </summary>
+	public static WavFileReadResult Success (WavFile file) => new (file, null);
+
+	/// <summary>
+	/// Creates a failure result.
+	/// </summary>
+	public static WavFileReadResult Failure (string error) => new (null, error);
+
+	/// <inheritdoc/>
+	public bool Equals (WavFileReadResult other) =>
+		ReferenceEquals (File, other.File) && Error == other.Error;
+
+	/// <inheritdoc/>
+	public override bool Equals (object? obj) =>
+		obj is WavFileReadResult other && Equals (other);
+
+	/// <inheritdoc/>
+	public override int GetHashCode () =>
+		HashCode.Combine (File, Error);
+
+	/// <summary>
+	/// Determines whether two results are equal.
+	/// </summary>
+	public static bool operator == (WavFileReadResult left, WavFileReadResult right) =>
+		left.Equals (right);
+
+	/// <summary>
+	/// Determines whether two results are not equal.
+	/// </summary>
+	public static bool operator != (WavFileReadResult left, WavFileReadResult right) =>
+		!left.Equals (right);
 }

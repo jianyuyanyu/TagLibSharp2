@@ -5,6 +5,36 @@ All notable changes to TagLibSharp2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-12-29
+
+### Added
+
+#### Error Context for File Parsing
+- `WavFileReadResult` struct with `IsSuccess`, `File`, and `Error` properties
+- `AiffFileReadResult` struct with `IsSuccess`, `File`, and `Error` properties
+- `WavFile.Read(ReadOnlySpan<byte>)` returns result type with error context
+- `AiffFile.Read(ReadOnlySpan<byte>)` returns result type with error context
+- `AiffFile.ReadFromFile` and `ReadFromFileAsync` methods for direct file loading
+
+#### Test Coverage
+- `PolyfillsTests.cs` - Hex conversion and Latin1 encoding tests
+- `OggCrcTests.cs` - CRC-32 calculation and validation tests
+- `Id3v1GenreTests.cs` - Genre lookup for all 192 genres
+- `DocExamplesCompileTests.cs` - Verify documentation code examples compile
+- `ResultTypeEqualityTests.cs` - IEquatable tests for 27 result types
+- `StructEqualityTests.cs` - Equality tests for SyncLyricsItem, FlacPreservedBlock, etc.
+
+#### Documentation
+- Fix Cookbook.md: Correct SyncLyricsFrame API (SyncLyricsItem, SyncLyricsType)
+- Fix Cookbook.md: Correct ChapterFrame API (StartTimeMs, EndTimeMs)
+- Update MILESTONES.md and ROADMAP.md with current status
+
+### Changed
+- `WavFile.ReadFromFile` and `ReadFromFileAsync` now return `WavFileReadResult`
+- `AiffFile.ReadFromFile` and `ReadFromFileAsync` now return `AiffFileReadResult`
+- Improved documentation for `Polyfills.Replace` StringComparison limitation
+- Test count increased from 1756 to 1939 (+183 tests)
+
 ## [0.2.0] - 2025-12-29
 
 ### Added
@@ -263,5 +293,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `BinaryData(byte[])` constructor now copies the array to ensure true immutability
 
+[0.2.1]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.2.1
 [0.2.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.2.0
 [0.1.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.1.0
