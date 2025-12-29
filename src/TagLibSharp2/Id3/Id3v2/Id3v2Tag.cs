@@ -11,8 +11,59 @@ namespace TagLibSharp2.Id3.Id3v2;
 /// </summary>
 public sealed class Id3v2Tag : Tag
 {
-	const int FrameHeaderSize = 10;
+	const int FrameHeaderSizeV23 = 10;  // v2.3 and v2.4: 4-byte ID + 4-byte size + 2-byte flags
+	const int FrameHeaderSizeV22 = 6;   // v2.2: 3-byte ID + 3-byte size (no flags)
 	const int DefaultPaddingSize = 1024;
+
+	/// <summary>
+	/// Maps ID3v2.2 3-character frame IDs to ID3v2.3/2.4 4-character equivalents.
+	/// </summary>
+	static readonly Dictionary<string, string> V22FrameIdMap = new (StringComparer.Ordinal) {
+		// Text frames
+		{ "TT2", "TIT2" },  // Title
+		{ "TP1", "TPE1" },  // Artist
+		{ "TP2", "TPE2" },  // Album artist
+		{ "TP3", "TPE3" },  // Conductor
+		{ "TP4", "TPE4" },  // Remixer
+		{ "TAL", "TALB" },  // Album
+		{ "TYE", "TYER" },  // Year (mapped to TYER, not TDRC for simplicity)
+		{ "TRK", "TRCK" },  // Track
+		{ "TPA", "TPOS" },  // Disc number
+		{ "TCO", "TCON" },  // Genre
+		{ "TCM", "TCOM" },  // Composer
+		{ "TEN", "TENC" },  // Encoded by
+		{ "TSS", "TSSE" },  // Encoder settings
+		{ "TT1", "TIT1" },  // Grouping
+		{ "TT3", "TIT3" },  // Subtitle
+		{ "TKE", "TKEY" },  // Initial key
+		{ "TBP", "TBPM" },  // BPM
+		{ "TLA", "TLAN" },  // Language
+		{ "TMT", "TMED" },  // Media type
+		{ "TCR", "TCOP" },  // Copyright
+		{ "TPB", "TPUB" },  // Publisher
+		{ "TOR", "TORY" },  // Original release year
+		{ "TOT", "TOAL" },  // Original album
+		{ "TOA", "TOPE" },  // Original artist
+		{ "TOL", "TOLY" },  // Original lyricist
+		{ "TXX", "TXXX" },  // User text
+		// Picture frame
+		{ "PIC", "APIC" },  // Attached picture
+		// Comment frame
+		{ "COM", "COMM" },  // Comment
+		// Lyrics frame
+		{ "ULT", "USLT" },  // Unsynchronized lyrics
+		// Unique file ID
+		{ "UFI", "UFID" },  // Unique file identifier
+		// URL frames
+		{ "WAR", "WOAR" },  // Official artist URL
+		{ "WAS", "WOAS" },  // Official audio source URL
+		{ "WCM", "WCOM" },  // Commercial URL
+		{ "WCP", "WCOP" },  // Copyright URL
+		{ "WPB", "WPUB" },  // Publisher URL
+		{ "WXX", "WXXX" },  // User URL
+		// Involved people
+		{ "IPL", "IPLS" },  // Involved people list
+	};
 
 	readonly List<TextFrame> _frames = new (16);
 	readonly List<PictureFrame> _pictures = new (2);
@@ -1010,16 +1061,34 @@ public sealed class Id3v2Tag : Tag
 		var header = headerResult.Header;
 		var tag = new Id3v2Tag (header.MajorVersion);
 
-		// Skip header and parse frames
-		var frameData = data.Slice (Id3v2Header.HeaderSize);
+		// Determine frame header size based on version
+		// v2.2: 6 bytes (3-byte ID + 3-byte size)
+		// v2.3/v2.4: 10 bytes (4-byte ID + 4-byte size + 2-byte flags)
+		var isV22 = header.MajorVersion == 2;
+		var frameHeaderSize = isV22 ? FrameHeaderSizeV22 : FrameHeaderSizeV23;
+
+		// Skip header and get tag data
+		var tagData = data.Slice (Id3v2Header.HeaderSize);
 
 		// Limit remaining to actual available data to handle truncated files gracefully.
 		// The header may claim a larger size than what's actually present in the data.
 		var availableData = data.Length - Id3v2Header.HeaderSize;
 		var remaining = (int)Math.Min (header.TagSize, (uint)availableData);
 
-		// Skip extended header if present
-		if (header.HasExtendedHeader && remaining >= 4) {
+		// If unsynchronization is applied globally (v2.3 style), remove it from the entire tag data
+		// Note: v2.4 can have per-frame unsynchronization, but global is still supported
+		ReadOnlySpan<byte> frameData;
+		byte[]? unsyncBuffer = null;
+		if (header.IsUnsynchronized) {
+			unsyncBuffer = RemoveUnsynchronization (tagData.Slice (0, remaining));
+			frameData = unsyncBuffer;
+			remaining = unsyncBuffer.Length;
+		} else {
+			frameData = tagData;
+		}
+
+		// Skip extended header if present (not used in v2.2)
+		if (header.HasExtendedHeader && remaining >= 4 && !isV22) {
 			var extHeaderSize = GetExtendedHeaderSize (frameData, header.MajorVersion);
 			if (extHeaderSize > 0 && extHeaderSize <= remaining) {
 				frameData = frameData.Slice (extHeaderSize);
@@ -1027,24 +1096,35 @@ public sealed class Id3v2Tag : Tag
 			}
 		}
 
-		while (remaining >= FrameHeaderSize && frameData.Length >= FrameHeaderSize) {
+		while (remaining >= frameHeaderSize && frameData.Length >= frameHeaderSize) {
 			// Check for padding (zeros)
 			if (frameData[0] == 0)
 				break;
 
-			// Read frame header
-			var frameId = GetFrameId (frameData);
-			if (string.IsNullOrEmpty (frameId))
-				break;
+			// Read frame header - different format for v2.2
+			string frameId;
+			int frameSize;
+			if (isV22) {
+				frameId = GetFrameIdV22 (frameData);
+				if (string.IsNullOrEmpty (frameId) || frameId[frameId.Length - 1] == '?')
+					break; // Unknown v2.2 frame, stop parsing
 
-			var frameSize = GetFrameSize (frameData.Slice (4, 4), header.MajorVersion);
+				frameSize = GetFrameSizeV22 (frameData.Slice (3, 3));
+			} else {
+				frameId = GetFrameId (frameData);
+				if (string.IsNullOrEmpty (frameId))
+					break;
+
+				frameSize = GetFrameSize (frameData.Slice (4, 4), header.MajorVersion);
+			}
+
 			if (frameSize <= 0 ||
-				frameSize > remaining - FrameHeaderSize ||
-				frameSize > frameData.Length - FrameHeaderSize)
+				frameSize > remaining - frameHeaderSize ||
+				frameSize > frameData.Length - frameHeaderSize)
 				break;
 
 			// Parse frame content
-			var frameContent = frameData.Slice (FrameHeaderSize, frameSize);
+			var frameContent = frameData.Slice (frameHeaderSize, frameSize);
 
 			// Handle text frames (T***) - exclude TXXX (user text) and TIPL/TMCL (involved people)
 			if (frameId[0] == 'T' && frameId != "TXXX" && frameId != "TIPL" && frameId != "TMCL") {
@@ -1138,7 +1218,7 @@ public sealed class Id3v2Tag : Tag
 			}
 
 			// Move to next frame
-			var totalFrameSize = FrameHeaderSize + frameSize;
+			var totalFrameSize = frameHeaderSize + frameSize;
 			frameData = frameData.Slice (totalFrameSize);
 			remaining -= totalFrameSize;
 		}
@@ -1570,7 +1650,8 @@ public sealed class Id3v2Tag : Tag
 
 	BinaryData RenderFrameHeader (string frameId, int contentSize)
 	{
-		using var builder = new BinaryDataBuilder (FrameHeaderSize);
+		// Always render in v2.3/v2.4 format (10-byte headers)
+		using var builder = new BinaryDataBuilder (FrameHeaderSizeV23);
 
 		// Frame ID (4 bytes)
 		var idBytes = System.Text.Encoding.ASCII.GetBytes (frameId);
@@ -2152,5 +2233,71 @@ public sealed class Id3v2Tag : Tag
 								(uint)data[3]);
 			return extSize + 4;
 		}
+	}
+
+	/// <summary>
+	/// Gets the frame ID for ID3v2.2 (3-byte) frames.
+	/// </summary>
+	static string GetFrameIdV22 (ReadOnlySpan<byte> data)
+	{
+		if (data.Length < 3)
+			return string.Empty;
+
+		// Frame ID must be uppercase A-Z or 0-9
+		for (var i = 0; i < 3; i++) {
+			var c = data[i];
+			if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
+				return string.Empty;
+		}
+
+		var v22Id = System.Text.Encoding.ASCII.GetString (data.Slice (0, 3));
+
+		// Map to v2.3/2.4 equivalent if known, otherwise return with padding
+		return V22FrameIdMap.TryGetValue (v22Id, out var mapped) ? mapped : v22Id + "?";
+	}
+
+	/// <summary>
+	/// Gets the frame size for ID3v2.2 (3-byte big-endian).
+	/// </summary>
+	static int GetFrameSizeV22 (ReadOnlySpan<byte> data)
+	{
+		// 3-byte big-endian unsigned integer
+		return (data[0] << 16) | (data[1] << 8) | data[2];
+	}
+
+	/// <summary>
+	/// Removes ID3v2 unsynchronization from the data.
+	/// </summary>
+	/// <remarks>
+	/// ID3v2 unsynchronization replaces 0xFF followed by 0x00 or any byte >= 0xE0
+	/// with 0xFF 0x00 to avoid false sync patterns. This method reverses the process
+	/// by removing the inserted 0x00 bytes after 0xFF.
+	/// </remarks>
+	static byte[] RemoveUnsynchronization (ReadOnlySpan<byte> data)
+	{
+		// First pass: count the output size
+		var outputSize = 0;
+		for (var i = 0; i < data.Length; i++) {
+			outputSize++;
+			// Skip the 0x00 that was inserted after 0xFF
+			if (data[i] == 0xFF && i + 1 < data.Length && data[i + 1] == 0x00)
+				i++;
+		}
+
+		// If no unsynchronization was found, return copy of original
+		if (outputSize == data.Length)
+			return data.ToArray ();
+
+		// Second pass: build the output
+		var output = new byte[outputSize];
+		var outIndex = 0;
+		for (var i = 0; i < data.Length; i++) {
+			output[outIndex++] = data[i];
+			// Skip the 0x00 that was inserted after 0xFF
+			if (data[i] == 0xFF && i + 1 < data.Length && data[i + 1] == 0x00)
+				i++;
+		}
+
+		return output;
 	}
 }
