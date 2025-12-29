@@ -1123,8 +1123,18 @@ public sealed class Id3v2Tag : Tag
 				frameSize > frameData.Length - frameHeaderSize)
 				break;
 
+			// Read frame flags (v2.3/v2.4 only - v2.2 has no flags)
+			byte formatFlags = 0;
+			if (!isV22)
+				formatFlags = frameData[9]; // Format flags in byte 9
+
 			// Parse frame content
 			var frameContent = frameData.Slice (frameHeaderSize, frameSize);
+
+			// Process frame flags (v2.3/v2.4 only)
+			if (!isV22 && formatFlags != 0) {
+				frameContent = ProcessFrameFlags (frameContent, formatFlags, header.MajorVersion);
+			}
 
 			// Handle text frames (T***) - exclude TXXX (user text) and TIPL/TMCL (involved people)
 			if (frameId[0] == 'T' && frameId != "TXXX" && frameId != "TIPL" && frameId != "TMCL") {
@@ -2299,5 +2309,144 @@ public sealed class Id3v2Tag : Tag
 		}
 
 		return output;
+	}
+
+	/// <summary>
+	/// Processes ID3v2 frame flags and transforms the frame content accordingly.
+	/// </summary>
+	/// <remarks>
+	/// <para>ID3v2.3 format flags (byte 9):</para>
+	/// <list type="bullet">
+	/// <item><description>bit 7 (0x80): compression</description></item>
+	/// <item><description>bit 6 (0x40): encryption</description></item>
+	/// <item><description>bit 5 (0x20): grouping identity</description></item>
+	/// </list>
+	/// <para>ID3v2.4 format flags (byte 9):</para>
+	/// <list type="bullet">
+	/// <item><description>bit 6 (0x40): grouping identity</description></item>
+	/// <item><description>bit 3 (0x08): compression</description></item>
+	/// <item><description>bit 2 (0x04): encryption</description></item>
+	/// <item><description>bit 1 (0x02): unsynchronization</description></item>
+	/// <item><description>bit 0 (0x01): data length indicator</description></item>
+	/// </list>
+	/// <para>
+	/// When multiple flags are set, the order of extra data is:
+	/// grouping identity (1 byte), then data length indicator (4 bytes).
+	/// </para>
+	/// </remarks>
+	static ReadOnlySpan<byte> ProcessFrameFlags (ReadOnlySpan<byte> content, byte formatFlags, int majorVersion)
+	{
+		if (content.Length == 0 || formatFlags == 0)
+			return content;
+
+		var offset = 0;
+
+		// Parse flags based on version
+		bool hasGrouping, hasCompression, hasEncryption, hasUnsync, hasDataLengthIndicator;
+		if (majorVersion == 4) {
+			// ID3v2.4 flags
+			hasGrouping = (formatFlags & 0x40) != 0;
+			hasCompression = (formatFlags & 0x08) != 0;
+			hasEncryption = (formatFlags & 0x04) != 0;
+			hasUnsync = (formatFlags & 0x02) != 0;
+			hasDataLengthIndicator = (formatFlags & 0x01) != 0;
+		} else {
+			// ID3v2.3 flags
+			hasGrouping = (formatFlags & 0x20) != 0;
+			hasCompression = (formatFlags & 0x80) != 0;
+			hasEncryption = (formatFlags & 0x40) != 0;
+			hasUnsync = false; // Per-frame unsync is v2.4 only
+			hasDataLengthIndicator = false; // Separate flag is v2.4 only
+		}
+
+		// Skip encryption - we can't decrypt, so just return original for now
+		if (hasEncryption)
+			return content;
+
+		// Skip grouping identity byte if present (1 byte)
+		if (hasGrouping) {
+			if (content.Length <= offset)
+				return content;
+			offset += 1;
+		}
+
+		// v2.4: Skip data length indicator if present (4-byte syncsafe integer)
+		// v2.3 with compression: first 4 bytes are decompressed size (handled in decompression)
+		int decompressedSize = 0;
+		if (majorVersion == 4 && hasDataLengthIndicator) {
+			if (content.Length < offset + 4)
+				return content;
+			decompressedSize = ReadSyncsafeInt32 (content.Slice (offset, 4));
+			offset += 4;
+		} else if (majorVersion == 3 && hasCompression) {
+			// v2.3: 4-byte big-endian decompressed size precedes compressed data
+			if (content.Length < offset + 4)
+				return content;
+			decompressedSize = (content[offset] << 24) | (content[offset + 1] << 16) |
+			                   (content[offset + 2] << 8) | content[offset + 3];
+			offset += 4;
+		}
+
+		var data = content.Slice (offset);
+
+		// Apply per-frame unsynchronization if set (v2.4 only)
+		byte[]? unsyncBuffer = null;
+		if (hasUnsync) {
+			unsyncBuffer = RemoveUnsynchronization (data);
+			data = unsyncBuffer;
+		}
+
+		// Decompress if compressed
+		if (hasCompression && decompressedSize > 0) {
+			var decompressed = DecompressZlib (data, decompressedSize);
+			if (decompressed is not null)
+				return decompressed;
+			// If decompression fails, return what we have
+		}
+
+		return data;
+	}
+
+	/// <summary>
+	/// Reads a 4-byte syncsafe integer.
+	/// </summary>
+	static int ReadSyncsafeInt32 (ReadOnlySpan<byte> data)
+	{
+		return ((data[0] & 0x7F) << 21) |
+		       ((data[1] & 0x7F) << 14) |
+		       ((data[2] & 0x7F) << 7) |
+		       (data[3] & 0x7F);
+	}
+
+	/// <summary>
+	/// Decompresses zlib-compressed data.
+	/// </summary>
+	static byte[]? DecompressZlib (ReadOnlySpan<byte> data, int expectedSize)
+	{
+		if (data.Length < 2)
+			return null;
+
+		try {
+			// zlib format: CMF (1 byte) + FLG (1 byte) + compressed data + Adler-32 (4 bytes)
+			// Skip the 2-byte zlib header, DeflateStream expects raw deflate
+			var deflateData = data.Slice (2);
+
+			// Remove Adler-32 checksum at the end if present (4 bytes)
+			if (deflateData.Length >= 4)
+				deflateData = deflateData.Slice (0, deflateData.Length - 4);
+
+			using var input = new System.IO.MemoryStream (deflateData.ToArray ());
+			using var deflate = new System.IO.Compression.DeflateStream (input, System.IO.Compression.CompressionMode.Decompress);
+			using var output = new System.IO.MemoryStream (expectedSize);
+
+			deflate.CopyTo (output);
+			return output.ToArray ();
+		} catch (System.IO.InvalidDataException) {
+			// Invalid or corrupt compressed data
+			return null;
+		} catch (System.IO.IOException) {
+			// I/O error during decompression
+			return null;
+		}
 	}
 }
