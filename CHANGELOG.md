@@ -29,8 +29,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic Opus vs Vorbis detection by inspecting first Ogg packet
 - `.opus` file extension support
 
+#### R128 Loudness Convenience Properties
+- `R128TrackGainDb` and `R128AlbumGainDb` properties on `Tag` base class
+- Convert Q7.8 fixed-point integers to/from decibels as doubles
+- Uses `CultureInfo.InvariantCulture` for locale-independent parsing
+
+### Fixed
+
+#### RFC 3533 Compliance (Ogg Container)
+- Add segment table overflow validation in `OggPageHelper.BuildOggPage`
+  - Throws `ArgumentException` when packets require >255 segments
+  - Prevents corrupt Ogg files with large embedded artwork
+- Add bounds check in `FindLastGranulePosition` for truncated pages
+- Add `BuildMultiPagePacket` helper for large metadata spanning multiple pages
+
+#### RFC 7845 Compliance (Opus Codec)
+- Add channel mapping family 1 validation (1-8 channels per §5.1.1.2)
+- Existing OpusHead minimum size validation (19 bytes) now tested
+
+#### netstandard2.0 Compatibility
+- Replace C# 12 collection expressions `[]` with explicit `new List<T>()`
+- Fix `#if NET8_0_OR_GREATER` to `#if NET5_0_OR_GREATER` for CollectionsMarshal
+
 ### Changed
-- Test count increased from 1939 to 1964 (+25 tests)
+- **Refactor**: `OggVorbisFile` now uses shared `OggPageHelper` code
+  - Eliminates ~160 lines of duplicate code
+  - `BuildOggPage` now includes segment overflow validation
+  - `FindLastGranulePosition` properly uses EOS flag per RFC 3533
+- Add `SaveToFileAsync` convenience overloads to `OggVorbisFile`
+- Change `OggPageWithSegmentsResult.Segments` to `IReadOnlyList<T>` for encapsulation
+- Standardize magic bytes to char cast syntax for readability
+- Test count increased from 1939 to 2057 (+118 tests)
 
 ## [0.2.1] - 2025-12-29
 
