@@ -1044,6 +1044,546 @@ public static class TestBuilders
 	}
 
 	/// <summary>
+	/// Builders for Ogg Opus file test data.
+	/// </summary>
+	public static class Opus
+	{
+		/// <summary>
+		/// Creates an OpusHead identification packet.
+		/// </summary>
+		public static byte[] CreateOpusHeadPacket (
+			int channels = TestConstants.AudioProperties.ChannelsStereo,
+			ushort preSkip = 312,
+			uint inputSampleRate = TestConstants.AudioProperties.SampleRate48000,
+			short outputGain = 0)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Magic "OpusHead" (8 bytes)
+			builder.Add (TestConstants.Magic.OpusHead);
+
+			// Version (must be 1)
+			builder.Add ((byte)1);
+
+			// Channels
+			builder.Add ((byte)channels);
+
+			// Pre-skip (little-endian)
+			builder.AddUInt16LE (preSkip);
+
+			// Input sample rate (little-endian)
+			builder.AddUInt32LE (inputSampleRate);
+
+			// Output gain (little-endian, signed)
+			builder.AddUInt16LE ((ushort)outputGain);
+
+			// Channel mapping family (0 = mono or stereo, no mapping table)
+			builder.Add ((byte)0);
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates an OpusTags packet (no framing bit, unlike Vorbis).
+		/// </summary>
+		public static byte[] CreateOpusTagsPacket (TagLibSharp2.Xiph.VorbisComment comment)
+		{
+			var commentData = comment.Render ().ToArray ();
+			var builder = new BinaryDataBuilder ();
+
+			// Magic "OpusTags" (8 bytes)
+			builder.Add (TestConstants.Magic.OpusTags);
+
+			// Comment data (NO framing bit for Opus!)
+			builder.Add (commentData);
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates a minimal valid Ogg Opus file with metadata.
+		/// </summary>
+		/// <param name="title">Title metadata (null or empty to skip).</param>
+		/// <param name="artist">Artist metadata (null or empty to skip).</param>
+		/// <param name="calculateCrc">If true, pages have valid CRCs.</param>
+		public static byte[] CreateMinimalFile (string title = "Test", string artist = "Artist", bool calculateCrc = true)
+		{
+			var comment = new TagLibSharp2.Xiph.VorbisComment (TestConstants.Vendors.TagLibSharp2);
+			if (!string.IsNullOrEmpty (title))
+				comment.Title = title;
+			if (!string.IsNullOrEmpty (artist))
+				comment.Artist = artist;
+
+			return CreateFile (comment, calculateCrc: calculateCrc);
+		}
+
+		/// <summary>
+		/// Creates an Ogg Opus file with custom audio properties.
+		/// </summary>
+		public static byte[] CreateFileWithProperties (
+			int channels = TestConstants.AudioProperties.ChannelsStereo,
+			ushort preSkip = 312,
+			uint inputSampleRate = TestConstants.AudioProperties.SampleRate48000,
+			ulong granulePosition = 480000, // 10 seconds at 48kHz
+			bool calculateCrc = true)
+		{
+			var comment = new TagLibSharp2.Xiph.VorbisComment (TestConstants.Vendors.TagLibSharp2);
+			return CreateFile (comment, channels, preSkip, inputSampleRate, granulePosition, calculateCrc: calculateCrc);
+		}
+
+		/// <summary>
+		/// Creates a complete Ogg Opus file with full control over parameters.
+		/// </summary>
+		public static byte[] CreateFile (
+			TagLibSharp2.Xiph.VorbisComment comment,
+			int channels = TestConstants.AudioProperties.ChannelsStereo,
+			ushort preSkip = 312,
+			uint inputSampleRate = TestConstants.AudioProperties.SampleRate48000,
+			ulong granulePosition = 480000, // 10 seconds at 48kHz
+			bool calculateCrc = true)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			var opusHeadPacket = CreateOpusHeadPacket (channels, preSkip, inputSampleRate);
+			var opusTagsPacket = CreateOpusTagsPacket (comment);
+
+			// Page 1: BOS with OpusHead
+			builder.Add (Ogg.CreatePage (opusHeadPacket, 0, OggPageFlags.BeginOfStream, calculateCrc: calculateCrc));
+
+			// Page 2: OpusTags
+			builder.Add (Ogg.CreatePage (opusTagsPacket, 1, OggPageFlags.None, calculateCrc: calculateCrc));
+
+			// Page 3: EOS (with granule position for duration calculation)
+			var audioData = new byte[10]; // Minimal audio data
+			builder.Add (CreatePageWithGranule (audioData, 2, OggPageFlags.EndOfStream, granulePosition, calculateCrc: calculateCrc));
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates an Ogg page with a specific granule position for duration testing.
+		/// </summary>
+		static byte[] CreatePageWithGranule (byte[] data, uint sequenceNumber, OggPageFlags flags, ulong granulePosition, bool calculateCrc = true)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Magic
+			builder.Add (TestConstants.Magic.Ogg);
+
+			// Version
+			builder.Add ((byte)0);
+
+			// Flags
+			builder.Add ((byte)flags);
+
+			// Granule position (8 bytes)
+			builder.AddUInt64LE (granulePosition);
+
+			// Serial number
+			builder.AddUInt32LE (1);
+
+			// Sequence number
+			builder.AddUInt32LE (sequenceNumber);
+
+			// CRC placeholder
+			builder.AddUInt32LE (0);
+
+			// Segment count and table
+			var segments = new byte[] { (byte)data.Length };
+			builder.Add ((byte)segments.Length);
+			builder.Add (segments);
+
+			// Page data
+			builder.Add (data);
+
+			var page = builder.ToArray ();
+
+			// Calculate and insert CRC if requested
+			if (calculateCrc) {
+				var crc = OggCrc.Calculate (page);
+				page[22] = (byte)(crc & 0xFF);
+				page[23] = (byte)((crc >> 8) & 0xFF);
+				page[24] = (byte)((crc >> 16) & 0xFF);
+				page[25] = (byte)((crc >> 24) & 0xFF);
+			}
+
+			return page;
+		}
+
+		/// <summary>
+		/// Creates an Ogg page with OpusHead but wrong version for error testing.
+		/// </summary>
+		public static byte[] CreateFileWithInvalidVersion (byte version = 0)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Create OpusHead with invalid version
+			var headBuilder = new BinaryDataBuilder ();
+			headBuilder.Add (TestConstants.Magic.OpusHead);
+			headBuilder.Add (version); // Invalid version
+			headBuilder.Add ((byte)2); // Channels
+			headBuilder.AddUInt16LE (312);
+			headBuilder.AddUInt32LE (48000);
+			headBuilder.AddUInt16LE (0);
+			headBuilder.Add ((byte)0);
+
+			builder.Add (Ogg.CreatePage (headBuilder.ToArray (), 0, OggPageFlags.BeginOfStream));
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates an Ogg page with non-Opus data for error testing (Ogg container but not Opus content).
+		/// </summary>
+		public static byte[] CreatePageWithNonOpusData (bool calculateCrc = false)
+		{
+			var data = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+			return Ogg.CreatePage (data, 0, OggPageFlags.BeginOfStream, calculateCrc: calculateCrc);
+		}
+
+		/// <summary>
+		/// Creates a complete Ogg Opus file with a specific version number.
+		/// </summary>
+		/// <remarks>
+		/// RFC 7845 requires implementations to accept versions 0-15 (treating as version 1)
+		/// and reject versions 16 and above.
+		/// </remarks>
+		public static byte[] CreateFileWithVersion (byte version)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Create OpusHead with specific version
+			var headBuilder = new BinaryDataBuilder ();
+			headBuilder.Add (TestConstants.Magic.OpusHead);
+			headBuilder.Add (version);
+			headBuilder.Add ((byte)2); // Channels
+			headBuilder.AddUInt16LE (312); // Pre-skip
+			headBuilder.AddUInt32LE (48000); // Input sample rate
+			headBuilder.AddUInt16LE (0); // Output gain
+			headBuilder.Add ((byte)0); // Channel mapping family
+
+			var opusHeadPacket = headBuilder.ToArray ();
+			var comment = new TagLibSharp2.Xiph.VorbisComment (TestConstants.Vendors.TagLibSharp2);
+			var opusTagsPacket = CreateOpusTagsPacket (comment);
+
+			// Page 1: BOS with OpusHead
+			builder.Add (Ogg.CreatePage (opusHeadPacket, 0, OggPageFlags.BeginOfStream));
+
+			// Page 2: OpusTags
+			builder.Add (Ogg.CreatePage (opusTagsPacket, 1, OggPageFlags.None));
+
+			// Page 3: EOS (minimal audio)
+			var audioData = new byte[10];
+			builder.Add (CreatePageWithGranuleAndEos (audioData, 2, 480000));
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates an Ogg Opus file with a specific output gain value.
+		/// </summary>
+		/// <param name="outputGain">Output gain in Q7.8 format (divide by 256 to get dB).</param>
+		public static byte[] CreateFileWithOutputGain (short outputGain)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Create OpusHead with specific output gain
+			var headBuilder = new BinaryDataBuilder ();
+			headBuilder.Add (TestConstants.Magic.OpusHead);
+			headBuilder.Add ((byte)1); // Version
+			headBuilder.Add ((byte)2); // Channels
+			headBuilder.AddUInt16LE (312); // Pre-skip
+			headBuilder.AddUInt32LE (48000); // Input sample rate
+			headBuilder.AddUInt16LE ((ushort)outputGain); // Output gain (signed but stored as ushort)
+			headBuilder.Add ((byte)0); // Channel mapping family
+
+			var opusHeadPacket = headBuilder.ToArray ();
+			var comment = new TagLibSharp2.Xiph.VorbisComment (TestConstants.Vendors.TagLibSharp2);
+			var opusTagsPacket = CreateOpusTagsPacket (comment);
+
+			// Page 1: BOS with OpusHead
+			builder.Add (Ogg.CreatePage (opusHeadPacket, 0, OggPageFlags.BeginOfStream));
+
+			// Page 2: OpusTags
+			builder.Add (Ogg.CreatePage (opusTagsPacket, 1, OggPageFlags.None));
+
+			// Page 3: EOS (minimal audio)
+			var audioData = new byte[10];
+			builder.Add (CreatePageWithGranuleAndEos (audioData, 2, 480000));
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates an Ogg Opus file with an invalid channel count for error testing.
+		/// </summary>
+		public static byte[] CreateFileWithInvalidChannels (byte channels)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Create OpusHead with invalid channel count
+			var headBuilder = new BinaryDataBuilder ();
+			headBuilder.Add (TestConstants.Magic.OpusHead);
+			headBuilder.Add ((byte)1); // Version
+			headBuilder.Add (channels); // Invalid channel count
+			headBuilder.AddUInt16LE (312);
+			headBuilder.AddUInt32LE (48000);
+			headBuilder.AddUInt16LE (0);
+			headBuilder.Add ((byte)0);
+
+			builder.Add (Ogg.CreatePage (headBuilder.ToArray (), 0, OggPageFlags.BeginOfStream));
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates an Ogg Opus file without the BOS flag on the first page for error testing.
+		/// </summary>
+		public static byte[] CreateFileWithoutBosFlag ()
+		{
+			var builder = new BinaryDataBuilder ();
+
+			var opusHeadPacket = CreateOpusHeadPacket ();
+
+			// Create page WITHOUT BOS flag (this is invalid per RFC 3533)
+			builder.Add (Ogg.CreatePage (opusHeadPacket, 0, OggPageFlags.None)); // Missing BOS flag
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates an Ogg Opus file with a specific channel mapping family.
+		/// </summary>
+		/// <remarks>
+		/// Per RFC 7845 §5.1.1.2:
+		/// - Family 0: Only 1 or 2 channels, no mapping table
+		/// - Family 1: 1-8 channels, Vorbis order, mapping table required
+		/// - Family 255: Discrete channels, mapping table required
+		/// </remarks>
+		public static byte[] CreateFileWithChannelMapping (byte channels, byte mappingFamily)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			var headBuilder = new BinaryDataBuilder ();
+			headBuilder.Add (TestConstants.Magic.OpusHead);
+			headBuilder.Add ((byte)1); // Version
+			headBuilder.Add (channels);
+			headBuilder.AddUInt16LE (312); // Pre-skip
+			headBuilder.AddUInt32LE (48000); // Input sample rate
+			headBuilder.AddUInt16LE (0); // Output gain
+			headBuilder.Add (mappingFamily);
+
+			// For mapping families > 0, include the channel mapping table
+			if (mappingFamily > 0) {
+				// Stream count: assume 1 coupled stream per 2 channels
+				var coupledStreams = (byte)(channels / 2);
+				var totalStreams = (byte)(coupledStreams + (channels % 2));
+				headBuilder.Add (totalStreams); // Stream count
+				headBuilder.Add (coupledStreams); // Coupled stream count
+
+				// Channel mapping table (N bytes where N = channels)
+				for (var i = 0; i < channels; i++)
+					headBuilder.Add ((byte)i);
+			}
+
+			var opusHeadPacket = headBuilder.ToArray ();
+			var comment = new TagLibSharp2.Xiph.VorbisComment (TestConstants.Vendors.TagLibSharp2);
+			var opusTagsPacket = CreateOpusTagsPacket (comment);
+
+			// Page 1: BOS with OpusHead
+			builder.Add (Ogg.CreatePage (opusHeadPacket, 0, OggPageFlags.BeginOfStream));
+
+			// Page 2: OpusTags
+			builder.Add (Ogg.CreatePage (opusTagsPacket, 1, OggPageFlags.None));
+
+			// Page 3: EOS
+			builder.Add (CreatePageWithGranuleAndEos (new byte[10], 2, 480000));
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates an Ogg Opus file with multi-page OpusTags (tags spanning multiple pages).
+		/// </summary>
+		/// <remarks>
+		/// This tests handling of large comment packets that span multiple Ogg pages,
+		/// which is common when embedded album art is present.
+		/// </remarks>
+		public static byte[] CreateFileWithMultiPageOpusTags (string title, string artist, int paddingSize = 300)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Create OpusHead packet
+			var opusHeadPacket = CreateOpusHeadPacket ();
+
+			// Create a VorbisComment with enough padding to span multiple pages
+			// A typical page holds ~250 segments × ~255 bytes = ~64KB
+			// We'll create a comment that's larger than that
+			var comment = new TagLibSharp2.Xiph.VorbisComment (TestConstants.Vendors.TagLibSharp2);
+			if (!string.IsNullOrEmpty (title))
+				comment.Title = title;
+			if (!string.IsNullOrEmpty (artist))
+				comment.Artist = artist;
+
+			// Add large padding comment to force multi-page
+			var padding = new string ('X', paddingSize);
+			comment.SetValue ("PADDING", padding);
+
+			var opusTagsPacket = CreateOpusTagsPacket (comment);
+
+			// Page 1: BOS with OpusHead
+			builder.Add (Ogg.CreatePage (opusHeadPacket, 0, OggPageFlags.BeginOfStream));
+
+			// Pages 2+: OpusTags (may span multiple pages)
+			// Split large packet across pages with proper continuation flags
+			var pageSequence = 1u;
+			var packetOffset = 0;
+			const int maxPageDataSize = 255 * 255; // Max segments (255) × max segment size (255)
+
+			while (packetOffset < opusTagsPacket.Length) {
+				var isFirstPage = packetOffset == 0;
+				var remainingBytes = opusTagsPacket.Length - packetOffset;
+				var pageDataSize = Math.Min (remainingBytes, maxPageDataSize);
+				var isLastPacketPage = packetOffset + pageDataSize >= opusTagsPacket.Length;
+
+				// Extract this page's portion of the packet
+				var pageData = new byte[pageDataSize];
+				Array.Copy (opusTagsPacket, packetOffset, pageData, 0, pageDataSize);
+
+				// Set continuation flag if this isn't the first page of the packet
+				var flags = isFirstPage ? OggPageFlags.None : OggPageFlags.Continuation;
+
+				builder.Add (CreateMultiPagePacketPage (pageData, pageSequence, flags, !isLastPacketPage));
+
+				pageSequence++;
+				packetOffset += pageDataSize;
+			}
+
+			// Final page: EOS with audio data
+			var audioData = new byte[10];
+			builder.Add (CreatePageWithGranuleAndEos (audioData, pageSequence, 480000));
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
+		/// Creates an Ogg page for a multi-page packet with proper segment table.
+		/// </summary>
+		static byte[] CreateMultiPagePacketPage (byte[] data, uint sequenceNumber, OggPageFlags flags, bool packetContinues)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Build segment table
+			var segments = new List<byte> ();
+			var remaining = data.Length;
+			while (remaining >= 255) {
+				segments.Add (255);
+				remaining -= 255;
+			}
+			// If packet continues to next page, last segment is 255
+			// If packet ends on this page, last segment is < 255 (or 0 for exact multiple)
+			if (packetContinues) {
+				// Packet continues - ensure we end with 255 if remaining is 0
+				if (remaining == 0 && segments.Count == 0)
+					segments.Add (0);
+				else if (remaining > 0)
+					segments.Add ((byte)remaining);
+				// Note: if remaining=0 and segments.Count>0, last segment is already 255
+			} else {
+				// Packet ends here
+				segments.Add ((byte)remaining);
+			}
+
+			// Magic
+			builder.Add (TestConstants.Magic.Ogg);
+
+			// Version
+			builder.Add ((byte)0);
+
+			// Flags
+			builder.Add ((byte)flags);
+
+			// Granule position (0 for header pages)
+			builder.AddUInt64LE (0);
+
+			// Serial number
+			builder.AddUInt32LE (1);
+
+			// Sequence number
+			builder.AddUInt32LE (sequenceNumber);
+
+			// CRC placeholder
+			builder.AddUInt32LE (0);
+
+			// Segment count and table
+			builder.Add ((byte)segments.Count);
+			builder.Add (segments.ToArray ());
+
+			// Page data
+			builder.Add (data);
+
+			var page = builder.ToArray ();
+
+			// Calculate and insert CRC
+			var crc = OggCrc.Calculate (page);
+			page[22] = (byte)(crc & 0xFF);
+			page[23] = (byte)((crc >> 8) & 0xFF);
+			page[24] = (byte)((crc >> 16) & 0xFF);
+			page[25] = (byte)((crc >> 24) & 0xFF);
+
+			return page;
+		}
+
+		/// <summary>
+		/// Creates an Ogg page with granule position and EOS flag for complete file testing.
+		/// </summary>
+		static byte[] CreatePageWithGranuleAndEos (byte[] data, uint sequenceNumber, ulong granulePosition)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Magic
+			builder.Add (TestConstants.Magic.Ogg);
+
+			// Version
+			builder.Add ((byte)0);
+
+			// Flags: EOS
+			builder.Add ((byte)OggPageFlags.EndOfStream);
+
+			// Granule position (8 bytes)
+			builder.AddUInt64LE (granulePosition);
+
+			// Serial number
+			builder.AddUInt32LE (1);
+
+			// Sequence number
+			builder.AddUInt32LE (sequenceNumber);
+
+			// CRC placeholder
+			builder.AddUInt32LE (0);
+
+			// Segment count and table
+			var segments = new byte[] { (byte)data.Length };
+			builder.Add ((byte)segments.Length);
+			builder.Add (segments);
+
+			// Page data
+			builder.Add (data);
+
+			var page = builder.ToArray ();
+
+			// Calculate and insert CRC
+			var crc = OggCrc.Calculate (page);
+			page[22] = (byte)(crc & 0xFF);
+			page[23] = (byte)((crc >> 8) & 0xFF);
+			page[24] = (byte)((crc >> 16) & 0xFF);
+			page[25] = (byte)((crc >> 24) & 0xFF);
+
+			return page;
+		}
+	}
+
+	/// <summary>
 	/// Builders for Vorbis Comment test data.
 	/// </summary>
 	public static class VorbisComment

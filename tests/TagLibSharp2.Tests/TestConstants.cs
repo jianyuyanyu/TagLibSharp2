@@ -43,6 +43,12 @@ public static class TestConstants
 
 		/// <summary>Vorbis packet signature "vorbis" (0x76 0x6F 0x72 0x62 0x69 0x73).</summary>
 		public static readonly byte[] Vorbis = [0x76, 0x6F, 0x72, 0x62, 0x69, 0x73];
+
+		/// <summary>Opus identification header signature "OpusHead" (8 bytes).</summary>
+		public static readonly byte[] OpusHead = [0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64];
+
+		/// <summary>Opus comment header signature "OpusTags" (8 bytes).</summary>
+		public static readonly byte[] OpusTags = [0x4F, 0x70, 0x75, 0x73, 0x54, 0x61, 0x67, 0x73];
 	}
 
 	/// <summary>

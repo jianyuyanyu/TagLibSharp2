@@ -21,6 +21,7 @@ namespace TagLibSharp2.Core;
 /// <item>MP3 (ID3v1, ID3v2)</item>
 /// <item>FLAC (Vorbis Comment, FLAC metadata)</item>
 /// <item>Ogg Vorbis (Vorbis Comment)</item>
+/// <item>Ogg Opus (Vorbis Comment)</item>
 /// <item>WAV (RIFF INFO, ID3v2)</item>
 /// <item>AIFF (ID3 chunk)</item>
 /// </list>
@@ -45,6 +46,8 @@ public static class MediaFile
 	static readonly byte[] FormMagic = { 0x46, 0x4F, 0x52, 0x4D }; // "FORM"
 	static readonly byte[] AiffId = { 0x41, 0x49, 0x46, 0x46 }; // "AIFF"
 	static readonly byte[] AifcId = { 0x41, 0x49, 0x46, 0x43 }; // "AIFC"
+	static readonly byte[] OpusHeadMagic = { 0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64 }; // "OpusHead"
+	static readonly byte[] VorbisMagic = { 0x76, 0x6F, 0x72, 0x62, 0x69, 0x73 }; // "vorbis"
 
 	/// <summary>
 	/// Opens a media file and returns a unified result.
@@ -108,6 +111,7 @@ public static class MediaFile
 		return format switch {
 			MediaFormat.Flac => OpenFlac (data),
 			MediaFormat.OggVorbis => OpenOggVorbis (data),
+			MediaFormat.Opus => OpenOpus (data),
 			MediaFormat.Mp3 => OpenMp3 (data),
 			MediaFormat.Wav => OpenWav (data),
 			MediaFormat.Aiff => OpenAiff (data),
@@ -130,10 +134,10 @@ public static class MediaFile
 				data[2] == FlacMagic[2] && data[3] == FlacMagic[3])
 				return MediaFormat.Flac;
 
-			// Ogg: starts with "OggS"
+			// Ogg: starts with "OggS" - need to check first packet to distinguish Opus from Vorbis
 			if (data[0] == OggMagic[0] && data[1] == OggMagic[1] &&
 				data[2] == OggMagic[2] && data[3] == OggMagic[3])
-				return MediaFormat.OggVorbis;
+				return DetectOggCodec (data);
 
 			// RIFF: starts with "RIFF" + 4 bytes size + "WAVE"
 			if (data.Length >= 12 &&
@@ -170,6 +174,7 @@ public static class MediaFile
 			return ext switch {
 				".FLAC" => MediaFormat.Flac,
 				".OGG" => MediaFormat.OggVorbis,
+				".OPUS" => MediaFormat.Opus,
 				".MP3" => MediaFormat.Mp3,
 				".WAV" => MediaFormat.Wav,
 				".AIF" or ".AIFF" or ".AIFC" => MediaFormat.Aiff,
@@ -178,6 +183,54 @@ public static class MediaFile
 		}
 
 		return MediaFormat.Unknown;
+	}
+
+	/// <summary>
+	/// Detects the specific codec inside an Ogg container by examining the first packet.
+	/// </summary>
+	static MediaFormat DetectOggCodec (ReadOnlySpan<byte> data)
+	{
+		// Ogg page structure:
+		// 0-3: "OggS" magic
+		// 4: version (0)
+		// 5: flags
+		// 6-13: granule position
+		// 14-17: serial number
+		// 18-21: page sequence number
+		// 22-25: CRC
+		// 26: segment count
+		// 27+: segment table (segment_count bytes)
+		// After segment table: page data
+
+		if (data.Length < 28)
+			return MediaFormat.OggVorbis; // Default fallback
+
+		var segmentCount = data[26];
+		if (data.Length < 27 + segmentCount + 8) // Need at least 8 bytes of data for magic
+			return MediaFormat.OggVorbis;
+
+		// Calculate where page data starts
+		var dataStart = 27 + segmentCount;
+
+		// Check for OpusHead magic in first packet
+		var packetData = data.Slice (dataStart);
+		if (packetData.Length >= 8 &&
+			packetData[0] == OpusHeadMagic[0] && packetData[1] == OpusHeadMagic[1] &&
+			packetData[2] == OpusHeadMagic[2] && packetData[3] == OpusHeadMagic[3] &&
+			packetData[4] == OpusHeadMagic[4] && packetData[5] == OpusHeadMagic[5] &&
+			packetData[6] == OpusHeadMagic[6] && packetData[7] == OpusHeadMagic[7])
+			return MediaFormat.Opus;
+
+		// Check for Vorbis identification header (type 1 + "vorbis")
+		if (packetData.Length >= 7 &&
+			packetData[0] == 1 && // Type 1 = identification header
+			packetData[1] == VorbisMagic[0] && packetData[2] == VorbisMagic[1] &&
+			packetData[3] == VorbisMagic[2] && packetData[4] == VorbisMagic[3] &&
+			packetData[5] == VorbisMagic[4] && packetData[6] == VorbisMagic[5])
+			return MediaFormat.OggVorbis;
+
+		// Unknown Ogg codec - default to Vorbis for backwards compatibility
+		return MediaFormat.OggVorbis;
 	}
 
 	static MediaFileResult OpenFlac (ReadOnlyMemory<byte> data)
@@ -196,6 +249,15 @@ public static class MediaFile
 			return MediaFileResult.Failure (result.Error!);
 
 		return MediaFileResult.Success (result.File!, result.File!.VorbisComment, MediaFormat.OggVorbis);
+	}
+
+	static MediaFileResult OpenOpus (ReadOnlyMemory<byte> data)
+	{
+		var result = OggOpusFile.Read (data.Span);
+		if (!result.IsSuccess)
+			return MediaFileResult.Failure (result.Error!);
+
+		return MediaFileResult.Success (result.File!, result.File!.VorbisComment, MediaFormat.Opus);
 	}
 
 	static MediaFileResult OpenMp3 (ReadOnlyMemory<byte> data)
@@ -313,6 +375,11 @@ public enum MediaFormat
 	/// Ogg Vorbis audio format.
 	/// </summary>
 	OggVorbis,
+
+	/// <summary>
+	/// Ogg Opus audio format.
+	/// </summary>
+	Opus,
 
 	/// <summary>
 	/// MP3 audio format.

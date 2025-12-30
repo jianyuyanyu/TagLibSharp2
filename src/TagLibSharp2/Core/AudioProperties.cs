@@ -114,6 +114,44 @@ public sealed class AudioProperties : IMediaProperties
 		return new AudioProperties (duration, bitrate, sampleRate, 0, channels, "Vorbis");
 	}
 
+	/// <summary>
+	/// Creates audio properties from Opus identification header.
+	/// </summary>
+	/// <param name="granulePosition">The granule position from the last page (at 48kHz).</param>
+	/// <param name="preSkip">The pre-skip samples to subtract.</param>
+	/// <param name="inputSampleRate">The original input sample rate (informational).</param>
+	/// <param name="channels">The number of audio channels.</param>
+	/// <param name="fileSize">The file size in bytes (for bitrate calculation).</param>
+	/// <returns>A new <see cref="AudioProperties"/> instance.</returns>
+	/// <remarks>
+	/// Opus always outputs at 48kHz regardless of the input sample rate.
+	/// The inputSampleRate is stored for informational purposes only.
+	/// </remarks>
+	public static AudioProperties FromOpus (
+		ulong granulePosition,
+		ushort preSkip,
+		uint inputSampleRate,
+		int channels,
+		long fileSize)
+	{
+		// Opus always outputs at 48kHz
+		const int OutputSampleRate = 48000;
+
+		// Subtract pre-skip for accurate sample count
+		var totalSamples = granulePosition > preSkip ? granulePosition - preSkip : 0;
+
+		var duration = totalSamples > 0
+			? TimeSpan.FromSeconds ((double)totalSamples / OutputSampleRate)
+			: TimeSpan.Zero;
+
+		// Calculate bitrate from file size and duration
+		var bitrate = duration.TotalSeconds > 0
+			? (int)(fileSize * 8 / duration.TotalSeconds / 1000)
+			: 0;
+
+		return new AudioProperties (duration, bitrate, OutputSampleRate, 0, channels, "Opus");
+	}
+
 	/// <inheritdoc/>
 	public override string ToString ()
 	{
