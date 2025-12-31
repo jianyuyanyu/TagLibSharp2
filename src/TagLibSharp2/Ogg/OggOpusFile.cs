@@ -353,12 +353,28 @@ public sealed class OggOpusFile
 			var expectedSize = 19 + 2 + channels; // header + stream counts + mapping
 			if (data.Length < expectedSize)
 				return OpusHeadResult.Failure ("OpusHead too short for channel mapping table");
+
+			// RFC 7845 §5.1.1.2: Validate stream count and coupled count
+			var streamCount = data[19];
+			var coupledCount = data[20];
+			if (streamCount == 0)
+				return OpusHeadResult.Failure ("Invalid stream count: 0. Per RFC 7845 §5.1.1.2, stream count must be > 0");
+			if (coupledCount > streamCount)
+				return OpusHeadResult.Failure ($"Invalid coupled count {coupledCount} > stream count {streamCount}. Per RFC 7845 §5.1.1.2, coupled count must be <= stream count");
 		} else if (channelMappingFamily == 255) {
 			// RFC 7845 §5.1.1.2: Family 255 allows discrete channels with no defined order
 			// Validate mapping table is present: stream count + coupled count + channel mapping
 			var expectedSize = 19 + 2 + channels; // header + stream counts + mapping
 			if (data.Length < expectedSize)
 				return OpusHeadResult.Failure ("OpusHead too short for channel mapping table");
+
+			// RFC 7845 §5.1.1.2: Validate stream count and coupled count
+			var streamCount = data[19];
+			var coupledCount = data[20];
+			if (streamCount == 0)
+				return OpusHeadResult.Failure ("Invalid stream count: 0. Per RFC 7845 §5.1.1.2, stream count must be > 0");
+			if (coupledCount > streamCount)
+				return OpusHeadResult.Failure ($"Invalid coupled count {coupledCount} > stream count {streamCount}. Per RFC 7845 §5.1.1.2, coupled count must be <= stream count");
 		} else {
 			// RFC 7845 §5.1.1.2: Families 2-254 are reserved and SHOULD NOT be used
 			// Reject these to ensure forward compatibility and spec compliance

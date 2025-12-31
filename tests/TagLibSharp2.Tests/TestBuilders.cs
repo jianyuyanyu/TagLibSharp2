@@ -1403,6 +1403,54 @@ public static class TestBuilders
 		}
 
 		/// <summary>
+		/// Creates an Ogg Opus file with specific stream count and coupled count values for testing
+		/// RFC 7845 §5.1.1.2 validation.
+		/// </summary>
+		/// <param name="channels">Number of channels.</param>
+		/// <param name="mappingFamily">Channel mapping family (1 or 255).</param>
+		/// <param name="streamCount">Stream count (N).</param>
+		/// <param name="coupledCount">Coupled stream count (M).</param>
+		/// <returns>The file data.</returns>
+		public static byte[] CreateFileWithStreamCounts (byte channels, byte mappingFamily, byte streamCount, byte coupledCount)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			var headBuilder = new BinaryDataBuilder ();
+			headBuilder.Add (TestConstants.Magic.OpusHead);
+			headBuilder.Add ((byte)1); // Version
+			headBuilder.Add (channels);
+			headBuilder.AddUInt16LE (312); // Pre-skip
+			headBuilder.AddUInt32LE (48000); // Input sample rate
+			headBuilder.AddUInt16LE (0); // Output gain
+			headBuilder.Add (mappingFamily);
+
+			// For mapping families > 0, include the channel mapping table with specified counts
+			if (mappingFamily > 0) {
+				headBuilder.Add (streamCount); // Stream count
+				headBuilder.Add (coupledCount); // Coupled stream count
+
+				// Channel mapping table (N bytes where N = channels)
+				for (var i = 0; i < channels; i++)
+					headBuilder.Add ((byte)(i % Math.Max (1, (int)streamCount)));
+			}
+
+			var opusHeadPacket = headBuilder.ToArray ();
+			var comment = new TagLibSharp2.Xiph.VorbisComment (TestConstants.Vendors.TagLibSharp2);
+			var opusTagsPacket = CreateOpusTagsPacket (comment);
+
+			// Page 1: BOS with OpusHead
+			builder.Add (Ogg.CreatePage (opusHeadPacket, 0, OggPageFlags.BeginOfStream));
+
+			// Page 2: OpusTags
+			builder.Add (Ogg.CreatePage (opusTagsPacket, 1, OggPageFlags.None));
+
+			// Page 3: EOS
+			builder.Add (CreatePageWithGranuleAndEos (new byte[10], 2, 480000));
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
 		/// Creates an Ogg Opus file with multi-page OpusTags (tags spanning multiple pages).
 		/// </summary>
 		/// <remarks>

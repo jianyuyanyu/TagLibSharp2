@@ -652,6 +652,117 @@ public class OggPageHelperTests
 	}
 
 	// ==========================================================================
+	// ExtractHeaderPackets Tests
+	// ==========================================================================
+
+	[TestMethod]
+	public void ExtractHeaderPackets_MaxPacketSizeLimit_RejectsOversizedPackets ()
+	{
+		// Security: Prevent DoS via memory exhaustion by limiting max packet size
+		// A malicious file could claim packets that span many pages, causing unbounded memory growth
+
+		// For testing, use a smaller limit that can be reached within the 50-page limit
+		// Each page holds ~65025 bytes (255 segments × 255 bytes)
+		// With 5 pages, we get ~325KB, so a limit of 200KB should trigger the rejection
+		const int testLimit = 200 * 1024; // 200 KB test limit
+		var builder = new BinaryDataBuilder ();
+
+		// Build first page with BOS flag (starts large packet)
+		var firstPage = CreatePageForLargePacket (0, 65025, true, false, 0);
+		builder.Add (firstPage);
+
+		// Build continuation pages (all 255-byte segments = incomplete packet)
+		for (var i = 1; i < 10; i++) { // 10 pages at 65KB each = 650KB > 200KB limit
+			var contPage = CreatePageForLargePacket ((uint)i, 65025, false, false, 0);
+			builder.Add (contPage);
+		}
+
+		// The parsing should reject this because accumulated packet exceeds the test limit
+		var result = OggPageHelper.ExtractHeaderPackets (builder.ToArray (), maxPackets: 1, maxPacketSize: testLimit);
+
+		// After the fix, this should return failure with error about size limit
+		Assert.IsFalse (result.IsSuccess, "Should reject packets exceeding size limit");
+		Assert.IsNotNull (result.Error);
+		StringAssert.Contains (result.Error, "size", StringComparison.OrdinalIgnoreCase);
+	}
+
+	[TestMethod]
+	public void ExtractHeaderPackets_ValidLargePacket_Succeeds ()
+	{
+		// A valid large packet (but under the limit) should still succeed
+		// Test with 1MB packet spanning multiple pages
+		const int packetLength = 1024 * 1024; // 1 MB - well under limit
+		var pages = CreateMultiPagePacketPages (packetLength);
+
+		var result = OggPageHelper.ExtractHeaderPackets (pages, maxPackets: 1);
+
+		Assert.IsTrue (result.IsSuccess, $"Valid 1MB packet should succeed: {result.Error}");
+		Assert.AreEqual (1, result.Packets.Count);
+		Assert.AreEqual (packetLength, result.Packets[0].Length);
+	}
+
+	static byte[] CreatePageForLargePacket (uint sequence, int dataSize, bool isBos, bool isComplete, uint serial)
+	{
+		// Build a page with 255-byte segments (continuation segments)
+		// If isComplete is false, all segments are 255 bytes (incomplete packet)
+		var segmentCount = Math.Min (255, (dataSize / 255) + (isComplete ? 1 : 0));
+		var actualDataSize = isComplete ? dataSize : segmentCount * 255;
+
+		var builder = new BinaryDataBuilder ();
+		builder.Add (TestConstants.Magic.Ogg);
+		builder.Add ((byte)0); // Version
+		builder.Add ((byte)(isBos ? OggPageFlags.BeginOfStream :
+			(sequence > 0 ? OggPageFlags.Continuation : OggPageFlags.None)));
+		builder.AddUInt64LE (0); // Granule
+		builder.AddUInt32LE (serial);
+		builder.AddUInt32LE (sequence);
+		builder.AddUInt32LE (0); // CRC placeholder
+		builder.Add ((byte)segmentCount);
+
+		// Segment table - all 255s except possibly last
+		for (var i = 0; i < segmentCount - 1; i++)
+			builder.Add ((byte)255);
+		if (segmentCount > 0) {
+			var lastSegment = isComplete ? (byte)(dataSize % 255) : (byte)255;
+			builder.Add (lastSegment);
+		}
+
+		// Data
+		builder.Add (new byte[actualDataSize]);
+
+		var page = builder.ToArray ();
+		var crc = OggCrc.Calculate (page);
+		page[22] = (byte)(crc & 0xFF);
+		page[23] = (byte)((crc >> 8) & 0xFF);
+		page[24] = (byte)((crc >> 16) & 0xFF);
+		page[25] = (byte)((crc >> 24) & 0xFF);
+
+		return page;
+	}
+
+	static byte[] CreateMultiPagePacketPages (int totalPacketSize)
+	{
+		const int maxBytesPerPage = 255 * 255; // 65025
+		var builder = new BinaryDataBuilder ();
+		var remaining = totalPacketSize;
+		uint sequence = 0;
+
+		while (remaining > 0) {
+			var isFirst = sequence == 0;
+			var pageDataSize = Math.Min (remaining, maxBytesPerPage);
+			var isLast = remaining <= maxBytesPerPage;
+
+			var page = CreatePageForLargePacket (sequence, pageDataSize, isFirst, isLast, 1);
+			builder.Add (page);
+
+			remaining -= pageDataSize;
+			sequence++;
+		}
+
+		return builder.ToArray ();
+	}
+
+	// ==========================================================================
 	// Segment Table Overflow Tests (RFC 3533 compliance)
 	// ==========================================================================
 

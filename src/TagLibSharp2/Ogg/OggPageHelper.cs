@@ -21,6 +21,16 @@ internal static class OggPageHelper
 	/// Packets larger than this must be split across multiple pages using continuation.
 	/// </remarks>
 	const int MaxSegmentsPerPage = 255;
+
+	/// <summary>
+	/// Maximum allowed packet size when extracting headers (16 MB).
+	/// </summary>
+	/// <remarks>
+	/// This limit prevents DoS attacks via memory exhaustion from malicious files that
+	/// claim packets spanning many pages. 16 MB is generous for audio metadata - even
+	/// large album art rarely exceeds 10 MB.
+	/// </remarks>
+	const int MaxPacketSize = 16 * 1024 * 1024;
 	/// <summary>
 	/// Reads an Ogg page and extracts individual packets based on segment table.
 	/// </summary>
@@ -478,6 +488,7 @@ internal static class OggPageHelper
 	/// <param name="data">The binary data to parse.</param>
 	/// <param name="maxPackets">Maximum number of packets to extract.</param>
 	/// <param name="validateCrc">Whether to validate CRC checksums.</param>
+	/// <param name="maxPacketSize">Maximum allowed packet size in bytes. Defaults to 16 MB.</param>
 	/// <returns>A result containing the extracted packets, or an error.</returns>
 	/// <remarks>
 	/// This method reads Ogg pages and reassembles packets that may span multiple pages.
@@ -486,7 +497,8 @@ internal static class OggPageHelper
 	public static HeaderPacketsResult ExtractHeaderPackets (
 		ReadOnlySpan<byte> data,
 		int maxPackets,
-		bool validateCrc = false)
+		bool validateCrc = false,
+		int maxPacketSize = MaxPacketSize)
 	{
 		var packets = new List<byte[]> ();
 		var packetBuffer = new List<byte> ();
@@ -518,6 +530,10 @@ internal static class OggPageHelper
 			var segmentIndex = 0;
 			if (pageResult.Page.IsContinuation && packetBuffer.Count > 0) {
 				if (pageResult.Segments.Count > 0) {
+					// Check size limit before adding to buffer
+					if (packetBuffer.Count + pageResult.Segments[0].Length > maxPacketSize)
+						return HeaderPacketsResult.Failure ($"Packet size exceeds maximum allowed size of {maxPacketSize / (1024 * 1024)} MB");
+
 					packetBuffer.AddRange (pageResult.Segments[0]);
 					if (pageResult.IsPacketComplete[0]) {
 						packets.Add (packetBuffer.ToArray ());
@@ -531,18 +547,33 @@ internal static class OggPageHelper
 			for (var i = segmentIndex; i < pageResult.Segments.Count && packets.Count < maxPackets; i++) {
 				if (pageResult.IsPacketComplete[i]) {
 					if (packetBuffer.Count > 0) {
-						// Shouldn't happen if continuation logic is correct, but handle it
+						// Check size limit before adding to buffer
+						if (packetBuffer.Count + pageResult.Segments[i].Length > maxPacketSize)
+							return HeaderPacketsResult.Failure ($"Packet size exceeds maximum allowed size of {maxPacketSize / (1024 * 1024)} MB");
+
 						packetBuffer.AddRange (pageResult.Segments[i]);
 						packets.Add (packetBuffer.ToArray ());
 						packetBuffer.Clear ();
 					} else {
+						// Direct add - check size
+						if (pageResult.Segments[i].Length > maxPacketSize)
+							return HeaderPacketsResult.Failure ($"Packet size exceeds maximum allowed size of {maxPacketSize / (1024 * 1024)} MB");
+
 						packets.Add (pageResult.Segments[i]);
 					}
 				} else {
+					// Check size limit for incomplete packet accumulation
+					if (pageResult.Segments[i].Length > maxPacketSize)
+						return HeaderPacketsResult.Failure ($"Packet size exceeds maximum allowed size of {maxPacketSize / (1024 * 1024)} MB");
+
 					packetBuffer.Clear ();
 					packetBuffer.AddRange (pageResult.Segments[i]);
 				}
 			}
+
+			// Check accumulated buffer size after processing each page
+			if (packetBuffer.Count > maxPacketSize)
+				return HeaderPacketsResult.Failure ($"Packet size exceeds maximum allowed size of {maxPacketSize / (1024 * 1024)} MB");
 		}
 
 		return HeaderPacketsResult.Success (packets, serialNumber, offset);

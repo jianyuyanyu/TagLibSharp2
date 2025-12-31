@@ -825,6 +825,90 @@ public class OggOpusFileTests
 	}
 
 	// ==========================================================================
+	// RFC 7845 §5.1.1.2: Stream Count and Coupled Count Validation
+	// ==========================================================================
+
+	[TestMethod]
+	public void Read_MappingFamily1_StreamCountZero_ReturnsFailure ()
+	{
+		// RFC 7845 §5.1.1.2: Stream count N must be > 0
+		var data = TestBuilders.Opus.CreateFileWithStreamCounts (
+			channels: 4, mappingFamily: 1, streamCount: 0, coupledCount: 0);
+
+		var result = OggOpusFile.Read (data);
+
+		Assert.IsFalse (result.IsSuccess, "Should reject stream count of 0");
+		Assert.IsNotNull (result.Error);
+		StringAssert.Contains (result.Error, "stream", StringComparison.OrdinalIgnoreCase);
+	}
+
+	[TestMethod]
+	public void Read_MappingFamily1_CoupledCountExceedsStreamCount_ReturnsFailure ()
+	{
+		// RFC 7845 §5.1.1.2: Coupled count M must be <= stream count N
+		var data = TestBuilders.Opus.CreateFileWithStreamCounts (
+			channels: 4, mappingFamily: 1, streamCount: 2, coupledCount: 3);
+
+		var result = OggOpusFile.Read (data);
+
+		Assert.IsFalse (result.IsSuccess, "Should reject coupled count > stream count");
+		Assert.IsNotNull (result.Error);
+		StringAssert.Contains (result.Error, "coupled", StringComparison.OrdinalIgnoreCase);
+	}
+
+	[TestMethod]
+	public void Read_MappingFamily255_StreamCountZero_ReturnsFailure ()
+	{
+		// RFC 7845 §5.1.1.2: Stream count N must be > 0 for family 255
+		var data = TestBuilders.Opus.CreateFileWithStreamCounts (
+			channels: 8, mappingFamily: 255, streamCount: 0, coupledCount: 0);
+
+		var result = OggOpusFile.Read (data);
+
+		Assert.IsFalse (result.IsSuccess, "Should reject stream count of 0");
+		Assert.IsNotNull (result.Error);
+	}
+
+	[TestMethod]
+	public void Read_MappingFamily255_CoupledCountExceedsStreamCount_ReturnsFailure ()
+	{
+		// RFC 7845 §5.1.1.2: Coupled count M must be <= stream count N
+		var data = TestBuilders.Opus.CreateFileWithStreamCounts (
+			channels: 8, mappingFamily: 255, streamCount: 4, coupledCount: 5);
+
+		var result = OggOpusFile.Read (data);
+
+		Assert.IsFalse (result.IsSuccess, "Should reject coupled count > stream count");
+		Assert.IsNotNull (result.Error);
+	}
+
+	[TestMethod]
+	public void Read_MappingFamily1_ValidStreamCounts_Succeeds ()
+	{
+		// Valid: 4 channels with 2 streams, 2 coupled (stereo pairs)
+		var data = TestBuilders.Opus.CreateFileWithStreamCounts (
+			channels: 4, mappingFamily: 1, streamCount: 2, coupledCount: 2);
+
+		var result = OggOpusFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess, $"Valid stream counts should succeed: {result.Error}");
+		Assert.AreEqual (4, result.File!.Properties.Channels);
+	}
+
+	[TestMethod]
+	public void Read_MappingFamily255_ValidStreamCounts_Succeeds ()
+	{
+		// Valid: 8 discrete channels with 8 streams, 0 coupled
+		var data = TestBuilders.Opus.CreateFileWithStreamCounts (
+			channels: 8, mappingFamily: 255, streamCount: 8, coupledCount: 0);
+
+		var result = OggOpusFile.Read (data);
+
+		Assert.IsTrue (result.IsSuccess, $"Valid stream counts should succeed: {result.Error}");
+		Assert.AreEqual (8, result.File!.Properties.Channels);
+	}
+
+	// ==========================================================================
 	// Error Path Tests
 	// ==========================================================================
 
