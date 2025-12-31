@@ -102,6 +102,21 @@ public class OggVorbisFileTests
 	}
 
 	[TestMethod]
+	[DataRow (1u)]
+	[DataRow (2u)]
+	[DataRow (0xFFFFFFFFu)]
+	public void Read_InvalidVorbisVersion_ReturnsFailure (uint version)
+	{
+		// Per Vorbis I spec, vorbis_version must be 0
+		var data = TestBuilders.Ogg.CreateFileWithInvalidVorbisVersion (version);
+
+		var result = OggVorbisFile.Read (data);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNotNull (result.Error);
+	}
+
+	[TestMethod]
 	public void Read_ValidFramingBit_Succeeds ()
 	{
 		var data = TestBuilders.Ogg.CreateMinimalFile ("Title", "Artist", calculateCrc: false);

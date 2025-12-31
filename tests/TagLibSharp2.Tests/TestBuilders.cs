@@ -866,6 +866,41 @@ public static class TestBuilders
 		}
 
 		/// <summary>
+		/// Creates an Ogg Vorbis file with an invalid vorbis_version for error testing.
+		/// Per spec, vorbis_version must be 0. Any other value is invalid.
+		/// </summary>
+		public static byte[] CreateFileWithInvalidVorbisVersion (uint version = 1, bool calculateCrc = false)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Create identification packet with invalid version
+			var idBuilder = new BinaryDataBuilder ();
+			idBuilder.Add (TestConstants.Ogg.PacketTypeIdentification);
+			idBuilder.Add (TestConstants.Magic.Vorbis);
+			idBuilder.AddUInt32LE (version); // Invalid version
+			idBuilder.Add ((byte)2); // channels
+			idBuilder.AddUInt32LE (44100); // sample rate
+			idBuilder.AddUInt32LE (0); // bitrate max
+			idBuilder.AddUInt32LE (128000); // bitrate nominal
+			idBuilder.AddUInt32LE (0); // bitrate min
+			idBuilder.Add ((byte)0xB8); // block sizes
+			idBuilder.Add ((byte)0x01); // framing bit
+			var idPacket = idBuilder.ToArray ();
+
+			// Add pages
+			builder.Add (CreatePage (idPacket, 0, OggPageFlags.BeginOfStream, calculateCrc: calculateCrc));
+
+			var comment = new TagLibSharp2.Xiph.VorbisComment ("Test");
+			var commentPacket = CreateCommentPacket (comment, validFramingBit: true);
+			builder.Add (CreatePage (commentPacket, 1, OggPageFlags.None, calculateCrc: calculateCrc));
+
+			var setupPacket = CreateSetupPacket ();
+			builder.Add (CreatePage (setupPacket, 2, OggPageFlags.EndOfStream, calculateCrc: calculateCrc));
+
+			return builder.ToArray ();
+		}
+
+		/// <summary>
 		/// Creates a complete Ogg Vorbis file with full control over parameters.
 		/// </summary>
 		public static byte[] CreateFile (

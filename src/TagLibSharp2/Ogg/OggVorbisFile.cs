@@ -187,6 +187,8 @@ public sealed class OggVorbisFile
 			return OggVorbisFileReadResult.Failure ("Not a Vorbis stream (expected identification header)");
 
 		var (sampleRate, channels, bitrateNominal) = ParseIdentificationHeader (identPacket);
+		if (sampleRate == 0 || channels == 0)
+			return OggVorbisFileReadResult.Failure ("Invalid Vorbis identification header (invalid version or missing audio info)");
 
 		// Packet 1: Vorbis comment header
 		VorbisComment? vorbisComment = null;
