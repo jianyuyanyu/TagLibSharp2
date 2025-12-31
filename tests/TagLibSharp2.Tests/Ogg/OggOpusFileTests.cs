@@ -782,7 +782,7 @@ public class OggOpusFileTests
 		builder.AddUInt16LE (312); // Pre-skip
 		builder.AddUInt32LE (48000); // Input sample rate
 		builder.AddUInt16LE (0); // Output gain
-		// Missing channel mapping family byte at position 18
+								 // Missing channel mapping family byte at position 18
 
 		var page = TestBuilders.Ogg.CreatePage (builder.ToArray (), 0, OggPageFlags.BeginOfStream);
 		var result = OggOpusFile.Read (page);
@@ -815,7 +815,7 @@ public class OggOpusFileTests
 		builder.AddUInt32LE (48000);
 		builder.AddUInt16LE (0);
 		builder.Add ((byte)1); // Mapping family 1 (requires table)
-		// Missing: stream count, coupled count, and 4-byte mapping table
+							   // Missing: stream count, coupled count, and 4-byte mapping table
 
 		var page = TestBuilders.Ogg.CreatePage (builder.ToArray (), 0, OggPageFlags.BeginOfStream);
 		var result = OggOpusFile.Read (page);
