@@ -5,7 +5,7 @@ All notable changes to TagLibSharp2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2025-12-29
+## [0.3.0] - 2025-12-30
 
 ### Added
 
@@ -51,6 +51,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace C# 12 collection expressions `[]` with explicit `new List<T>()`
 - Fix `#if NET8_0_OR_GREATER` to `#if NET5_0_OR_GREATER` for CollectionsMarshal
 
+#### R128 Gain Handling
+- Fix integer overflow in `R128TrackGainDb` and `R128AlbumGainDb` setters for extreme values
+- Add `ClampToQ78` helper to safely clamp dB values to Q7.8 format range (-128 to +127.99 dB)
+
+#### Vorbis Validation
+- Add validation for invalid `vorbis_version` in identification header (must be 0 per spec)
+- Return explicit error for Vorbis files with zero sample rate or channel count
+
+#### Security Hardening
+- Add 16 MB max packet size limit in `OggPageHelper.ExtractHeaderPackets` to prevent DoS
+- Add stream/coupled count validation for Opus mapping families 1 & 255 per RFC 7845 §5.1.1.2
+
 ### Changed
 - **Refactor**: `OggVorbisFile` now uses shared `OggPageHelper` code
   - Eliminates ~160 lines of duplicate code
@@ -59,7 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `SaveToFileAsync` convenience overloads to `OggVorbisFile`
 - Change `OggPageWithSegmentsResult.Segments` to `IReadOnlyList<T>` for encapsulation
 - Standardize magic bytes to char cast syntax for readability
-- Test count increased from 1939 to 2057 (+118 tests)
+- Test count increased from 1939 to 2077 (+138 tests)
 
 ## [0.2.1] - 2025-12-29
 
