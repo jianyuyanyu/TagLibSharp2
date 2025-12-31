@@ -656,7 +656,7 @@ public abstract class Tag
 		}
 		set {
 			R128TrackGain = value.HasValue
-				? ((short)Math.Round (value.Value * 256.0)).ToString (CultureInfo.InvariantCulture)
+				? ClampToQ78 (value.Value).ToString (CultureInfo.InvariantCulture)
 				: null;
 		}
 	}
@@ -683,9 +683,24 @@ public abstract class Tag
 		}
 		set {
 			R128AlbumGain = value.HasValue
-				? ((short)Math.Round (value.Value * 256.0)).ToString (CultureInfo.InvariantCulture)
+				? ClampToQ78 (value.Value).ToString (CultureInfo.InvariantCulture)
 				: null;
 		}
+	}
+
+	/// <summary>
+	/// Clamps a dB value to the valid Q7.8 fixed-point range for R128 gain.
+	/// </summary>
+	/// <param name="dB">The gain value in decibels.</param>
+	/// <returns>A Q7.8 value clamped to short range (-32768 to 32767).</returns>
+	static short ClampToQ78 (double dB)
+	{
+		var q78 = Math.Round (dB * 256.0);
+		if (q78 > short.MaxValue)
+			return short.MaxValue;
+		if (q78 < short.MinValue)
+			return short.MinValue;
+		return (short)q78;
 	}
 
 	// MusicBrainz IDs

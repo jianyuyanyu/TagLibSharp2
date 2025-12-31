@@ -289,6 +289,40 @@ public sealed class CrossTaggerCompatibilityTests
 	}
 
 	/// <summary>
+	/// Tests that R128 dB setter clamps extreme values to valid Q7.8 range.
+	/// The Q7.8 format uses a signed 16-bit integer (-32768 to 32767).
+	/// Valid dB range is approximately -128 to +127.99 dB.
+	/// </summary>
+	[TestMethod]
+	public void R128GainDb_ExtremePositiveValue_ClampedToMax ()
+	{
+		var tag = new Id3v2Tag ();
+
+		// 200 dB would be 51200 in Q7.8, exceeding short.MaxValue (32767)
+		tag.R128TrackGainDb = 200.0;
+
+		// Should clamp to short.MaxValue (32767) = ~127.99 dB
+		Assert.AreEqual ("32767", tag.R128TrackGain);
+		Assert.IsTrue (tag.R128TrackGainDb!.Value < 128.0);
+	}
+
+	/// <summary>
+	/// Tests that R128 dB setter clamps extreme negative values to valid Q7.8 range.
+	/// </summary>
+	[TestMethod]
+	public void R128GainDb_ExtremeNegativeValue_ClampedToMin ()
+	{
+		var tag = new Id3v2Tag ();
+
+		// -200 dB would be -51200 in Q7.8, below short.MinValue (-32768)
+		tag.R128AlbumGainDb = -200.0;
+
+		// Should clamp to short.MinValue (-32768) = -128 dB
+		Assert.AreEqual ("-32768", tag.R128AlbumGain);
+		Assert.IsTrue (tag.R128AlbumGainDb!.Value >= -128.0);
+	}
+
+	/// <summary>
 	/// Tests that standard text frames use the correct frame IDs.
 	/// These are critical for basic compatibility with all taggers.
 	/// </summary>
