@@ -625,7 +625,7 @@ public sealed class Mp4Tag : Tag
 			var coverDataAtoms = new List<Mp4DataAtom> ();
 			foreach (var pic in _pictures) {
 				var isJpeg = pic.MimeType.Contains ("jpeg", StringComparison.OrdinalIgnoreCase) ||
-				             pic.MimeType.Contains ("jpg", StringComparison.OrdinalIgnoreCase);
+							 pic.MimeType.Contains ("jpg", StringComparison.OrdinalIgnoreCase);
 				var typeIndicator = isJpeg ? Mp4AtomMapping.TypeJpeg : Mp4AtomMapping.TypePng;
 				coverDataAtoms.Add (new Mp4DataAtom (typeIndicator, pic.PictureData));
 			}

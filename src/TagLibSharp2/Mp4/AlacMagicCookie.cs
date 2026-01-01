@@ -43,7 +43,7 @@ internal static class AlacMagicCookie
 	/// </summary>
 	/// <param name="data">The magic cookie data (must be exactly 36 bytes).</param>
 	/// <returns>The parsed configuration, or null if parsing failed.</returns>
-	public static AlacConfig? Parse(ReadOnlySpan<byte> data)
+	public static AlacConfig? Parse (ReadOnlySpan<byte> data)
 	{
 		if (data.Length < MinCookieSize)
 			return null;
@@ -59,13 +59,12 @@ internal static class AlacMagicCookie
 			return null; // Invalid channel count
 
 		// Average bitrate at offset 19 (4 bytes, big-endian)
-		var avgBitrate = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(19, 4));
+		var avgBitrate = BinaryPrimitives.ReadUInt32BigEndian (data.Slice (19, 4));
 
 		// Sample rate at offset 23 (4 bytes, big-endian)
-		var sampleRate = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(23, 4));
+		var sampleRate = BinaryPrimitives.ReadUInt32BigEndian (data.Slice (23, 4));
 
-		return new AlacConfig
-		{
+		return new AlacConfig {
 			SampleSize = sampleSize,
 			Channels = channels,
 			AvgBitrate = avgBitrate,

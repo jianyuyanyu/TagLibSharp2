@@ -175,7 +175,7 @@ public class Mp4MalformedInputTests
 		builder.Add ((byte)0); // version
 		builder.AddUInt24BE (1); // flags
 		builder.AddUInt32BE (0); // reserved
-		// Actual data is tiny
+								 // Actual data is tiny
 
 		// Act & Assert
 		Assert.ThrowsExactly<NotImplementedException> (() => {
@@ -322,7 +322,7 @@ public class Mp4MalformedInputTests
 		dataContent.Add ((byte)0); // version
 		dataContent.AddUInt24BE (1); // flags (UTF-8)
 		dataContent.AddUInt32BE (0); // reserved
-		// No actual data
+									 // No actual data
 
 		var dataBox = Mp4TestBuilder.CreateFullBox ("data", 0, 1, dataContent.ToArray ());
 		var titleBox = Mp4TestBuilder.CreateBox ("©nam", dataBox);

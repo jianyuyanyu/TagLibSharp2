@@ -36,17 +36,17 @@ public class Mp4FullBox : Mp4Box
 	/// <param name="contentData">The box data excluding version/flags header.</param>
 	/// <param name="children">Child boxes for container boxes.</param>
 	/// <param name="usesExtendedSize">Whether this box uses 64-bit size.</param>
-	public Mp4FullBox(
+	public Mp4FullBox (
 		string type,
 		byte version,
 		uint flags,
 		BinaryData contentData,
 		IReadOnlyList<Mp4Box>? children = null,
 		bool usesExtendedSize = false)
-		: base(type, BuildFullBoxData(version, flags, contentData), children, usesExtendedSize)
+		: base (type, BuildFullBoxData (version, flags, contentData), children, usesExtendedSize)
 	{
 		if (flags > 0xFFFFFF)
-			throw new ArgumentOutOfRangeException(nameof(flags), "Flags must fit in 24 bits (max 0xFFFFFF)");
+			throw new ArgumentOutOfRangeException (nameof (flags), "Flags must fit in 24 bits (max 0xFFFFFF)");
 
 		Version = version;
 		Flags = flags;
@@ -61,30 +61,30 @@ public class Mp4FullBox : Mp4Box
 	/// <param name="children">Child boxes if this is a container.</param>
 	/// <param name="usesExtendedSize">Whether the box uses extended size.</param>
 	/// <returns>A parsed FullBox instance.</returns>
-	public static Mp4FullBox Parse(string type, BinaryData data, IReadOnlyList<Mp4Box>? children = null, bool usesExtendedSize = false)
+	public static Mp4FullBox Parse (string type, BinaryData data, IReadOnlyList<Mp4Box>? children = null, bool usesExtendedSize = false)
 	{
 		if (data.Length < 4)
-			throw new ArgumentException("FullBox data must be at least 4 bytes (version + flags)", nameof(data));
+			throw new ArgumentException ("FullBox data must be at least 4 bytes (version + flags)", nameof (data));
 
 		var version = data[0];
-		var flags = data.ToUInt24BE(1);
-		var contentData = data.Slice(4);
+		var flags = data.ToUInt24BE (1);
+		var contentData = data.Slice (4);
 
-		return new Mp4FullBox(type, version, flags, contentData, children, usesExtendedSize);
+		return new Mp4FullBox (type, version, flags, contentData, children, usesExtendedSize);
 	}
 
 	/// <summary>
 	/// Builds the complete box data by prepending version and flags to content data.
 	/// </summary>
-	static BinaryData BuildFullBoxData(byte version, uint flags, BinaryData contentData)
+	static BinaryData BuildFullBoxData (byte version, uint flags, BinaryData contentData)
 	{
-		using var builder = new BinaryDataBuilder(4 + contentData.Length);
-		builder.Add(version);
-		builder.AddUInt24BE(flags);
-		builder.Add(contentData);
-		return builder.ToBinaryData();
+		using var builder = new BinaryDataBuilder (4 + contentData.Length);
+		builder.Add (version);
+		builder.AddUInt24BE (flags);
+		builder.Add (contentData);
+		return builder.ToBinaryData ();
 	}
 
 	/// <inheritdoc />
-	public override string ToString() => $"{Type} v{Version} flags=0x{Flags:X6} ({TotalSize} bytes{(IsContainer ? $", {Children.Count} children" : "")})";
+	public override string ToString () => $"{Type} v{Version} flags=0x{Flags:X6} ({TotalSize} bytes{(IsContainer ? $", {Children.Count} children" : "")})";
 }

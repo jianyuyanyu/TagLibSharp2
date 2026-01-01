@@ -48,7 +48,7 @@ internal static class EsdsParser
 	/// </summary>
 	/// <param name="data">The esds box data (after box header and FullBox version/flags).</param>
 	/// <returns>The parsed configuration, or null if parsing failed.</returns>
-	public static EsdsConfig? Parse(ReadOnlySpan<byte> data)
+	public static EsdsConfig? Parse (ReadOnlySpan<byte> data)
 	{
 		if (data.Length < 4)
 			return null;
@@ -60,7 +60,7 @@ internal static class EsdsParser
 			return null;
 		offset++;
 
-		var esDescriptorSize = ReadDescriptorSize(data, ref offset);
+		var esDescriptorSize = ReadDescriptorSize (data, ref offset);
 		if (offset + esDescriptorSize > data.Length)
 			return null;
 
@@ -72,7 +72,7 @@ internal static class EsdsParser
 			return null;
 		offset++;
 
-		var decoderConfigSize = ReadDescriptorSize(data, ref offset);
+		var decoderConfigSize = ReadDescriptorSize (data, ref offset);
 		if (offset + decoderConfigSize > data.Length)
 			return null;
 
@@ -82,32 +82,30 @@ internal static class EsdsParser
 
 		var objectTypeIndication = data[offset];
 		var streamType = data[offset + 1];
-		var bufferSizeDB = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(offset + 2, 3).Prepend((byte)0));
-		var maxBitrate = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(offset + 5, 4));
-		var avgBitrate = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(offset + 9, 4));
+		var bufferSizeDB = BinaryPrimitives.ReadUInt32BigEndian (data.Slice (offset + 2, 3).Prepend ((byte)0));
+		var maxBitrate = BinaryPrimitives.ReadUInt32BigEndian (data.Slice (offset + 5, 4));
+		var avgBitrate = BinaryPrimitives.ReadUInt32BigEndian (data.Slice (offset + 9, 4));
 		offset += 13;
 
 		// Find DecoderSpecificInfo (Audio Specific Config)
 		if (offset >= data.Length || data[offset] != DecSpecificInfoTag)
-			return new EsdsConfig
-			{
+			return new EsdsConfig {
 				ObjectTypeIndication = objectTypeIndication,
 				MaxBitrate = maxBitrate,
 				AvgBitrate = avgBitrate
 			};
 
 		offset++;
-		var audioSpecificConfigSize = ReadDescriptorSize(data, ref offset);
+		var audioSpecificConfigSize = ReadDescriptorSize (data, ref offset);
 		if (offset + audioSpecificConfigSize > data.Length)
 			return null;
 
-		var audioSpecificConfig = data.Slice(offset, audioSpecificConfigSize);
+		var audioSpecificConfig = data.Slice (offset, audioSpecificConfigSize);
 
 		// Parse Audio Specific Config
-		var (sampleRate, channels) = ParseAudioSpecificConfig(audioSpecificConfig);
+		var (sampleRate, channels) = ParseAudioSpecificConfig (audioSpecificConfig);
 
-		return new EsdsConfig
-		{
+		return new EsdsConfig {
 			ObjectTypeIndication = objectTypeIndication,
 			MaxBitrate = maxBitrate,
 			AvgBitrate = avgBitrate,
@@ -123,13 +121,12 @@ internal static class EsdsParser
 	/// Each byte has 7 data bits and 1 continuation bit (MSB).
 	/// Size can be 1-4 bytes depending on continuation bits.
 	/// </remarks>
-	private static int ReadDescriptorSize(ReadOnlySpan<byte> data, ref int offset)
+	private static int ReadDescriptorSize (ReadOnlySpan<byte> data, ref int offset)
 	{
 		var size = 0;
 		var count = 0;
 
-		while (offset < data.Length && count < 4)
-		{
+		while (offset < data.Length && count < 4) {
 			var b = data[offset++];
 			size = (size << 7) | (b & 0x7F);
 			if ((b & 0x80) == 0)
@@ -155,13 +152,13 @@ internal static class EsdsParser
 	/// Reference: ISO/IEC 14496-3 §1.6.2.1
 	/// </para>
 	/// </remarks>
-	private static (int sampleRate, int channels) ParseAudioSpecificConfig(ReadOnlySpan<byte> config)
+	private static (int sampleRate, int channels) ParseAudioSpecificConfig (ReadOnlySpan<byte> config)
 	{
 		if (config.Length < 2)
 			return (0, 0);
 
 		// Read first 16 bits
-		var bits = BinaryPrimitives.ReadUInt16BigEndian(config);
+		var bits = BinaryPrimitives.ReadUInt16BigEndian (config);
 
 		// Extract samplingFrequencyIndex (4 bits starting at bit 5)
 		var samplingFrequencyIndex = (bits >> 7) & 0x0F;
@@ -169,8 +166,7 @@ internal static class EsdsParser
 		int sampleRate;
 		int channelOffset;
 
-		if (samplingFrequencyIndex == 15)
-		{
+		if (samplingFrequencyIndex == 15) {
 			// Explicit 24-bit sample rate follows
 			if (config.Length < 5)
 				return (0, 0);
@@ -178,9 +174,7 @@ internal static class EsdsParser
 			// Read 24-bit sample rate (bits 9-32)
 			sampleRate = ((config[1] & 0x7F) << 17) | (config[2] << 9) | (config[3] << 1) | (config[4] >> 7);
 			channelOffset = 4;
-		}
-		else
-		{
+		} else {
 			// Use lookup table
 			sampleRate = samplingFrequencyIndex < SamplingFrequencies.Length
 				? SamplingFrequencies[samplingFrequencyIndex]
@@ -190,13 +184,10 @@ internal static class EsdsParser
 
 		// Extract channelConfiguration (4 bits)
 		int channels;
-		if (samplingFrequencyIndex == 15)
-		{
+		if (samplingFrequencyIndex == 15) {
 			// Channel config starts at bit 33
 			channels = (config[channelOffset] >> 3) & 0x0F;
-		}
-		else
-		{
+		} else {
 			// Channel config starts at bit 11
 			channels = (config[channelOffset] >> 3) & 0x0F;
 		}
@@ -205,8 +196,7 @@ internal static class EsdsParser
 		// 0 = defined in AOT Specific Config (rare, treat as 0)
 		// 1-7 = standard configurations
 		// 7 is actually 8 channels (7.1)
-		var actualChannels = channels switch
-		{
+		var actualChannels = channels switch {
 			0 => 0, // AOT-specific, fallback needed
 			1 => 1, // Mono
 			2 => 2, // Stereo
@@ -270,11 +260,11 @@ internal static class SpanExtensions
 	/// <summary>
 	/// Prepends a byte to a span by creating a new array.
 	/// </summary>
-	public static ReadOnlySpan<byte> Prepend(this ReadOnlySpan<byte> span, byte value)
+	public static ReadOnlySpan<byte> Prepend (this ReadOnlySpan<byte> span, byte value)
 	{
 		var result = new byte[span.Length + 1];
 		result[0] = value;
-		span.CopyTo(result.AsSpan(1));
+		span.CopyTo (result.AsSpan (1));
 		return result;
 	}
 }

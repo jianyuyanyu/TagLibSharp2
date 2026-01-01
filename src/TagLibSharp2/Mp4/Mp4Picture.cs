@@ -81,7 +81,7 @@ public sealed class Mp4Picture : IPicture
 	internal BinaryData ToDataAtom ()
 	{
 		var isJpeg = MimeType.Contains ("jpeg", StringComparison.OrdinalIgnoreCase) ||
-		             MimeType.Contains ("jpg", StringComparison.OrdinalIgnoreCase);
+					 MimeType.Contains ("jpg", StringComparison.OrdinalIgnoreCase);
 
 		return Mp4DataAtom.CreateImage (PictureData, isJpeg);
 	}

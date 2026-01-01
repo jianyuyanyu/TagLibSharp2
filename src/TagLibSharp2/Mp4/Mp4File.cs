@@ -42,7 +42,7 @@ public sealed class Mp4File
 
 	IFileSystem? _sourceFileSystem;
 
-	Mp4File(Mp4Tag? tag, AudioProperties properties, Mp4AudioCodec audioCodec)
+	Mp4File (Mp4Tag? tag, AudioProperties properties, Mp4AudioCodec audioCodec)
 	{
 		Tag = tag;
 		Properties = properties;
@@ -83,7 +83,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Title {
 		get => Tag?.Title;
-		set => EnsureTag().Title = value;
+		set => EnsureTag ().Title = value;
 	}
 
 	/// <summary>
@@ -91,7 +91,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Artist {
 		get => Tag?.Artist;
-		set => EnsureTag().Artist = value;
+		set => EnsureTag ().Artist = value;
 	}
 
 	/// <summary>
@@ -99,7 +99,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Album {
 		get => Tag?.Album;
-		set => EnsureTag().Album = value;
+		set => EnsureTag ().Album = value;
 	}
 
 	/// <summary>
@@ -107,7 +107,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Year {
 		get => Tag?.Year;
-		set => EnsureTag().Year = value;
+		set => EnsureTag ().Year = value;
 	}
 
 	/// <summary>
@@ -115,7 +115,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Genre {
 		get => Tag?.Genre;
-		set => EnsureTag().Genre = value;
+		set => EnsureTag ().Genre = value;
 	}
 
 	/// <summary>
@@ -123,7 +123,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Comment {
 		get => Tag?.Comment;
-		set => EnsureTag().Comment = value;
+		set => EnsureTag ().Comment = value;
 	}
 
 	/// <summary>
@@ -131,7 +131,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? AlbumArtist {
 		get => Tag?.AlbumArtist;
-		set => EnsureTag().AlbumArtist = value;
+		set => EnsureTag ().AlbumArtist = value;
 	}
 
 	/// <summary>
@@ -139,7 +139,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Composer {
 		get => Tag?.Composer;
-		set => EnsureTag().Composer = value;
+		set => EnsureTag ().Composer = value;
 	}
 
 	/// <summary>
@@ -147,7 +147,7 @@ public sealed class Mp4File
 	/// </summary>
 	public uint? Track {
 		get => Tag?.Track;
-		set => EnsureTag().Track = value;
+		set => EnsureTag ().Track = value;
 	}
 
 	/// <summary>
@@ -155,7 +155,7 @@ public sealed class Mp4File
 	/// </summary>
 	public uint? TrackCount {
 		get => Tag?.TotalTracks;
-		set => EnsureTag().TotalTracks = value;
+		set => EnsureTag ().TotalTracks = value;
 	}
 
 	/// <summary>
@@ -163,7 +163,7 @@ public sealed class Mp4File
 	/// </summary>
 	public uint? DiscNumber {
 		get => Tag?.DiscNumber;
-		set => EnsureTag().DiscNumber = value;
+		set => EnsureTag ().DiscNumber = value;
 	}
 
 	/// <summary>
@@ -171,7 +171,7 @@ public sealed class Mp4File
 	/// </summary>
 	public uint? DiscCount {
 		get => Tag?.TotalDiscs;
-		set => EnsureTag().TotalDiscs = value;
+		set => EnsureTag ().TotalDiscs = value;
 	}
 
 	// Sort order properties
@@ -181,7 +181,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? AlbumSort {
 		get => Tag?.AlbumSort;
-		set => EnsureTag().AlbumSort = value;
+		set => EnsureTag ().AlbumSort = value;
 	}
 
 	/// <summary>
@@ -189,7 +189,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? ArtistSort {
 		get => Tag?.ArtistSort;
-		set => EnsureTag().ArtistSort = value;
+		set => EnsureTag ().ArtistSort = value;
 	}
 
 	/// <summary>
@@ -197,7 +197,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? TitleSort {
 		get => Tag?.TitleSort;
-		set => EnsureTag().TitleSort = value;
+		set => EnsureTag ().TitleSort = value;
 	}
 
 	/// <summary>
@@ -205,7 +205,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? AlbumArtistSort {
 		get => Tag?.AlbumArtistSort;
-		set => EnsureTag().AlbumArtistSort = value;
+		set => EnsureTag ().AlbumArtistSort = value;
 	}
 
 	/// <summary>
@@ -213,7 +213,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? ComposerSort {
 		get => Tag?.ComposerSort;
-		set => EnsureTag().ComposerSort = value;
+		set => EnsureTag ().ComposerSort = value;
 	}
 
 	// Classical music properties
@@ -223,7 +223,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Work {
 		get => Tag?.Work;
-		set => EnsureTag().Work = value;
+		set => EnsureTag ().Work = value;
 	}
 
 	/// <summary>
@@ -231,7 +231,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Movement {
 		get => Tag?.Movement;
-		set => EnsureTag().Movement = value;
+		set => EnsureTag ().Movement = value;
 	}
 
 	/// <summary>
@@ -239,7 +239,7 @@ public sealed class Mp4File
 	/// </summary>
 	public uint? MovementNumber {
 		get => Tag?.MovementNumber;
-		set => EnsureTag().MovementNumber = value;
+		set => EnsureTag ().MovementNumber = value;
 	}
 
 	/// <summary>
@@ -247,7 +247,7 @@ public sealed class Mp4File
 	/// </summary>
 	public uint? MovementTotal {
 		get => Tag?.MovementTotal;
-		set => EnsureTag().MovementTotal = value;
+		set => EnsureTag ().MovementTotal = value;
 	}
 
 	// Additional metadata properties
@@ -257,7 +257,7 @@ public sealed class Mp4File
 	/// </summary>
 	public bool IsGapless {
 		get => Tag?.IsGapless ?? false;
-		set => EnsureTag().IsGapless = value;
+		set => EnsureTag ().IsGapless = value;
 	}
 
 	/// <summary>
@@ -265,7 +265,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Isrc {
 		get => Tag?.Isrc;
-		set => EnsureTag().Isrc = value;
+		set => EnsureTag ().Isrc = value;
 	}
 
 	/// <summary>
@@ -273,7 +273,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Conductor {
 		get => Tag?.Conductor;
-		set => EnsureTag().Conductor = value;
+		set => EnsureTag ().Conductor = value;
 	}
 
 	/// <summary>
@@ -281,7 +281,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? OriginalReleaseDate {
 		get => Tag?.OriginalReleaseDate;
-		set => EnsureTag().OriginalReleaseDate = value;
+		set => EnsureTag ().OriginalReleaseDate = value;
 	}
 
 	// ReplayGain properties
@@ -291,7 +291,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? ReplayGainTrackGain {
 		get => Tag?.ReplayGainTrackGain;
-		set => EnsureTag().ReplayGainTrackGain = value;
+		set => EnsureTag ().ReplayGainTrackGain = value;
 	}
 
 	/// <summary>
@@ -299,7 +299,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? ReplayGainTrackPeak {
 		get => Tag?.ReplayGainTrackPeak;
-		set => EnsureTag().ReplayGainTrackPeak = value;
+		set => EnsureTag ().ReplayGainTrackPeak = value;
 	}
 
 	/// <summary>
@@ -307,7 +307,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? ReplayGainAlbumGain {
 		get => Tag?.ReplayGainAlbumGain;
-		set => EnsureTag().ReplayGainAlbumGain = value;
+		set => EnsureTag ().ReplayGainAlbumGain = value;
 	}
 
 	/// <summary>
@@ -315,7 +315,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? ReplayGainAlbumPeak {
 		get => Tag?.ReplayGainAlbumPeak;
-		set => EnsureTag().ReplayGainAlbumPeak = value;
+		set => EnsureTag ().ReplayGainAlbumPeak = value;
 	}
 
 	// R128 loudness properties
@@ -325,7 +325,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? R128TrackGain {
 		get => Tag?.R128TrackGain;
-		set => EnsureTag().R128TrackGain = value;
+		set => EnsureTag ().R128TrackGain = value;
 	}
 
 	/// <summary>
@@ -333,7 +333,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? R128AlbumGain {
 		get => Tag?.R128AlbumGain;
-		set => EnsureTag().R128AlbumGain = value;
+		set => EnsureTag ().R128AlbumGain = value;
 	}
 
 	/// <summary>
@@ -346,7 +346,7 @@ public sealed class Mp4File
 	/// </remarks>
 	public double? R128TrackGainDb {
 		get => Tag?.R128TrackGainDb;
-		set => EnsureTag().R128TrackGainDb = value;
+		set => EnsureTag ().R128TrackGainDb = value;
 	}
 
 	/// <summary>
@@ -359,7 +359,7 @@ public sealed class Mp4File
 	/// </remarks>
 	public double? R128AlbumGainDb {
 		get => Tag?.R128AlbumGainDb;
-		set => EnsureTag().R128AlbumGainDb = value;
+		set => EnsureTag ().R128AlbumGainDb = value;
 	}
 
 	// AcoustID properties
@@ -369,7 +369,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? AcoustIdId {
 		get => Tag?.AcoustIdId;
-		set => EnsureTag().AcoustIdId = value;
+		set => EnsureTag ().AcoustIdId = value;
 	}
 
 	/// <summary>
@@ -377,7 +377,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? AcoustIdFingerprint {
 		get => Tag?.AcoustIdFingerprint;
-		set => EnsureTag().AcoustIdFingerprint = value;
+		set => EnsureTag ().AcoustIdFingerprint = value;
 	}
 
 	// Extended MusicBrainz properties
@@ -387,7 +387,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? MusicBrainzRecordingId {
 		get => Tag?.MusicBrainzRecordingId;
-		set => EnsureTag().MusicBrainzRecordingId = value;
+		set => EnsureTag ().MusicBrainzRecordingId = value;
 	}
 
 	/// <summary>
@@ -395,7 +395,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? MusicBrainzDiscId {
 		get => Tag?.MusicBrainzDiscId;
-		set => EnsureTag().MusicBrainzDiscId = value;
+		set => EnsureTag ().MusicBrainzDiscId = value;
 	}
 
 	/// <summary>
@@ -403,7 +403,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? MusicBrainzReleaseStatus {
 		get => Tag?.MusicBrainzReleaseStatus;
-		set => EnsureTag().MusicBrainzReleaseStatus = value;
+		set => EnsureTag ().MusicBrainzReleaseStatus = value;
 	}
 
 	/// <summary>
@@ -411,7 +411,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? MusicBrainzReleaseType {
 		get => Tag?.MusicBrainzReleaseType;
-		set => EnsureTag().MusicBrainzReleaseType = value;
+		set => EnsureTag ().MusicBrainzReleaseType = value;
 	}
 
 	/// <summary>
@@ -419,7 +419,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? MusicBrainzReleaseCountry {
 		get => Tag?.MusicBrainzReleaseCountry;
-		set => EnsureTag().MusicBrainzReleaseCountry = value;
+		set => EnsureTag ().MusicBrainzReleaseCountry = value;
 	}
 
 	// DJ and remix properties
@@ -429,7 +429,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? InitialKey {
 		get => Tag?.InitialKey;
-		set => EnsureTag().InitialKey = value;
+		set => EnsureTag ().InitialKey = value;
 	}
 
 	/// <summary>
@@ -437,7 +437,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Remixer {
 		get => Tag?.Remixer;
-		set => EnsureTag().Remixer = value;
+		set => EnsureTag ().Remixer = value;
 	}
 
 	/// <summary>
@@ -445,7 +445,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Mood {
 		get => Tag?.Mood;
-		set => EnsureTag().Mood = value;
+		set => EnsureTag ().Mood = value;
 	}
 
 	/// <summary>
@@ -453,7 +453,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Subtitle {
 		get => Tag?.Subtitle;
-		set => EnsureTag().Subtitle = value;
+		set => EnsureTag ().Subtitle = value;
 	}
 
 	// Collector properties
@@ -463,7 +463,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Barcode {
 		get => Tag?.Barcode;
-		set => EnsureTag().Barcode = value;
+		set => EnsureTag ().Barcode = value;
 	}
 
 	/// <summary>
@@ -471,7 +471,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? CatalogNumber {
 		get => Tag?.CatalogNumber;
-		set => EnsureTag().CatalogNumber = value;
+		set => EnsureTag ().CatalogNumber = value;
 	}
 
 	/// <summary>
@@ -479,7 +479,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? AmazonId {
 		get => Tag?.AmazonId;
-		set => EnsureTag().AmazonId = value;
+		set => EnsureTag ().AmazonId = value;
 	}
 
 	// Library management properties
@@ -489,7 +489,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? DateTagged {
 		get => Tag?.DateTagged;
-		set => EnsureTag().DateTagged = value;
+		set => EnsureTag ().DateTagged = value;
 	}
 
 	/// <summary>
@@ -497,7 +497,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? Language {
 		get => Tag?.Language;
-		set => EnsureTag().Language = value;
+		set => EnsureTag ().Language = value;
 	}
 
 	/// <summary>
@@ -505,7 +505,7 @@ public sealed class Mp4File
 	/// </summary>
 	public string? MediaType {
 		get => Tag?.MediaType;
-		set => EnsureTag().MediaType = value;
+		set => EnsureTag ().MediaType = value;
 	}
 
 	/// <summary>
@@ -519,12 +519,12 @@ public sealed class Mp4File
 	/// Adds a picture to this file.
 	/// </summary>
 	/// <param name="picture">The picture to add.</param>
-	public void AddPicture(IPicture picture)
+	public void AddPicture (IPicture picture)
 	{
-		var tag = EnsureTag();
+		var tag = EnsureTag ();
 		var current = tag.Pictures;
 		var newList = new IPicture[current.Length + 1];
-		current.CopyTo(newList, 0);
+		current.CopyTo (newList, 0);
 		newList[^1] = picture;
 		tag.Pictures = newList;
 	}
@@ -532,12 +532,12 @@ public sealed class Mp4File
 	/// <summary>
 	/// Removes all pictures from this file.
 	/// </summary>
-	public void RemovePictures() => Tag?.Clear();
+	public void RemovePictures () => Tag?.Clear ();
 
 	/// <summary>
 	/// Clears all metadata from this file.
 	/// </summary>
-	public void ClearAllMetadata() => Tag?.Clear();
+	public void ClearAllMetadata () => Tag?.Clear ();
 
 	/// <summary>
 	/// Gets a freeform (----) metadata value.
@@ -545,17 +545,17 @@ public sealed class Mp4File
 	/// <param name="mean">The mean (namespace) identifier.</param>
 	/// <param name="name">The name identifier.</param>
 	/// <returns>The value, or null if not present.</returns>
-	public string? GetFreeformTag(string mean, string name)
+	public string? GetFreeformTag (string mean, string name)
 	{
 		if (Tag is null)
 			return null;
 
 		var key = $"{Mp4AtomMapping.FreeformAtom}:{mean}:{name}";
-		var atoms = Tag.GetAtoms();
-		if (!atoms.TryGetValue(key, out var dataAtoms) || dataAtoms.Count == 0)
+		var atoms = Tag.GetAtoms ();
+		if (!atoms.TryGetValue (key, out var dataAtoms) || dataAtoms.Count == 0)
 			return null;
 
-		return dataAtoms[0].ToUtf8String();
+		return dataAtoms[0].ToUtf8String ();
 	}
 
 	/// <summary>
@@ -564,23 +564,23 @@ public sealed class Mp4File
 	/// <param name="mean">The mean (namespace) identifier.</param>
 	/// <param name="name">The name identifier.</param>
 	/// <param name="value">The value to set, or null to remove.</param>
-	public void SetFreeformTag(string mean, string name, string? value)
+	public void SetFreeformTag (string mean, string name, string? value)
 	{
-		var tag = EnsureTag();
+		var tag = EnsureTag ();
 		var key = $"{Mp4AtomMapping.FreeformAtom}:{mean}:{name}";
 
-		if (string.IsNullOrEmpty(value)) {
-			tag.SetAtoms(key, null!);
+		if (string.IsNullOrEmpty (value)) {
+			tag.SetAtoms (key, null!);
 			return;
 		}
 
-		var dataAtom = new Mp4DataAtom(Mp4AtomMapping.TypeUtf8, BinaryData.FromStringUtf8(value!));
-		tag.SetAtoms(key, new List<Mp4DataAtom> { dataAtom });
+		var dataAtom = new Mp4DataAtom (Mp4AtomMapping.TypeUtf8, BinaryData.FromStringUtf8 (value!));
+		tag.SetAtoms (key, new List<Mp4DataAtom> { dataAtom });
 	}
 
-	Mp4Tag EnsureTag()
+	Mp4Tag EnsureTag ()
 	{
-		Tag ??= new Mp4Tag();
+		Tag ??= new Mp4Tag ();
 		return Tag;
 	}
 
@@ -589,24 +589,24 @@ public sealed class Mp4File
 	/// </summary>
 	/// <param name="data">The file data.</param>
 	/// <returns>A result indicating success or failure.</returns>
-	public static Mp4FileReadResult Read(ReadOnlySpan<byte> data)
+	public static Mp4FileReadResult Read (ReadOnlySpan<byte> data)
 	{
 		if (data.Length < Mp4Box.HeaderSize)
-			return Mp4FileReadResult.Failure("File too small to contain valid MP4 boxes");
+			return Mp4FileReadResult.Failure ("File too small to contain valid MP4 boxes");
 
 		// Parse all top-level boxes
-		var boxes = new List<Mp4Box>();
+		var boxes = new List<Mp4Box> ();
 		var offset = 0;
 		while (offset < data.Length) {
 			var remaining = data[offset..];
 			if (remaining.Length < Mp4Box.HeaderSize)
 				break;
 
-			var result = Mp4Box.Parse(remaining);
+			var result = Mp4Box.Parse (remaining);
 			if (!result.IsSuccess)
 				break;
 
-			boxes.Add(result.Box!);
+			boxes.Add (result.Box!);
 			offset += result.BytesConsumed;
 		}
 
@@ -617,83 +617,83 @@ public sealed class Mp4File
 		for (int i = 0; i < boxes.Count; i++) {
 			var box = boxes[i];
 			if (box.Type == "ftyp")
-				fileType = ExtractFileType(box);
+				fileType = ExtractFileType (box);
 			else if (box.Type == "moov")
 				moov = box;
 		}
 
 		if (moov is null)
-			return Mp4FileReadResult.Failure("Missing moov box - not a valid MP4 file");
+			return Mp4FileReadResult.Failure ("Missing moov box - not a valid MP4 file");
 
 		// Extract audio properties from moov/trak/mdia
-		var (properties, audioCodec) = ExtractAudioProperties(moov);
+		var (properties, audioCodec) = ExtractAudioProperties (moov);
 
 		// Extract iTunes metadata from moov/udta/meta/ilst
-		var tag = ExtractMetadata(moov);
+		var tag = ExtractMetadata (moov);
 
-		var file = new Mp4File(tag, properties, audioCodec) {
+		var file = new Mp4File (tag, properties, audioCodec) {
 			FileType = fileType
 		};
 
-		return Mp4FileReadResult.Success(file, offset);
+		return Mp4FileReadResult.Success (file, offset);
 	}
 
-	static string ExtractFileType(Mp4Box ftypBox)
+	static string ExtractFileType (Mp4Box ftypBox)
 	{
 		if (ftypBox.Data.Length < 4)
 			return string.Empty;
-		return ftypBox.Data.Slice(0, 4).ToStringLatin1().TrimEnd();
+		return ftypBox.Data.Slice (0, 4).ToStringLatin1 ().TrimEnd ();
 	}
 
-	static (AudioProperties, Mp4AudioCodec) ExtractAudioProperties(Mp4Box moov)
+	static (AudioProperties, Mp4AudioCodec) ExtractAudioProperties (Mp4Box moov)
 	{
 		// First try to get duration from mvhd (movie header) for overall duration
 		uint movieTimescale = 0;
 		ulong movieDuration = 0;
-		var mvhd = moov.FindChild("mvhd");
+		var mvhd = moov.FindChild ("mvhd");
 		if (mvhd is not null && mvhd.Data.Length >= 20) {
 			var mvhdData = mvhd.Data;
 			var mvhdVersion = mvhdData[0];
 			if (mvhdVersion == 0) {
 				// Version 0: 32-bit values
 				// version(1) + flags(3) + creation(4) + modification(4) + timescale(4) + duration(4)
-				movieTimescale = mvhdData.ToUInt32BE(12);
-				movieDuration = mvhdData.ToUInt32BE(16);
+				movieTimescale = mvhdData.ToUInt32BE (12);
+				movieDuration = mvhdData.ToUInt32BE (16);
 			} else {
 				// Version 1: 64-bit values
 				if (mvhdData.Length >= 32) {
-					movieTimescale = mvhdData.ToUInt32BE(20);
-					movieDuration = mvhdData.ToUInt64BE(24);
+					movieTimescale = mvhdData.ToUInt32BE (20);
+					movieDuration = mvhdData.ToUInt64BE (24);
 				}
 			}
 		}
 
 		// Navigate to moov/trak/mdia for track info
-		var trak = moov.FindChild("trak");
+		var trak = moov.FindChild ("trak");
 		if (trak is null)
 			return (AudioProperties.Empty, Mp4AudioCodec.Unknown);
 
-		var mdia = trak.FindChild("mdia");
+		var mdia = trak.FindChild ("mdia");
 		if (mdia is null)
 			return (AudioProperties.Empty, Mp4AudioCodec.Unknown);
 
 		// Parse mdhd for track-level timescale (used for sample rate if not found in stsd)
 		uint trackTimescale = movieTimescale;
-		var mdhd = mdia.FindChild("mdhd");
+		var mdhd = mdia.FindChild ("mdhd");
 		if (mdhd is not null && mdhd.Data.Length >= 20) {
 			var mdhdData = mdhd.Data;
 			var mdhdVersion = mdhdData[0];
 			if (mdhdVersion == 0) {
-				trackTimescale = mdhdData.ToUInt32BE(12);
+				trackTimescale = mdhdData.ToUInt32BE (12);
 			} else if (mdhdData.Length >= 28) {
-				trackTimescale = mdhdData.ToUInt32BE(20);
+				trackTimescale = mdhdData.ToUInt32BE (20);
 			}
 		}
 
 		// Navigate to moov/trak/mdia/minf/stbl/stsd for codec info
-		var minf = mdia.FindChild("minf");
-		var stbl = minf?.FindChild("stbl");
-		var stsd = stbl?.FindChild("stsd");
+		var minf = mdia.FindChild ("minf");
+		var stbl = minf?.FindChild ("stbl");
+		var stsd = stbl?.FindChild ("stsd");
 
 		var codec = Mp4AudioCodec.Unknown;
 		var channels = 0;
@@ -703,13 +703,13 @@ public sealed class Mp4File
 
 		if (stsd is not null && stsd.Data.Length >= 16) {
 			// stsd is a FullBox: version(1) + flags(3) + entry_count(4) + sample_entries
-			var entryData = stsd.Data.Slice(8);
+			var entryData = stsd.Data.Slice (8);
 			if (entryData.Length >= 36) {
 				// Sample entry structure:
 				// size(4) + type(4) + reserved(6) + data_ref_idx(2) + reserved(8)
 				// + channelcount(2) + samplesize(2) + pre_defined(2) + reserved(2)
 				// + samplerate(4, 16.16 fixed)
-				var codecType = entryData.Slice(4, 4).ToStringLatin1();
+				var codecType = entryData.Slice (4, 4).ToStringLatin1 ();
 				codec = codecType switch {
 					"mp4a" => Mp4AudioCodec.Aac,
 					"alac" => Mp4AudioCodec.Alac,
@@ -729,12 +729,12 @@ public sealed class Mp4File
 				// 28: pre_defined (2 bytes)
 				// 30: reserved (2 bytes)
 				// 32: samplerate (4 bytes, 16.16 fixed-point)
-				channels = entryData.ToUInt16BE(24);
+				channels = entryData.ToUInt16BE (24);
 
 				// For lossy codecs like AAC, bits per sample is meaningless
 				// Only report it for lossless codecs like ALAC
 				if (codec == Mp4AudioCodec.Alac || codec == Mp4AudioCodec.Flac)
-					bitsPerSample = entryData.ToUInt16BE(26);
+					bitsPerSample = entryData.ToUInt16BE (26);
 
 				// Sample rate is stored as 16.16 fixed-point, which overflows for rates > 65535
 				// For high sample rates like 96kHz, 176.4kHz, 192kHz, use mdhd timescale instead
@@ -742,15 +742,15 @@ public sealed class Mp4File
 					// mdhd has a sample rate that cannot fit in 16.16 fixed-point
 					sampleRate = (int)trackTimescale;
 				} else {
-					var rawSampleRate = entryData.ToUInt32BE(32);
+					var rawSampleRate = entryData.ToUInt32BE (32);
 					var stsdSampleRate = (int)(rawSampleRate >> 16);
 					sampleRate = stsdSampleRate > 0 ? stsdSampleRate : (int)trackTimescale;
 				}
 
 				// Parse codec-specific extensions for bitrate
-				var sampleEntrySize = entryData.ToUInt32BE(0);
+				var sampleEntrySize = entryData.ToUInt32BE (0);
 				if (sampleEntrySize > 36 && entryData.Length > 36) {
-					bitrate = ExtractBitrateFromCodecBox(entryData.Slice(36), codec);
+					bitrate = ExtractBitrateFromCodecBox (entryData.Slice (36), codec);
 				}
 			}
 		}
@@ -761,7 +761,7 @@ public sealed class Mp4File
 
 		// Calculate duration from movie header
 		var durationSeconds = movieTimescale > 0 ? (double)movieDuration / movieTimescale : 0;
-		var audioDuration = TimeSpan.FromSeconds(durationSeconds);
+		var audioDuration = TimeSpan.FromSeconds (durationSeconds);
 
 		var codecName = codec switch {
 			Mp4AudioCodec.Aac => "AAC",
@@ -773,14 +773,14 @@ public sealed class Mp4File
 			_ => null
 		};
 
-		var properties = new AudioProperties(audioDuration, bitrate, sampleRate, bitsPerSample, channels, codecName);
+		var properties = new AudioProperties (audioDuration, bitrate, sampleRate, bitsPerSample, channels, codecName);
 		return (properties, codec);
 	}
 
 	/// <summary>
 	/// Extracts bitrate from codec-specific boxes (esds for AAC, alac for ALAC).
 	/// </summary>
-	static int ExtractBitrateFromCodecBox(BinaryData codecExtensions, Mp4AudioCodec codec)
+	static int ExtractBitrateFromCodecBox (BinaryData codecExtensions, Mp4AudioCodec codec)
 	{
 		if (codecExtensions.Length < 8)
 			return 0;
@@ -788,16 +788,16 @@ public sealed class Mp4File
 		// Look for nested boxes within the sample entry extensions
 		var offset = 0;
 		while (offset + 8 <= codecExtensions.Length) {
-			var boxSize = codecExtensions.ToUInt32BE(offset);
+			var boxSize = codecExtensions.ToUInt32BE (offset);
 			if (boxSize < 8 || boxSize > codecExtensions.Length - offset)
 				break;
 
-			var boxType = codecExtensions.Slice(offset + 4, 4).ToStringLatin1();
+			var boxType = codecExtensions.Slice (offset + 4, 4).ToStringLatin1 ();
 
 			if (boxType == "esds" && codec == Mp4AudioCodec.Aac) {
 				// esds box: version(1) + flags(3) + ES_Descriptor
 				// Parse ES_Descriptor to find DecoderConfigDescriptor with bitrate
-				return ParseEsdsBitrate(codecExtensions.Slice(offset + 8, (int)boxSize - 8));
+				return ParseEsdsBitrate (codecExtensions.Slice (offset + 8, (int)boxSize - 8));
 			}
 
 			offset += (int)boxSize;
@@ -809,7 +809,7 @@ public sealed class Mp4File
 	/// <summary>
 	/// Parses bitrate from esds (Elementary Stream Descriptor) box.
 	/// </summary>
-	static int ParseEsdsBitrate(BinaryData esdsData)
+	static int ParseEsdsBitrate (BinaryData esdsData)
 	{
 		if (esdsData.Length < 12)
 			return 0;
@@ -823,7 +823,7 @@ public sealed class Mp4File
 		offset++;
 
 		// Skip size (variable length, typically 1 byte for small descriptors)
-		offset += GetDescriptorSizeLength(esdsData.Slice(offset));
+		offset += GetDescriptorSizeLength (esdsData.Slice (offset));
 		if (offset + 3 > esdsData.Length)
 			return 0;
 
@@ -836,13 +836,13 @@ public sealed class Mp4File
 		offset++;
 
 		// Skip size
-		offset += GetDescriptorSizeLength(esdsData.Slice(offset));
+		offset += GetDescriptorSizeLength (esdsData.Slice (offset));
 		if (offset + 13 > esdsData.Length)
 			return 0;
 
 		// objectTypeIndication (1) + streamType (1) + bufferSizeDB (3) + maxBitrate (4) + avgBitrate (4)
 		// Skip to avgBitrate at offset + 1 + 1 + 3 + 4 = 9
-		var avgBitrate = esdsData.ToUInt32BE(offset + 9);
+		var avgBitrate = esdsData.ToUInt32BE (offset + 9);
 
 		// Convert from bits/second to kbits/second
 		return (int)(avgBitrate / 1000);
@@ -851,7 +851,7 @@ public sealed class Mp4File
 	/// <summary>
 	/// Gets the length of a descriptor size field (1-4 bytes, expandable).
 	/// </summary>
-	static int GetDescriptorSizeLength(BinaryData data)
+	static int GetDescriptorSizeLength (BinaryData data)
 	{
 		// Expandable size encoding: high bit = more bytes follow
 		var length = 0;
@@ -863,14 +863,14 @@ public sealed class Mp4File
 		return length;
 	}
 
-	static Mp4Tag? ExtractMetadata(Mp4Box moov)
+	static Mp4Tag? ExtractMetadata (Mp4Box moov)
 	{
 		// Navigate: moov -> udta -> meta -> ilst
-		var udta = moov.FindChild("udta");
+		var udta = moov.FindChild ("udta");
 		if (udta is null)
 			return null;
 
-		var meta = udta.FindChild("meta");
+		var meta = udta.FindChild ("meta");
 		if (meta is null)
 			return null;
 
@@ -880,16 +880,16 @@ public sealed class Mp4File
 			return null;
 
 		// Find ilst within meta's children (already parsed by Mp4BoxParser)
-		var ilst = meta.FindChild("ilst");
+		var ilst = meta.FindChild ("ilst");
 		if (ilst is null)
 			return null;
 
-		return ParseIlst(ilst);
+		return ParseIlst (ilst);
 	}
 
-	static Mp4Tag ParseIlst(Mp4Box ilst)
+	static Mp4Tag ParseIlst (Mp4Box ilst)
 	{
-		var tag = new Mp4Tag();
+		var tag = new Mp4Tag ();
 
 		// Each child of ilst is a metadata atom (©nam, ©ART, etc.)
 		foreach (var atomBox in ilst.Children) {
@@ -897,41 +897,41 @@ public sealed class Mp4File
 
 			// Handle cover art specially
 			if (atomId == Mp4AtomMapping.CoverArt) {
-				ParseCoverArt(atomBox, tag);
+				ParseCoverArt (atomBox, tag);
 				continue;
 			}
 
 			// Handle freeform atoms (----)
 			if (atomId == Mp4AtomMapping.FreeformAtom) {
-				ParseFreeformAtom(atomBox, tag);
+				ParseFreeformAtom (atomBox, tag);
 				continue;
 			}
 
 			// Standard atoms contain data sub-atoms
-			var dataAtoms = new List<Mp4DataAtom>();
+			var dataAtoms = new List<Mp4DataAtom> ();
 			foreach (var child in atomBox.Children) {
 				if (child.Type == "data" && child.Data.Length >= 8) {
-					var dataAtom = Mp4DataAtom.Parse(child.Data.Span);
-					dataAtoms.Add(dataAtom);
+					var dataAtom = Mp4DataAtom.Parse (child.Data.Span);
+					dataAtoms.Add (dataAtom);
 				}
 			}
 
 			if (dataAtoms.Count > 0)
-				tag.SetAtoms(atomId, dataAtoms);
+				tag.SetAtoms (atomId, dataAtoms);
 		}
 
 		return tag;
 	}
 
-	static void ParseCoverArt(Mp4Box covrBox, Mp4Tag tag)
+	static void ParseCoverArt (Mp4Box covrBox, Mp4Tag tag)
 	{
-		var pictures = new List<Mp4Picture>();
+		var pictures = new List<Mp4Picture> ();
 
 		foreach (var child in covrBox.Children) {
 			if (child.Type == "data" && child.Data.Length >= 8) {
-				var dataAtom = Mp4DataAtom.Parse(child.Data.Span);
-				var picture = Mp4Picture.FromDataAtom(dataAtom);
-				pictures.Add(picture);
+				var dataAtom = Mp4DataAtom.Parse (child.Data.Span);
+				var picture = Mp4Picture.FromDataAtom (dataAtom);
+				pictures.Add (picture);
 			}
 		}
 
@@ -939,29 +939,29 @@ public sealed class Mp4File
 			tag.Pictures = [.. pictures];
 	}
 
-	static void ParseFreeformAtom(Mp4Box freeformBox, Mp4Tag tag)
+	static void ParseFreeformAtom (Mp4Box freeformBox, Mp4Tag tag)
 	{
 		// Freeform atoms have mean, name, and data children
 		string? mean = null;
 		string? name = null;
-		var dataAtoms = new List<Mp4DataAtom>();
+		var dataAtoms = new List<Mp4DataAtom> ();
 
 		foreach (var child in freeformBox.Children) {
 			if (child.Type == "mean" && child.Data.Length >= 4) {
 				// Skip version(1) + flags(3)
-				mean = child.Data.Slice(4).ToStringUtf8();
+				mean = child.Data.Slice (4).ToStringUtf8 ();
 			} else if (child.Type == "name" && child.Data.Length >= 4) {
 				// Skip version(1) + flags(3)
-				name = child.Data.Slice(4).ToStringUtf8();
+				name = child.Data.Slice (4).ToStringUtf8 ();
 			} else if (child.Type == "data" && child.Data.Length >= 8) {
-				var dataAtom = Mp4DataAtom.Parse(child.Data.Span);
-				dataAtoms.Add(dataAtom);
+				var dataAtom = Mp4DataAtom.Parse (child.Data.Span);
+				dataAtoms.Add (dataAtom);
 			}
 		}
 
-		if (!string.IsNullOrEmpty(mean) && !string.IsNullOrEmpty(name) && dataAtoms.Count > 0) {
+		if (!string.IsNullOrEmpty (mean) && !string.IsNullOrEmpty (name) && dataAtoms.Count > 0) {
 			var key = $"{Mp4AtomMapping.FreeformAtom}:{mean}:{name}";
-			tag.SetAtoms(key, dataAtoms);
+			tag.SetAtoms (key, dataAtoms);
 		}
 	}
 
@@ -972,13 +972,13 @@ public sealed class Mp4File
 	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
 	/// <returns>A result indicating success or failure.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is null.</exception>
-	public static Mp4FileReadResult ReadFromFile(string path, IFileSystem? fileSystem = null)
+	public static Mp4FileReadResult ReadFromFile (string path, IFileSystem? fileSystem = null)
 	{
-		var readResult = FileHelper.SafeReadAllBytes(path, fileSystem);
+		var readResult = FileHelper.SafeReadAllBytes (path, fileSystem);
 		if (!readResult.IsSuccess)
-			return Mp4FileReadResult.Failure(readResult.Error!);
+			return Mp4FileReadResult.Failure (readResult.Error!);
 
-		var result = Read(readResult.Data!);
+		var result = Read (readResult.Data!);
 		if (result.IsSuccess) {
 			result.File!.SourcePath = path;
 			result.File._sourceFileSystem = fileSystem;
@@ -994,17 +994,17 @@ public sealed class Mp4File
 	/// <param name="cancellationToken">A token to cancel the operation.</param>
 	/// <returns>A task containing a result indicating success or failure.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is null.</exception>
-	public static async Task<Mp4FileReadResult> ReadFromFileAsync(
+	public static async Task<Mp4FileReadResult> ReadFromFileAsync (
 		string path,
 		IFileSystem? fileSystem = null,
 		CancellationToken cancellationToken = default)
 	{
-		var readResult = await FileHelper.SafeReadAllBytesAsync(path, fileSystem, cancellationToken)
-			.ConfigureAwait(false);
+		var readResult = await FileHelper.SafeReadAllBytesAsync (path, fileSystem, cancellationToken)
+			.ConfigureAwait (false);
 		if (!readResult.IsSuccess)
-			return Mp4FileReadResult.Failure(readResult.Error!);
+			return Mp4FileReadResult.Failure (readResult.Error!);
 
-		var result = Read(readResult.Data!);
+		var result = Read (readResult.Data!);
 		if (result.IsSuccess) {
 			result.File!.SourcePath = path;
 			result.File._sourceFileSystem = fileSystem;
@@ -1021,24 +1021,24 @@ public sealed class Mp4File
 	/// The moov.udta.meta.ilst atom is rebuilt with current tag values.
 	/// All other atoms are preserved from the original file.
 	/// </remarks>
-	public BinaryData Render(ReadOnlySpan<byte> originalData)
+	public BinaryData Render (ReadOnlySpan<byte> originalData)
 	{
 		if (originalData.Length < Mp4Box.HeaderSize)
 			return BinaryData.Empty;
 
 		// Parse all top-level boxes to find their positions and content
-		var boxes = new List<(Mp4Box Box, int Start, int Length)>();
+		var boxes = new List<(Mp4Box Box, int Start, int Length)> ();
 		var offset = 0;
 		while (offset < originalData.Length) {
 			var remaining = originalData[offset..];
 			if (remaining.Length < Mp4Box.HeaderSize)
 				break;
 
-			var result = Mp4Box.Parse(remaining);
+			var result = Mp4Box.Parse (remaining);
 			if (!result.IsSuccess)
 				break;
 
-			boxes.Add((result.Box!, offset, result.BytesConsumed));
+			boxes.Add ((result.Box!, offset, result.BytesConsumed));
 			offset += result.BytesConsumed;
 		}
 
@@ -1055,31 +1055,31 @@ public sealed class Mp4File
 			return BinaryData.Empty;
 
 		// Build the new moov box with updated metadata
-		var newMoov = RebuildMoovWithMetadata(boxes[moovIndex].Box);
+		var newMoov = RebuildMoovWithMetadata (boxes[moovIndex].Box);
 
 		// Reassemble the file
-		using var builder = new BinaryDataBuilder();
+		using var builder = new BinaryDataBuilder ();
 
 		for (int i = 0; i < boxes.Count; i++) {
 			if (i == moovIndex) {
 				// Use our rebuilt moov
-				builder.Add(newMoov);
+				builder.Add (newMoov);
 			} else {
 				// Copy original box data
 				var (_, start, length) = boxes[i];
-				builder.Add(new BinaryData(originalData.Slice(start, length)));
+				builder.Add (new BinaryData (originalData.Slice (start, length)));
 			}
 		}
 
-		return builder.ToBinaryData();
+		return builder.ToBinaryData ();
 	}
 
 	/// <summary>
 	/// Rebuilds the moov box with updated metadata in udta/meta/ilst.
 	/// </summary>
-	BinaryData RebuildMoovWithMetadata(Mp4Box originalMoov)
+	BinaryData RebuildMoovWithMetadata (Mp4Box originalMoov)
 	{
-		using var moovContent = new BinaryDataBuilder();
+		using var moovContent = new BinaryDataBuilder ();
 
 		// Copy all children except udta
 		bool hasUdta = false;
@@ -1088,85 +1088,85 @@ public sealed class Mp4File
 				hasUdta = true;
 				continue; // We'll add our own udta
 			}
-			moovContent.Add(child.Render());
+			moovContent.Add (child.Render ());
 		}
 
 		// Build new udta with updated metadata (or create one if Tag exists)
 		if (Tag is not null || hasUdta) {
-			var newUdta = BuildUdtaBox();
+			var newUdta = BuildUdtaBox ();
 			if (newUdta.Length > 0)
-				moovContent.Add(newUdta);
+				moovContent.Add (newUdta);
 		}
 
 		// Build the moov box header
-		using var moovBuilder = new BinaryDataBuilder();
-		var moovContentData = moovContent.ToBinaryData();
+		using var moovBuilder = new BinaryDataBuilder ();
+		var moovContentData = moovContent.ToBinaryData ();
 		var totalSize = Mp4Box.HeaderSize + moovContentData.Length;
 
-		moovBuilder.AddUInt32BE((uint)totalSize);
-		moovBuilder.AddStringLatin1("moov");
-		moovBuilder.Add(moovContentData);
+		moovBuilder.AddUInt32BE ((uint)totalSize);
+		moovBuilder.AddStringLatin1 ("moov");
+		moovBuilder.Add (moovContentData);
 
-		return moovBuilder.ToBinaryData();
+		return moovBuilder.ToBinaryData ();
 	}
 
 	/// <summary>
 	/// Builds the udta box containing meta and ilst.
 	/// </summary>
-	BinaryData BuildUdtaBox()
+	BinaryData BuildUdtaBox ()
 	{
 		if (Tag is null)
 			return BinaryData.Empty;
 
 		// Build ilst content
-		var ilstContent = Tag.Render();
+		var ilstContent = Tag.Render ();
 		if (ilstContent.IsEmpty)
 			return BinaryData.Empty;
 
 		// Build ilst box
-		using var ilstBuilder = new BinaryDataBuilder();
-		ilstBuilder.AddUInt32BE((uint)(Mp4Box.HeaderSize + ilstContent.Length));
-		ilstBuilder.AddStringLatin1("ilst");
-		ilstBuilder.Add(ilstContent);
-		var ilstBox = ilstBuilder.ToBinaryData();
+		using var ilstBuilder = new BinaryDataBuilder ();
+		ilstBuilder.AddUInt32BE ((uint)(Mp4Box.HeaderSize + ilstContent.Length));
+		ilstBuilder.AddStringLatin1 ("ilst");
+		ilstBuilder.Add (ilstContent);
+		var ilstBox = ilstBuilder.ToBinaryData ();
 
 		// Build hdlr box for meta (handler type: mdir/appl)
-		using var hdlrContent = new BinaryDataBuilder();
-		hdlrContent.AddUInt32BE(0); // version + flags
-		hdlrContent.AddUInt32BE(0); // pre_defined
-		hdlrContent.AddStringLatin1("mdir"); // handler_type
-		hdlrContent.AddStringLatin1("appl"); // manufacturer
-		hdlrContent.AddUInt32BE(0); // reserved
-		hdlrContent.AddUInt32BE(0); // reserved
-		hdlrContent.Add((byte)0); // null-terminated name
+		using var hdlrContent = new BinaryDataBuilder ();
+		hdlrContent.AddUInt32BE (0); // version + flags
+		hdlrContent.AddUInt32BE (0); // pre_defined
+		hdlrContent.AddStringLatin1 ("mdir"); // handler_type
+		hdlrContent.AddStringLatin1 ("appl"); // manufacturer
+		hdlrContent.AddUInt32BE (0); // reserved
+		hdlrContent.AddUInt32BE (0); // reserved
+		hdlrContent.Add ((byte)0); // null-terminated name
 
-		using var hdlrBuilder = new BinaryDataBuilder();
-		var hdlrContentData = hdlrContent.ToBinaryData();
-		hdlrBuilder.AddUInt32BE((uint)(Mp4Box.HeaderSize + hdlrContentData.Length));
-		hdlrBuilder.AddStringLatin1("hdlr");
-		hdlrBuilder.Add(hdlrContentData);
-		var hdlrBox = hdlrBuilder.ToBinaryData();
+		using var hdlrBuilder = new BinaryDataBuilder ();
+		var hdlrContentData = hdlrContent.ToBinaryData ();
+		hdlrBuilder.AddUInt32BE ((uint)(Mp4Box.HeaderSize + hdlrContentData.Length));
+		hdlrBuilder.AddStringLatin1 ("hdlr");
+		hdlrBuilder.Add (hdlrContentData);
+		var hdlrBox = hdlrBuilder.ToBinaryData ();
 
 		// Build meta box (FullBox: version + flags prefix)
-		using var metaContent = new BinaryDataBuilder();
-		metaContent.AddUInt32BE(0); // version(1) + flags(3) = 0
-		metaContent.Add(hdlrBox);
-		metaContent.Add(ilstBox);
+		using var metaContent = new BinaryDataBuilder ();
+		metaContent.AddUInt32BE (0); // version(1) + flags(3) = 0
+		metaContent.Add (hdlrBox);
+		metaContent.Add (ilstBox);
 
-		using var metaBuilder = new BinaryDataBuilder();
-		var metaContentData = metaContent.ToBinaryData();
-		metaBuilder.AddUInt32BE((uint)(Mp4Box.HeaderSize + metaContentData.Length));
-		metaBuilder.AddStringLatin1("meta");
-		metaBuilder.Add(metaContentData);
-		var metaBox = metaBuilder.ToBinaryData();
+		using var metaBuilder = new BinaryDataBuilder ();
+		var metaContentData = metaContent.ToBinaryData ();
+		metaBuilder.AddUInt32BE ((uint)(Mp4Box.HeaderSize + metaContentData.Length));
+		metaBuilder.AddStringLatin1 ("meta");
+		metaBuilder.Add (metaContentData);
+		var metaBox = metaBuilder.ToBinaryData ();
 
 		// Build udta box
-		using var udtaBuilder = new BinaryDataBuilder();
-		udtaBuilder.AddUInt32BE((uint)(Mp4Box.HeaderSize + metaBox.Length));
-		udtaBuilder.AddStringLatin1("udta");
-		udtaBuilder.Add(metaBox);
+		using var udtaBuilder = new BinaryDataBuilder ();
+		udtaBuilder.AddUInt32BE ((uint)(Mp4Box.HeaderSize + metaBox.Length));
+		udtaBuilder.AddStringLatin1 ("udta");
+		udtaBuilder.Add (metaBox);
 
-		return udtaBuilder.ToBinaryData();
+		return udtaBuilder.ToBinaryData ();
 	}
 
 	/// <summary>
@@ -1176,13 +1176,13 @@ public sealed class Mp4File
 	/// <param name="originalData">The original file data.</param>
 	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
 	/// <returns>A result indicating success or failure.</returns>
-	public FileWriteResult SaveToFile(string path, ReadOnlySpan<byte> originalData, IFileSystem? fileSystem = null)
+	public FileWriteResult SaveToFile (string path, ReadOnlySpan<byte> originalData, IFileSystem? fileSystem = null)
 	{
-		var rendered = Render(originalData);
+		var rendered = Render (originalData);
 		if (rendered.IsEmpty)
-			return FileWriteResult.Failure("Failed to render MP4 file");
+			return FileWriteResult.Failure ("Failed to render MP4 file");
 
-		return AtomicFileWriter.Write(path, rendered.Span, fileSystem);
+		return AtomicFileWriter.Write (path, rendered.Span, fileSystem);
 	}
 
 	/// <summary>
@@ -1193,17 +1193,17 @@ public sealed class Mp4File
 	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
 	/// <param name="cancellationToken">A token to cancel the operation.</param>
 	/// <returns>A task containing a result indicating success or failure.</returns>
-	public Task<FileWriteResult> SaveToFileAsync(
+	public Task<FileWriteResult> SaveToFileAsync (
 		string path,
 		ReadOnlyMemory<byte> originalData,
 		IFileSystem? fileSystem = null,
 		CancellationToken cancellationToken = default)
 	{
-		var rendered = Render(originalData.Span);
+		var rendered = Render (originalData.Span);
 		if (rendered.IsEmpty)
-			return Task.FromResult(FileWriteResult.Failure("Failed to render MP4 file"));
+			return Task.FromResult (FileWriteResult.Failure ("Failed to render MP4 file"));
 
-		return AtomicFileWriter.WriteAsync(path, rendered.Memory, fileSystem, cancellationToken);
+		return AtomicFileWriter.WriteAsync (path, rendered.Memory, fileSystem, cancellationToken);
 	}
 
 	/// <summary>
@@ -1217,17 +1217,17 @@ public sealed class Mp4File
 	/// <param name="path">The target file path.</param>
 	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
 	/// <returns>A result indicating success or failure.</returns>
-	public FileWriteResult SaveToFile(string path, IFileSystem? fileSystem = null)
+	public FileWriteResult SaveToFile (string path, IFileSystem? fileSystem = null)
 	{
-		if (string.IsNullOrEmpty(SourcePath))
-			return FileWriteResult.Failure("No source path available. File was not read from disk.");
+		if (string.IsNullOrEmpty (SourcePath))
+			return FileWriteResult.Failure ("No source path available. File was not read from disk.");
 
 		var fs = fileSystem ?? _sourceFileSystem;
-		var readResult = FileHelper.SafeReadAllBytes(SourcePath!, fs);
+		var readResult = FileHelper.SafeReadAllBytes (SourcePath!, fs);
 		if (!readResult.IsSuccess)
-			return FileWriteResult.Failure($"Failed to re-read source file: {readResult.Error}");
+			return FileWriteResult.Failure ($"Failed to re-read source file: {readResult.Error}");
 
-		return SaveToFile(path, readResult.Data!, fileSystem);
+		return SaveToFile (path, readResult.Data!, fileSystem);
 	}
 
 	/// <summary>
@@ -1240,12 +1240,12 @@ public sealed class Mp4File
 	/// </remarks>
 	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
 	/// <returns>A result indicating success or failure.</returns>
-	public FileWriteResult SaveToFile(IFileSystem? fileSystem = null)
+	public FileWriteResult SaveToFile (IFileSystem? fileSystem = null)
 	{
-		if (string.IsNullOrEmpty(SourcePath))
-			return FileWriteResult.Failure("No source path available. File was not read from disk.");
+		if (string.IsNullOrEmpty (SourcePath))
+			return FileWriteResult.Failure ("No source path available. File was not read from disk.");
 
-		return SaveToFile(SourcePath!, fileSystem);
+		return SaveToFile (SourcePath!, fileSystem);
 	}
 
 	/// <summary>
@@ -1255,22 +1255,22 @@ public sealed class Mp4File
 	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
 	/// <param name="cancellationToken">A token to cancel the operation.</param>
 	/// <returns>A task containing a result indicating success or failure.</returns>
-	public async Task<FileWriteResult> SaveToFileAsync(
+	public async Task<FileWriteResult> SaveToFileAsync (
 		string path,
 		IFileSystem? fileSystem = null,
 		CancellationToken cancellationToken = default)
 	{
-		if (string.IsNullOrEmpty(SourcePath))
-			return FileWriteResult.Failure("No source path available. File was not read from disk.");
+		if (string.IsNullOrEmpty (SourcePath))
+			return FileWriteResult.Failure ("No source path available. File was not read from disk.");
 
 		var fs = fileSystem ?? _sourceFileSystem;
-		var readResult = await FileHelper.SafeReadAllBytesAsync(SourcePath!, fs, cancellationToken)
-			.ConfigureAwait(false);
+		var readResult = await FileHelper.SafeReadAllBytesAsync (SourcePath!, fs, cancellationToken)
+			.ConfigureAwait (false);
 		if (!readResult.IsSuccess)
-			return FileWriteResult.Failure($"Failed to re-read source file: {readResult.Error}");
+			return FileWriteResult.Failure ($"Failed to re-read source file: {readResult.Error}");
 
-		return await SaveToFileAsync(path, readResult.Data!, fileSystem, cancellationToken)
-			.ConfigureAwait(false);
+		return await SaveToFileAsync (path, readResult.Data!, fileSystem, cancellationToken)
+			.ConfigureAwait (false);
 	}
 
 	/// <summary>
@@ -1279,14 +1279,14 @@ public sealed class Mp4File
 	/// <param name="fileSystem">Optional file system abstraction for testing.</param>
 	/// <param name="cancellationToken">A token to cancel the operation.</param>
 	/// <returns>A task containing a result indicating success or failure.</returns>
-	public Task<FileWriteResult> SaveToFileAsync(
+	public Task<FileWriteResult> SaveToFileAsync (
 		IFileSystem? fileSystem = null,
 		CancellationToken cancellationToken = default)
 	{
-		if (string.IsNullOrEmpty(SourcePath))
-			return Task.FromResult(FileWriteResult.Failure("No source path available. File was not read from disk."));
+		if (string.IsNullOrEmpty (SourcePath))
+			return Task.FromResult (FileWriteResult.Failure ("No source path available. File was not read from disk."));
 
-		return SaveToFileAsync(SourcePath!, fileSystem, cancellationToken);
+		return SaveToFileAsync (SourcePath!, fileSystem, cancellationToken);
 	}
 }
 
@@ -1315,7 +1315,7 @@ public readonly struct Mp4FileReadResult : IEquatable<Mp4FileReadResult>
 	/// </summary>
 	public int BytesConsumed { get; }
 
-	Mp4FileReadResult(Mp4File? file, string? error, int bytesConsumed)
+	Mp4FileReadResult (Mp4File? file, string? error, int bytesConsumed)
 	{
 		File = file;
 		Error = error;
@@ -1328,39 +1328,39 @@ public readonly struct Mp4FileReadResult : IEquatable<Mp4FileReadResult>
 	/// <param name="file">The parsed file.</param>
 	/// <param name="bytesConsumed">The number of bytes consumed.</param>
 	/// <returns>A successful result.</returns>
-	public static Mp4FileReadResult Success(Mp4File file, int bytesConsumed) =>
-		new(file, null, bytesConsumed);
+	public static Mp4FileReadResult Success (Mp4File file, int bytesConsumed) =>
+		new (file, null, bytesConsumed);
 
 	/// <summary>
 	/// Creates a failure result.
 	/// </summary>
 	/// <param name="error">The error message.</param>
 	/// <returns>A failure result.</returns>
-	public static Mp4FileReadResult Failure(string error) =>
-		new(null, error, 0);
+	public static Mp4FileReadResult Failure (string error) =>
+		new (null, error, 0);
 
 	/// <inheritdoc/>
-	public bool Equals(Mp4FileReadResult other) =>
-		ReferenceEquals(File, other.File) &&
+	public bool Equals (Mp4FileReadResult other) =>
+		ReferenceEquals (File, other.File) &&
 		Error == other.Error &&
 		BytesConsumed == other.BytesConsumed;
 
 	/// <inheritdoc/>
-	public override bool Equals(object? obj) =>
-		obj is Mp4FileReadResult other && Equals(other);
+	public override bool Equals (object? obj) =>
+		obj is Mp4FileReadResult other && Equals (other);
 
 	/// <inheritdoc/>
-	public override int GetHashCode() => HashCode.Combine(File, Error, BytesConsumed);
+	public override int GetHashCode () => HashCode.Combine (File, Error, BytesConsumed);
 
 	/// <summary>
 	/// Determines whether two results are equal.
 	/// </summary>
-	public static bool operator ==(Mp4FileReadResult left, Mp4FileReadResult right) =>
-		left.Equals(right);
+	public static bool operator == (Mp4FileReadResult left, Mp4FileReadResult right) =>
+		left.Equals (right);
 
 	/// <summary>
 	/// Determines whether two results are not equal.
 	/// </summary>
-	public static bool operator !=(Mp4FileReadResult left, Mp4FileReadResult right) =>
-		!left.Equals(right);
+	public static bool operator != (Mp4FileReadResult left, Mp4FileReadResult right) =>
+		!left.Equals (right);
 }
