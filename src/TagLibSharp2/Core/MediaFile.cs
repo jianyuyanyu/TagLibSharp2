@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using TagLibSharp2.Aiff;
+using TagLibSharp2.Mp4;
 using TagLibSharp2.Mpeg;
 using TagLibSharp2.Ogg;
 using TagLibSharp2.Riff;
@@ -24,6 +25,7 @@ namespace TagLibSharp2.Core;
 /// <item>Ogg Opus (Vorbis Comment)</item>
 /// <item>WAV (RIFF INFO, ID3v2)</item>
 /// <item>AIFF (ID3 chunk)</item>
+/// <item>MP4/M4A (iTunes metadata)</item>
 /// </list>
 /// </remarks>
 /// <example>
@@ -48,6 +50,7 @@ public static class MediaFile
 	static readonly byte[] AifcId = [(byte)'A', (byte)'I', (byte)'F', (byte)'C'];
 	static readonly byte[] OpusHeadMagic = [(byte)'O', (byte)'p', (byte)'u', (byte)'s', (byte)'H', (byte)'e', (byte)'a', (byte)'d'];
 	static readonly byte[] VorbisMagic = [(byte)'v', (byte)'o', (byte)'r', (byte)'b', (byte)'i', (byte)'s'];
+	static readonly byte[] FtypMagic = [(byte)'f', (byte)'t', (byte)'y', (byte)'p'];
 
 	/// <summary>
 	/// Opens a media file and returns a unified result.
@@ -115,6 +118,7 @@ public static class MediaFile
 			MediaFormat.Mp3 => OpenMp3 (data),
 			MediaFormat.Wav => OpenWav (data),
 			MediaFormat.Aiff => OpenAiff (data),
+			MediaFormat.Mp4 => OpenMp4 (data),
 			_ => MediaFileResult.Failure ($"Unknown or unsupported file format{(pathHint is not null ? $": {pathHint}" : "")}")
 		};
 	}
@@ -156,6 +160,12 @@ public static class MediaFile
 				 (data[8] == AifcId[0] && data[9] == AifcId[1] &&
 				  data[10] == AifcId[2] && data[11] == AifcId[3])))
 				return MediaFormat.Aiff;
+
+			// MP4/M4A: box structure with "ftyp" at offset 4
+			if (data.Length >= 8 &&
+				data[4] == FtypMagic[0] && data[5] == FtypMagic[1] &&
+				data[6] == FtypMagic[2] && data[7] == FtypMagic[3])
+				return MediaFormat.Mp4;
 		}
 
 		if (data.Length >= 3) {
@@ -178,6 +188,7 @@ public static class MediaFile
 				".MP3" => MediaFormat.Mp3,
 				".WAV" => MediaFormat.Wav,
 				".AIF" or ".AIFF" or ".AIFC" => MediaFormat.Aiff,
+				".M4A" or ".M4B" or ".M4P" or ".M4V" or ".MP4" => MediaFormat.Mp4,
 				_ => MediaFormat.Unknown
 			};
 		}
@@ -295,6 +306,15 @@ public static class MediaFile
 
 		return MediaFileResult.Success (file, file.Tag, MediaFormat.Aiff);
 	}
+
+	static MediaFileResult OpenMp4 (ReadOnlyMemory<byte> data)
+	{
+		var result = Mp4File.Read (data.Span);
+		if (!result.IsSuccess)
+			return MediaFileResult.Failure (result.Error!);
+
+		return MediaFileResult.Success (result.File!, result.File!.Tag, MediaFormat.Mp4);
+	}
 }
 
 /// <summary>
@@ -394,5 +414,10 @@ public enum MediaFormat
 	/// <summary>
 	/// AIFF/AIFC audio format (IFF container).
 	/// </summary>
-	Aiff
+	Aiff,
+
+	/// <summary>
+	/// MP4/M4A audio format (MPEG-4 container).
+	/// </summary>
+	Mp4
 }
