@@ -29,8 +29,10 @@ namespace TagLibSharp2.Mp4;
 /// Reference: ISO 14496-12 (MP4 base format), ISO 14496-14 (MP4 file format).
 /// </para>
 /// </remarks>
-public sealed class Mp4File
+public sealed class Mp4File : IDisposable
 {
+	bool _disposed;
+
 	/// <summary>
 	/// Gets the source file path if the file was read from disk.
 	/// </summary>
@@ -582,6 +584,20 @@ public sealed class Mp4File
 	{
 		Tag ??= new Mp4Tag ();
 		return Tag;
+	}
+
+	/// <summary>
+	/// Releases resources used by this instance.
+	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		Tag = null;
+		_sourceFileSystem = null;
+		SourcePath = null;
+		_disposed = true;
 	}
 
 	/// <summary>

@@ -21,8 +21,10 @@ namespace TagLibSharp2.Aiff;
 ///
 /// Unlike RIFF/WAV, AIFF uses big-endian byte order throughout.
 /// </remarks>
-public class AiffFile
+public sealed class AiffFile : IDisposable
 {
+	bool _disposed;
+
 	/// <summary>
 	/// Size of the FORM header (FORM + size + form type).
 	/// </summary>
@@ -101,6 +103,20 @@ public class AiffFile
 	readonly List<AiffChunk> _chunks = [];
 
 	/// <summary>
+	/// Releases resources used by this instance.
+	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		_chunks.Clear ();
+		Tag = null;
+		AudioProperties = null;
+		_disposed = true;
+	}
+
+	/// <summary>
 	/// Gets a chunk by its FourCC, or null if not found.
 	/// </summary>
 	/// <param name="fourCC">The 4-character chunk identifier.</param>
@@ -150,8 +166,10 @@ public class AiffFile
 
 		// Use internal parsing from here
 		var file = new AiffFile ();
-		if (!file.Parse (new BinaryData (data.ToArray ())))
+		if (!file.Parse (new BinaryData (data.ToArray ()))) {
+			file.Dispose ();
 			return AiffFileReadResult.Failure ("Failed to parse AIFF file structure");
+		}
 
 		return AiffFileReadResult.Success (file);
 	}

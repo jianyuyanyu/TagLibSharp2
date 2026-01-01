@@ -23,8 +23,10 @@ namespace TagLibSharp2.Riff;
 /// Reference: Microsoft RIFF Specification
 /// </para>
 /// </remarks>
-public sealed class WavFile
+public sealed class WavFile : IDisposable
 {
+	bool _disposed;
+
 	/// <summary>
 	/// FourCC for the fmt (format) chunk.
 	/// </summary>
@@ -50,7 +52,7 @@ public sealed class WavFile
 	/// </summary>
 	public const string BextChunkId = "bext";
 
-	readonly RiffFile _riff;
+	RiffFile _riff;
 
 	/// <summary>
 	/// Gets or sets the RIFF INFO tag.
@@ -98,11 +100,28 @@ public sealed class WavFile
 	/// <summary>
 	/// Gets whether this file was successfully parsed.
 	/// </summary>
-	public bool IsValid => _riff.IsValid && Properties is not null;
+	public bool IsValid => _riff?.IsValid == true && Properties is not null;
 
 	WavFile (RiffFile riff)
 	{
 		_riff = riff;
+	}
+
+	/// <summary>
+	/// Releases resources used by this instance.
+	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		InfoTag = null;
+		Id3v2Tag = null;
+		BextTag = null;
+		Properties = null;
+		ExtendedProperties = null;
+		_riff = null!;
+		_disposed = true;
 	}
 
 	/// <summary>

@@ -23,10 +23,11 @@ namespace TagLibSharp2.Ogg;
 /// Reference: https://xiph.org/vorbis/doc/Vorbis_I_spec.html
 /// </para>
 /// </remarks>
-public sealed class OggVorbisFile
+public sealed class OggVorbisFile : IDisposable
 {
 	const int MinVorbisHeaderSize = 7; // 1 byte type + 6 bytes "vorbis"
 	static readonly byte[] VorbisMagic = [(byte)'v', (byte)'o', (byte)'r', (byte)'b', (byte)'i', (byte)'s'];
+	bool _disposed;
 
 	/// <summary>
 	/// Gets the source file path if the file was read from disk.
@@ -610,6 +611,23 @@ public sealed class OggVorbisFile
 
 	static bool IsVorbisSetupHeader (byte[] data) =>
 		IsVorbisSetupHeader (data.AsSpan ());
+
+	/// <summary>
+	/// Releases resources used by this instance.
+	/// </summary>
+	/// <remarks>
+	/// Clears internal references to allow garbage collection.
+	/// </remarks>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		VorbisComment = null;
+		SourcePath = null;
+		_sourceFileSystem = null;
+		_disposed = true;
+	}
 }
 
 /// <summary>

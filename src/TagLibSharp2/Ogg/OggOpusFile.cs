@@ -26,9 +26,10 @@ namespace TagLibSharp2.Ogg;
 /// Reference: RFC 6716 (Opus codec), RFC 7845 (Ogg Opus encapsulation)
 /// </para>
 /// </remarks>
-public sealed class OggOpusFile
+public sealed class OggOpusFile : IDisposable
 {
 	const int OpusHeadMinSize = 19; // Minimum size for OpusHead header
+	bool _disposed;
 
 	/// <summary>
 	/// Gets the source file path if the file was read from disk.
@@ -411,6 +412,20 @@ public sealed class OggOpusFile
 	{
 		VorbisComment ??= new VorbisComment ("TagLibSharp2");
 		return VorbisComment;
+	}
+
+	/// <summary>
+	/// Releases resources used by this instance.
+	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		VorbisComment = null;
+		_sourceFileSystem = null;
+		SourcePath = null;
+		_disposed = true;
 	}
 
 	/// <summary>

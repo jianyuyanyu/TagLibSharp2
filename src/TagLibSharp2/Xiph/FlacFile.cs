@@ -27,13 +27,14 @@ namespace TagLibSharp2.Xiph;
 /// Reference: https://xiph.org/flac/format.html
 /// </para>
 /// </remarks>
-public sealed class FlacFile
+public sealed class FlacFile : IDisposable
 {
 	const int MagicSize = 4;
 	static readonly byte[] FlacMagic = [(byte)'f', (byte)'L', (byte)'a', (byte)'C'];
 
 	readonly List<FlacPicture> _pictures = new (2);
 	readonly List<FlacPreservedBlock> _preservedBlocks = new (2);
+	bool _disposed;
 
 	/// <summary>
 	/// Gets the source file path if the file was read from disk.
@@ -597,6 +598,26 @@ public sealed class FlacFile
 		var totalSamples = (totalSamplesUpper << 32) | totalSamplesLower;
 
 		return AudioProperties.FromFlac (totalSamples, sampleRate, bitsPerSample, channels);
+	}
+
+	/// <summary>
+	/// Releases resources used by this instance.
+	/// </summary>
+	/// <remarks>
+	/// Clears internal collections to allow garbage collection.
+	/// </remarks>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		_pictures.Clear ();
+		_preservedBlocks.Clear ();
+		VorbisComment = null;
+		CueSheet = null;
+		SourcePath = null;
+		_sourceFileSystem = null;
+		_disposed = true;
 	}
 }
 
