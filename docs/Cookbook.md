@@ -9,9 +9,11 @@ Practical recipes for common audio tagging tasks.
 3. [Album Art](#album-art)
 4. [MP4/M4A Files](#mp4m4a-files)
 5. [Ogg Opus Files](#ogg-opus-files)
-6. [Batch Operations](#batch-operations)
-7. [Format Conversion](#format-conversion)
-8. [Advanced Patterns](#advanced-patterns)
+6. [DSF Files (DSD Audio)](#dsf-files-dsd-audio)
+7. [APE Tags](#ape-tags)
+8. [Batch Operations](#batch-operations)
+9. [Format Conversion](#format-conversion)
+10. [Advanced Patterns](#advanced-patterns)
 
 ---
 
@@ -458,6 +460,236 @@ if (result.IsSuccess)
     var data = File.ReadAllBytes("song.opus");
     opus.SaveToFile("song.opus", data);
 }
+```
+
+---
+
+## DSF Files (DSD Audio)
+
+### Read DSF Metadata
+
+```csharp
+using TagLibSharp2.Dsf;
+
+var result = DsfFile.ReadFromFile("song.dsf");
+if (result.IsSuccess)
+{
+    var dsf = result.File!;
+
+    // Metadata (via embedded ID3v2 tag)
+    Console.WriteLine($"Title: {dsf.Id3v2Tag?.Title}");
+    Console.WriteLine($"Artist: {dsf.Id3v2Tag?.Artist}");
+    Console.WriteLine($"Album: {dsf.Id3v2Tag?.Album}");
+
+    // DSD-specific audio properties
+    var props = dsf.Properties;
+    Console.WriteLine($"Sample Rate: {props?.SampleRate} Hz");
+    Console.WriteLine($"DSD Format: {GetDsdFormat(props?.SampleRate)}");
+    Console.WriteLine($"Channels: {props?.Channels}");
+    Console.WriteLine($"Channel Type: {props?.ChannelType}");  // Mono, Stereo, Surround
+    Console.WriteLine($"Duration: {props?.Duration}");
+    Console.WriteLine($"Bits Per Sample: {props?.BitsPerSample}");
+}
+
+string GetDsdFormat(int? sampleRate) => sampleRate switch
+{
+    2822400 => "DSD64 (2.8 MHz)",
+    5644800 => "DSD128 (5.6 MHz)",
+    11289600 => "DSD256 (11.2 MHz)",
+    22579200 => "DSD512 (22.5 MHz)",
+    45158400 => "DSD1024 (45.1 MHz)",
+    _ => "Unknown"
+};
+```
+
+### Read Album Art from DSF
+
+```csharp
+using TagLibSharp2.Dsf;
+
+var result = DsfFile.ReadFromFile("song.dsf");
+if (result.IsSuccess)
+{
+    var dsf = result.File!;
+    var pictures = dsf.Id3v2Tag?.Pictures;
+
+    if (pictures?.Length > 0)
+    {
+        var cover = pictures[0];
+        Console.WriteLine($"Cover: {cover.MimeType}, {cover.PictureData.Length} bytes");
+        File.WriteAllBytes("cover.jpg", cover.PictureData.ToArray());
+    }
+}
+```
+
+### Write DSF Metadata
+
+```csharp
+using TagLibSharp2.Dsf;
+
+var result = DsfFile.ReadFromFile("song.dsf");
+if (result.IsSuccess)
+{
+    var dsf = result.File!;
+
+    // Modify ID3v2 tag (creates one if not present)
+    var tag = dsf.Id3v2Tag ?? new Id3v2Tag();
+    tag.Title = "My DSD Song";
+    tag.Artist = "My Artist";
+    tag.Album = "My Album";
+
+    // Save changes back to file
+    dsf.SaveToFile();
+
+    // Or save to a different location
+    dsf.SaveToFile("output.dsf");
+}
+```
+
+### Async DSF Operations
+
+```csharp
+using TagLibSharp2.Dsf;
+
+// Async read
+var result = await DsfFile.ReadFromFileAsync("song.dsf");
+if (result.IsSuccess)
+{
+    var dsf = result.File!;
+    Console.WriteLine($"Title: {dsf.Id3v2Tag?.Title}");
+    Console.WriteLine($"Duration: {dsf.Properties?.Duration}");
+
+    // Async write
+    dsf.Id3v2Tag!.Title = "Updated Title";
+    await dsf.SaveToFileAsync();
+}
+```
+
+---
+
+## APE Tags
+
+APE (APE v2) tags are a flexible metadata format commonly used for ReplayGain data
+and with lossless audio formats. TagLibSharp2 provides standalone APE tag support.
+
+### Parse APE Tag from File Data
+
+```csharp
+using TagLibSharp2.Ape;
+
+// APE tags are typically located at the end of audio files
+var fileData = File.ReadAllBytes("song.ape");
+var result = ApeTag.Parse(fileData);
+
+if (result.IsSuccess)
+{
+    var ape = result.Tag!;
+
+    Console.WriteLine($"Title: {ape.Title}");
+    Console.WriteLine($"Artist: {ape.Artist}");
+    Console.WriteLine($"Album: {ape.Album}");
+
+    // ReplayGain (commonly stored in APE tags)
+    Console.WriteLine($"Track Gain: {ape.ReplayGainTrackGain}");
+    Console.WriteLine($"Track Peak: {ape.ReplayGainTrackPeak}");
+    Console.WriteLine($"Album Gain: {ape.ReplayGainAlbumGain}");
+    Console.WriteLine($"Album Peak: {ape.ReplayGainAlbumPeak}");
+}
+```
+
+### Read Custom APE Fields
+
+```csharp
+using TagLibSharp2.Ape;
+
+var fileData = File.ReadAllBytes("song.ape");
+var result = ApeTag.Parse(fileData);
+
+if (result.IsSuccess)
+{
+    var ape = result.Tag!;
+
+    // APE tags support arbitrary field names (case-insensitive)
+    var customValue = ape.GetValue("MY_CUSTOM_FIELD");
+    var catalogId = ape.GetValue("CATALOG");
+
+    // MusicBrainz IDs
+    Console.WriteLine($"MB Track ID: {ape.MusicBrainzTrackId}");
+    Console.WriteLine($"MB Release ID: {ape.MusicBrainzReleaseId}");
+}
+```
+
+### Create and Write APE Tags
+
+```csharp
+using TagLibSharp2.Ape;
+
+// Create a new APE tag
+var ape = new ApeTag();
+
+// Set standard fields
+ape.Title = "My Song";
+ape.Artist = "My Artist";
+ape.Album = "My Album";
+ape.Year = "2024";
+ape.Track = 1;
+ape.Genre = "Rock";
+
+// Set ReplayGain values
+ape.ReplayGainTrackGain = "-6.50 dB";
+ape.ReplayGainTrackPeak = "0.988547";
+ape.ReplayGainAlbumGain = "-5.20 dB";
+ape.ReplayGainAlbumPeak = "0.995123";
+
+// Set custom fields
+ape.SetValue("CATALOG", "ABC-12345");
+ape.SetValue("ENCODER", "My Encoder v1.0");
+
+// Render to binary (with optional header)
+var tagData = ape.RenderWithOptions(includeHeader: true);
+```
+
+### APE Tag with Binary Data (Cover Art)
+
+```csharp
+using TagLibSharp2.Ape;
+
+var ape = new ApeTag();
+
+// Add cover art as binary item
+// APE spec requires filename prefix for binary items
+var imageBytes = File.ReadAllBytes("cover.jpg");
+ape.SetBinaryItem("Cover Art (Front)", "cover.jpg", imageBytes);
+
+// Read binary item
+var coverData = ape.GetBinaryItem("Cover Art (Front)");
+if (coverData is not null)
+{
+    Console.WriteLine($"Cover filename: {coverData.Filename}");
+    File.WriteAllBytes("extracted_cover.jpg", coverData.Data);
+}
+```
+
+### APE Tag Properties
+
+```csharp
+using TagLibSharp2.Ape;
+
+var ape = new ApeTag();
+
+// Track and disc numbers support "N/M" format
+ape.Track = 5;
+ape.TotalTracks = 12;
+ape.Disc = 1;
+ape.TotalDiscs = 2;
+
+// MusicBrainz identifiers
+ape.MusicBrainzTrackId = "12345678-1234-1234-1234-123456789012";
+ape.MusicBrainzReleaseId = "abcdefgh-abcd-abcd-abcd-abcdefghijkl";
+ape.MusicBrainzArtistId = "11111111-2222-3333-4444-555555555555";
+
+// Item count
+Console.WriteLine($"Tag contains {ape.ItemCount} items");
 ```
 
 ---

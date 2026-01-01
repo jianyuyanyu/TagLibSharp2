@@ -463,7 +463,7 @@ async Task<string?> GetTitleAsync(string path, CancellationToken ct = default)
 
 TagLibSharp2 is under active development. These TagLib# features are planned but not yet implemented:
 
-- **Formats**: MP4/M4A, ASF/WMA, APE, Opus, DSF
+- **Formats**: ASF/WMA, WavPack, Musepack, DFF
 
 ## New Features Not in TagLib#
 

@@ -19,8 +19,12 @@ A modern .NET library for reading and writing metadata in media files.
 | MP3 (ID3v1/ID3v2) | ✅ | ✅ | ✅ |
 | FLAC | ✅ | ✅ | ✅ |
 | Ogg Vorbis | ✅ | ✅ | ✅ |
+| Ogg Opus | ✅ | ✅ | ✅ |
+| MP4/M4A (AAC/ALAC) | ✅ | ✅ | ✅ |
 | WAV (RIFF INFO/ID3v2) | ✅ | ✅ | ✅ |
 | AIFF/AIFC | ✅ | ✅ | ✅ |
+| DSF (DSD) | ✅ | ✅ | ✅ |
+| APE Tags (standalone) | ✅ | ✅ | — |
 
 ## Quick Start
 

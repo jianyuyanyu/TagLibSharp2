@@ -13,7 +13,7 @@ A modern .NET library for reading and writing metadata in media files.
 - Result-based error handling (no exceptions)
 
 **Choose TagLib# if you need:**
-- ASF/WMA or APE support (not yet implemented here)
+- ASF/WMA support (not yet implemented here)
 - A battle-tested library used in production for years
 
 See the [Migration Guide](docs/MIGRATION-FROM-TAGLIB.md) for detailed comparison.
@@ -25,24 +25,25 @@ See the [Migration Guide](docs/MIGRATION-FROM-TAGLIB.md) for detailed comparison
 - **Performance-First**: Zero-allocation parsing with `Span<T>` and `ArrayPool<T>`
 - **Multi-Target**: Supports .NET Standard 2.0/2.1, .NET 8.0, and .NET 10.0
 - **Format Support**:
-  - Audio: MP3 (ID3v1/ID3v2), FLAC, OGG Vorbis, Ogg Opus, WAV (RIFF INFO/ID3v2), AIFF (ID3v2), MP4/M4A (AAC/ALAC)
-  - Planned: ASF/WMA, APE, DSF
+  - Audio: MP3 (ID3v1/ID3v2), FLAC, OGG Vorbis, Ogg Opus, WAV (RIFF INFO/ID3v2), AIFF (ID3v2), MP4/M4A (AAC/ALAC), DSF (DSD), APE Tags
+  - Planned: ASF/WMA
 
 ## Format Support Matrix
 
-| Feature | MP3 | FLAC | Ogg Vorbis | Ogg Opus | WAV | AIFF | MP4/M4A |
-|---------|:---:|:----:|:----------:|:--------:|:---:|:----:|:-------:|
-| **Read metadata** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Write metadata** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Audio properties** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Async I/O** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Album art** | ✅ | ✅ | ✅ | ✅ | ✅¹ | ✅¹ | ✅ |
-| **ReplayGain** | ✅ | ✅ | ✅ | ✅⁴ | ✅¹ | ✅¹ | ✅⁵ |
-| **MusicBrainz IDs** | ✅ | ✅ | ✅ | ✅ | ✅¹ | ✅¹ | ✅ |
-| **Lyrics** | ✅ | ✅² | ✅² | ✅² | ✅¹ | ✅¹ | ✅ |
-| **Performer roles** | ✅ | ✅ | ✅ | ✅ | ✅¹ | ✅¹ | — |
-| **BWF broadcast metadata** | — | — | — | — | ✅ | — | — |
-| **Surround sound info** | — | — | — | — | ✅³ | — | ✅⁶ |
+| Feature | MP3 | FLAC | Ogg Vorbis | Ogg Opus | WAV | AIFF | MP4/M4A | DSF |
+|---------|:---:|:----:|:----------:|:--------:|:---:|:----:|:-------:|:---:|
+| **Read metadata** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Write metadata** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| **Audio properties** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Async I/O** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Album art** | ✅ | ✅ | ✅ | ✅ | ✅¹ | ✅¹ | ✅ | ✅¹ |
+| **ReplayGain** | ✅ | ✅ | ✅ | ✅⁴ | ✅¹ | ✅¹ | ✅⁵ | ✅¹ |
+| **MusicBrainz IDs** | ✅ | ✅ | ✅ | ✅ | ✅¹ | ✅¹ | ✅ | ✅¹ |
+| **Lyrics** | ✅ | ✅² | ✅² | ✅² | ✅¹ | ✅¹ | ✅ | ✅¹ |
+| **Performer roles** | ✅ | ✅ | ✅ | ✅ | ✅¹ | ✅¹ | — | ✅¹ |
+| **BWF broadcast metadata** | — | — | — | — | ✅ | — | — | — |
+| **Surround sound info** | — | — | — | — | ✅³ | — | ✅⁶ | ✅⁷ |
+| **DSD sample rates** | — | — | — | — | — | — | — | ✅ |
 
 ¹ Via embedded ID3v2 tag
 ² Via Vorbis Comment LYRICS field
@@ -50,18 +51,20 @@ See the [Migration Guide](docs/MIGRATION-FROM-TAGLIB.md) for detailed comparison
 ⁴ Via R128 gain tags (RFC 7845)
 ⁵ Via iTunes ----:com.apple.iTunes:replaygain_* atoms
 ⁶ Via channel layout in stsd/esds
+⁷ Via channel type in fmt chunk (Mono, Stereo, 5.1 surround)
 
 ### Tag Format by Container
 
 | Container | Native Tag | Alternative Tags | Priority |
 |-----------|------------|------------------|----------|
-| MP3 | ID3v2 | ID3v1 | ID3v2 preferred |
+| MP3 | ID3v2 | ID3v1, APE | ID3v2 preferred |
 | FLAC | Vorbis Comment | — | Native only |
 | Ogg Vorbis | Vorbis Comment | — | Native only |
 | Ogg Opus | Vorbis Comment | — | Native only |
 | WAV | RIFF INFO | ID3v2, bext (BWF) | ID3v2 preferred |
 | AIFF | ID3 chunk | — | Native only |
 | MP4/M4A | iTunes atoms (ilst) | — | Native only |
+| DSF | ID3v2 | — | Native only |
 
 ## Installation
 
@@ -243,10 +246,19 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 - [x] Atomic file writing with mdat relocation
 - [x] MediaFile factory integration for format auto-detection
 
+### Phase 12: DSF & APE Tags ✅
+- [x] DSF (DSD Stream File) format for high-resolution DSD audio
+  - [x] DSD64/128/256/512 sample rate detection
+  - [x] DSD/fmt/data chunk parsing
+  - [x] ID3v2 metadata support at end of file
+  - [x] Channel type detection (Mono, Stereo, 5.1 surround)
+- [x] APE Tag v2 support for tagging flexibility
+  - [x] Text, Binary, and External item types
+  - [x] Full read/write round-trip support
+  - [x] Standard and extended metadata mappings
+
 ### Future
-- [ ] DSF (DSD) format
 - [ ] ASF/WMA format
-- [ ] APE tags for WavPack/Musepack
 
 ## Documentation
 

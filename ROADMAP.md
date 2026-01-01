@@ -79,13 +79,15 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 | Multi-value fields | ✅ |
 | METADATA_BLOCK_PICTURE (base64) | 🔶 | Needs verification |
 
-### APE Tag
+### APE Tag 🎯 v0.5.0 Priority
 | Feature | Status |
 |---------|--------|
 | Read | ❌ |
 | Write | ❌ |
 | Binary items | ❌ |
 | Cover art | ❌ |
+
+*Note: APE Tag is infrastructure that unlocks WavPack, Musepack, and Monkey's Audio formats.*
 
 ### MP4/iTunes Atoms ✅ Complete
 | Feature | Status |
@@ -196,13 +198,14 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 | Tag write | ✅ |
 | MediaFile factory integration | ✅ |
 
-### DSF (DSD)
+### DSF (DSD) 🎯 v0.5.0 Priority
 | Feature | Status |
 |---------|--------|
 | DSD chunk | ❌ |
 | fmt chunk | ❌ |
 | ID3v2 at metadata offset | ❌ |
 | Audio properties | ❌ |
+| Duration (use double for overflow safety) | ❌ |
 | Write | ❌ |
 
 ### Opus ✅ Complete
@@ -295,17 +298,42 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 
 ---
 
+## v0.5.0 Scope (BETA Release)
+
+### P0 - Must Ship
+| Item | Effort | Notes |
+|------|--------|-------|
+| DSF format support | 2-3 days | DSD chunk, ID3v2 at offset, duration with double |
+| APE Tag format | 3-4 days | v2 parsing, binary items, cover art |
+| IDisposable pattern | 0.5 days | All file types |
+| Test coverage >90% | 2-3 days | Currently 88.67% |
+| Large file tests | 1 day | >4GB file support |
+
+### P1 - Should Ship
+| Item | Effort | Notes |
+|------|--------|-------|
+| Performance benchmarks | 0.5 days | Document <10ms tag reading |
+| Classical metadata | 1 day | WORK, MOVEMENTNAME in ID3v2/Vorbis |
+
+### Deferred to v0.6.0+
+- WavPack format (depends on APE Tag)
+- ASF/WMA format
+- DFF (DSD secondary format)
+- TagLib# compatibility shim
+
+---
+
 ## Critical Issues to Address
 
 From spec document "Critical Implementation Notes":
 
-1. **Integer Overflow in DSD Duration** - Use double arithmetic
+1. **Integer Overflow in DSD Duration** - Use double arithmetic 🎯 v0.5.0
 2. **Encoding Class Name Collision** - Use fully qualified names
 3. **LocalFileStream.Insert Off-by-One** - Fix loop condition
 4. **GetTextFrame Return Type** - Proper nullable annotations
 5. **XiphComment Empty String Handling** - Distinguish null vs empty
-6. **OGG Page Parsing Infinite Loop** - Add safety limits
-7. **Missing IDisposable Pattern** - Full dispose implementation
+6. **OGG Page Parsing Infinite Loop** - Add safety limits ✅ Fixed in v0.3.0
+7. **Missing IDisposable Pattern** - Full dispose implementation 🎯 v0.5.0
 8. **Unsafe BitConverter Usage** - Use explicit endian readers
 9. **ID3v1 Genre Property** - Static genre list access
 
@@ -339,11 +367,12 @@ Consider adding compatibility shim for TagLib# consumers:
 | AIFF | ✅ | ✅ | Complete with FORM + COMM + ID3 + AIFC |
 | VBR Headers | ✅ | ✅ | Complete with Xing/VBRI parsing |
 | MP4/M4A | ✅ | ✅ | Complete with ISO 14496-12 parsing + iTunes atoms + AAC/ALAC |
-| DSF | 3-4 | Low | Simple chunk format |
 | Opus | ✅ | ✅ | Complete with OpusHead + OpusTags + R128 gain |
-| APE Tags | 2-3 | Medium | Needed for multiple formats |
-| ASF/WMA | 5-6 | High | GUID-based, complex |
+| **DSF** | 3-4 | Low | 🎯 v0.5.0 - Simple chunk format, ID3v2 at offset |
+| **APE Tags** | 2-3 | Medium | 🎯 v0.5.0 - Unlocks WavPack/Monkey's Audio |
+| WavPack | 2-3 | Low | v0.6.0 - Depends on APE Tags |
+| ASF/WMA | 5-6 | High | v0.7.0 - GUID-based, complex |
 
 ---
 
-*Last Updated: 2025-12-31 (v0.4.0)*
+*Last Updated: 2025-12-31 (v0.5.0 planning)*

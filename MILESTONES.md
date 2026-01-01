@@ -236,16 +236,39 @@ Completing P0 formats:
 ---
 
 ### 🎯 BETA RELEASE (v0.5.0)
-**Target:** Week 10-12 from start
+**Target:** Early January 2025
 
-**Formats:** All P0 (8 formats)
+**Formats:** 8 formats (add DSF to existing 7)
+
+**Scope (P0 - Must Ship):**
+- [ ] DSF format support (DSD)
+  - DSD/fmt chunk parsing
+  - ID3v2 at metadata offset
+  - Duration calculation (use double to avoid overflow)
+- [ ] APE Tag format (infrastructure for WavPack/Monkey's Audio)
+  - APE v2 tag parsing
+  - Binary item support
+  - Cover art support
+- [ ] IDisposable pattern complete for all file types
+- [ ] Test coverage >90% (currently 88.67%)
+- [ ] Large file tests (>4GB)
+
+**Scope (P1 - Should Ship):**
+- [ ] Performance benchmarks (document <10ms tag reading)
+- [ ] Classical metadata in ID3v2/Vorbis (WORK, MOVEMENTNAME)
+
+**Deferred to v0.6.0:**
+- WavPack format (depends on APE Tag)
+- ASF/WMA format
+- DFF (DSD secondary format)
+- TagLib# compatibility shim
 
 **Quality Bar:**
 - [ ] All 8 P0 formats pass comprehensive tests
 - [ ] >90% test coverage
 - [ ] Zero memory leaks in stress tests
 - [ ] Large file support verified (>4GB)
-- [ ] Production Roon deployment (beta users)
+- [ ] Zero known data-loss bugs
 
 ---
 
@@ -320,14 +343,17 @@ Production readiness:
 ✅ v0.3.0 RELEASED: 2025-12-30 (Ogg Opus with R128 gain)
 ✅ v0.4.0 RELEASED: 2025-12-31 (MP4/M4A + MediaFile factory)
 
-NEXT UP:
-- APE Tag format (unlocks WavPack/Monkey's Audio)
-- DSF (DSD format)
+NEXT UP (v0.5.0 BETA):
+- DSF (DSD format) - audiophile priority
+- APE Tag format - infrastructure unlock
+- IDisposable pattern - critical cleanup
+- Test coverage >90%
+- Large file tests (>4GB)
          >>> BETA RELEASE (v0.5.0) <<<
-- WMA/ASF + DFF + WavPack
-- OGG FLAC + Speex + Bug Fixes
+- WavPack + DFF (v0.6.0)
+- WMA/ASF + OGG FLAC + Speex (v0.7.0)
          >>> RELEASE CANDIDATE (v0.9.0) <<<
-- P2 Niche Formats + Polish
+- P2 Niche Formats + Polish + TagLib# Shim
          >>> PRODUCTION RELEASE (v1.0.0) <<<
 ```
 
@@ -380,10 +406,12 @@ NEXT UP:
 - ✅ <10ms tag reading performance
 - ✅ Zero data loss bugs
 
-### Beta Release
-- 8 P0 formats complete (have: 7, need: DSF)
-- Production Roon deployment (beta users)
-- Cross-tagger compatibility verified
+### Beta Release (v0.5.0)
+- 8 formats complete (add DSF to existing 7)
+- APE Tag format ready (infrastructure for future formats)
+- IDisposable pattern complete
+- >90% test coverage
+- Large file support verified (>4GB)
 
 ### Production Release
 - 22 formats (or documented limitations)
@@ -404,5 +432,5 @@ NEXT UP:
 
 ---
 
-*Last Updated: 2025-12-31 (v0.4.0)*
-*Sources: Audiophile analysis, Dev PM analysis, Audio Product analysis, Project Management analysis*
+*Last Updated: 2025-12-31 (v0.5.0 planning)*
+*Sources: Audiophile analysis, Product Manager analysis, Project Manager analysis*

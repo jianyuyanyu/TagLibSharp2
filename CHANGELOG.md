@@ -5,6 +5,45 @@ All notable changes to TagLibSharp2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-12-31
+
+### Added
+
+#### APE Tag v2 Support
+- `ApeTag` class for reading and writing APE v2 tags
+- APE item types: Text (UTF-8), Binary, External (locators)
+- Read-only flag support per APE specification
+- `ApeTagFooter` and `ApeTagHeader` parsing with version detection
+- `ApeTagItem` for individual tag items with flags
+- Result types: `ApeTagFooterParseResult`, `ApeTagHeaderParseResult`, `ApeTagItemParseResult`, `ApeTagParseResult`
+- Full read/write round-trip support
+- Standard metadata mappings: Title, Artist, Album, Track, Genre, Date, Comment
+- Extended metadata: ReplayGain, MusicBrainz IDs, Performer roles
+
+#### DSF (DSD Stream File) Format Support
+- `DsfFile` class for reading DSF audio files (Sony DSD format)
+- DSD64 (2.8MHz), DSD128 (5.6MHz), DSD256 (11.2MHz), DSD512 (22.4MHz) sample rate detection
+- `DsfDsdChunk` for DSD header with total file size and metadata pointer
+- `DsfFmtChunk` for format specification (channels, sample rate, bits per sample)
+- `DsfDataChunk` for audio data boundaries
+- `DsfAudioProperties` with DSD-specific information
+- ID3v2 tag support at end of file (per DSF specification)
+- Result types: `DsfDsdChunkParseResult`, `DsfFmtChunkParseResult`, `DsfDataChunkParseResult`, `DsfFileParseResult`
+- Channel type detection: Mono, Stereo, 3-channel, Quad, 4-channel, 5-channel, 5.1 surround
+
+#### IDisposable Pattern
+- `BinaryDataBuilder` now implements `IDisposable` for proper resource cleanup
+- Automatic return of ArrayPool buffers on dispose
+- `using` statement support for deterministic cleanup
+
+#### Large File Support
+- Validated file operations with files >4GB
+- Comprehensive test coverage for large file scenarios
+
+### Changed
+- Test count increased from 2272 to 2560 (+288 tests)
+- Code coverage: 90.2% line coverage, 77.2% branch coverage
+
 ## [0.4.0] - 2025-12-31
 
 ### Added
@@ -475,6 +514,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `BinaryData(byte[])` constructor now copies the array to ensure true immutability
 
+[0.5.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.5.0
 [0.4.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.4.0
 [0.3.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.3.0
 [0.2.1]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.2.1

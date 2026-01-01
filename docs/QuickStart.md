@@ -85,6 +85,26 @@ if (mp4.IsSuccess)
     Console.WriteLine($"Duration: {file.Duration}");
     Console.WriteLine($"Codec: {file.AudioCodec}");  // Aac, Alac, or Unknown
 }
+
+// DSF files (DSD high-resolution audio)
+using TagLibSharp2.Dsf;
+var dsf = DsfFile.ReadFromFile("song.dsf");
+if (dsf.IsSuccess)
+{
+    var file = dsf.File!;
+    Console.WriteLine($"Title: {file.Id3v2Tag?.Title}");
+    Console.WriteLine($"Sample Rate: {file.Properties?.SampleRate}");  // DSD64=2822400, DSD128=5644800
+    Console.WriteLine($"Channel Type: {file.Properties?.ChannelType}");  // Mono, Stereo, or Surround
+}
+
+// APE tagged files (MP3 with APEv2)
+using TagLibSharp2.Ape;
+var result = Mp3File.ReadFromFile("song.mp3");
+if (result.IsSuccess && result.File!.ApeTag is { } ape)
+{
+    Console.WriteLine($"Title: {ape.Title}");
+    Console.WriteLine($"ReplayGain: {ape.ReplayGainTrackGain}");
+}
 ```
 
 ## Writing Tags
