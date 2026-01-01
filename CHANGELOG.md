@@ -5,6 +5,120 @@ All notable changes to TagLibSharp2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-12-31
+
+### Added
+
+#### MP4/M4A Format Support
+- `Mp4File` class for reading and writing MP4/M4A audio files
+- ISO 14496-12 (ISOBMFF) and ISO 14496-14 compliant box parsing
+- iTunes-style metadata (moov → udta → meta → ilst atoms)
+- Full read/write round-trip support with atomic file saves
+- 197 comprehensive tests covering parsing, rendering, and edge cases
+
+#### MP4 Box Infrastructure
+- `Mp4Box` class for hierarchical box (atom) parsing
+- `Mp4BoxParser` for recursive child box parsing
+- `Mp4FullBox` support for version and flags fields
+- `Mp4DataAtom` for typed data atoms (text, integer, binary)
+- `Mp4BoxReadResult` result type with error context
+- Extended box size support (size=1 with 64-bit size field)
+
+#### MP4 Audio Properties
+- `Mp4AudioPropertiesParser` for extracting audio information
+- Duration from mvhd (movie header) with timescale conversion
+- Sample rate from stsd (sample description) or mdhd fallback
+- High sample rate support (>65535 Hz via mdhd timescale)
+- Channel count, bits per sample (for lossless codecs)
+- Bitrate extraction from esds (Elementary Stream Descriptor)
+
+#### MP4 Audio Codec Detection
+- `Mp4AudioCodec` enum: AAC, ALAC, FLAC, Opus, AC-3, E-AC-3, Unknown
+- Codec-specific parsing for accurate properties
+- `EsdsParser` for AAC decoder configuration
+- `AlacMagicCookie` parsing for ALAC parameters
+
+#### Standard iTunes Metadata Atoms
+- Text atoms: Title (©nam), Artist (©ART), Album (©alb), Genre (©gen)
+- Date atoms: Year (©day)
+- Comment atom: ©cmt
+- Composer atom: ©wrt
+- Album artist atom: aART
+- Track/disc numbers: trkn and disk (8-byte binary format)
+- BPM: tmpo (16-bit integer)
+- Gapless playback: pgap (boolean)
+- Compilation flag: cpil (boolean)
+- Encoder: ©too
+- Copyright: cprt
+
+#### Sort Order Atoms
+- AlbumSort (soal), ArtistSort (soar), TitleSort (sonm)
+- AlbumArtistSort (soaa), ComposerSort (soco)
+
+#### Classical Music Metadata
+- Work name: ©wrk
+- Movement name: ©mvn
+- Movement number: ©mvi (integer)
+- Movement count: ©mvc (integer)
+- Show movement flag: shwm (boolean)
+
+#### Cover Art Support
+- `Mp4Picture` class implementing `IPicture` interface
+- JPEG (type code 13) and PNG (type code 14) support
+- Multiple pictures per file via covr atom
+- AddPicture/RemovePictures API on Mp4File
+
+#### Freeform Metadata (---- atoms)
+- Full support for mean/name/data structure
+- GetFreeformTag/SetFreeformTag API for arbitrary metadata
+
+##### MusicBrainz Identifiers (org.musicbrainz namespace)
+- Track ID, Album ID, Artist ID, Album Artist ID
+- Release Group ID, Work ID, Recording ID, Disc ID
+- Release Status, Release Type, Release Country
+
+##### AcoustID (com.apple.iTunes namespace)
+- AcoustId Id
+- AcoustId Fingerprint
+
+##### ReplayGain (com.apple.iTunes namespace)
+- Track gain and peak (replaygain_track_gain/peak)
+- Album gain and peak (replaygain_album_gain/peak)
+
+##### R128 Loudness (com.apple.iTunes namespace)
+- Track gain (R128_TRACK_GAIN) - Q7.8 fixed-point
+- Album gain (R128_ALBUM_GAIN) - Q7.8 fixed-point
+- Convenience properties: R128TrackGainDb, R128AlbumGainDb (decibels)
+
+##### DJ and Remix Metadata
+- Initial key (initialkey)
+- Remixer (REMIXER)
+- Mood (MOOD)
+- Subtitle (SUBTITLE)
+
+##### Collector Metadata
+- Barcode (BARCODE)
+- Catalog number (CATALOGNUMBER)
+- Amazon ID (ASIN)
+
+##### Library Management
+- Date tagged (date_tagged)
+- Language (LANGUAGE)
+- Media type (MEDIA)
+
+##### Additional Identifiers
+- ISRC (ISRC)
+- Conductor (CONDUCTOR)
+- Original year (ORIGINAL YEAR)
+
+#### MediaFile Factory Updates
+- `MediaFormat.Mp4` enum value
+- Automatic MP4 detection by ftyp box
+- `.m4a`, `.mp4`, `.m4b`, `.m4p`, `.m4v` file extension support
+
+### Changed
+- Test count increased from 2077 to 2272 (+195 tests)
+
 ## [0.3.0] - 2025-12-30
 
 ### Added
@@ -361,6 +475,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `BinaryData(byte[])` constructor now copies the array to ensure true immutability
 
+[0.4.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.4.0
 [0.3.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.3.0
 [0.2.1]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.2.1
 [0.2.0]: https://github.com/decriptor/TagLibSharp2/releases/tag/v0.2.0
