@@ -206,4 +206,161 @@ public class Mp4BoxTests
 		Assert.AreEqual ("skip", result.Box!.Type);
 		Assert.AreEqual (24, result.Box.TotalSize); // 8 + 16
 	}
+
+	#region Large File Tests (>4GB Boundary)
+
+	/// <summary>
+	/// Tests that MP4 correctly handles extended size boxes.
+	/// When actual data matches the claimed size, parsing succeeds.
+	/// </summary>
+	[TestMethod]
+	public void ParseExtendedSizeBox_MatchingData_ParsesCorrectly ()
+	{
+		// Arrange - create extended size box where claimed size matches actual data
+		var content = new byte[100];
+		var data = CreateExtendedSizeBoxWithActualSize ("mdat", content);
+
+		// Act
+		var result = Mp4Box.Parse (data);
+
+		// Assert - succeeds because data matches claimed size
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("mdat", result.Box!.Type);
+		Assert.IsTrue (result.Box.UsesExtendedSize);
+	}
+
+	/// <summary>
+	/// Tests that extended size box with insufficient data fails gracefully.
+	/// This is expected behavior - we can't parse a 5GB box without 5GB of data.
+	/// The test verifies no integer overflow or exception occurs.
+	/// </summary>
+	[TestMethod]
+	public void ParseExtendedSizeBox_LargeClaimedSize_FailsGracefully ()
+	{
+		// Arrange - create box claiming 5GB but only providing 100 bytes
+		const ulong fiveGigabytes = 5UL * 1024 * 1024 * 1024;
+		var data = CreateExtendedSizeBoxWithClaimedSize ("mdat", fiveGigabytes, new byte[100]);
+
+		// Act - should handle without integer overflow or exception
+		var result = Mp4Box.Parse (data);
+
+		// Assert - fails because data is insufficient, but no exception thrown
+		Assert.IsFalse (result.IsSuccess);
+	}
+
+	/// <summary>
+	/// Tests that extremely large size values (near ulong.MaxValue) don't cause overflow.
+	/// </summary>
+	[TestMethod]
+	public void ParseExtendedSizeBox_MaxSize_HandlesWithoutOverflow ()
+	{
+		// Arrange - maximum theoretical size (minus header)
+		const ulong hugeSize = ulong.MaxValue - 16;
+		var data = CreateExtendedSizeBoxWithClaimedSize ("mdat", hugeSize, new byte[100]);
+
+		// Act - should parse the header without integer overflow
+		var result = Mp4Box.Parse (data);
+
+		// Assert - fails due to insufficient data, but no overflow exception
+		Assert.IsNotNull (result);
+		Assert.IsFalse (result.IsSuccess); // Expected: insufficient data
+	}
+
+	/// <summary>
+	/// Tests that extended size boxes render correctly and can be re-parsed.
+	/// </summary>
+	[TestMethod]
+	public void ExtendedSizeBox_RenderAndParse_RoundTrips ()
+	{
+		// Arrange - create a valid extended size box with matching data
+		var content = new byte[50];
+		var originalData = CreateExtendedSizeBoxWithActualSize ("mdat", content);
+
+		// Act - parse
+		var result = Mp4Box.Parse (originalData);
+
+		// Assert
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("mdat", result.Box!.Type);
+		Assert.IsTrue (result.Box.UsesExtendedSize);
+
+		// Round-trip: render and re-parse
+		var rendered = result.Box.Render ();
+		var reparsed = Mp4Box.Parse (rendered.Span);
+		Assert.IsTrue (reparsed.IsSuccess);
+		Assert.AreEqual ("mdat", reparsed.Box!.Type);
+		Assert.IsTrue (reparsed.Box.UsesExtendedSize);
+	}
+
+	/// <summary>
+	/// Tests that 64-bit size values can store sizes beyond uint.MaxValue.
+	/// Since we can't actually allocate 4GB+ of data, we verify the header writing logic.
+	/// </summary>
+	[TestMethod]
+	public void ExtendedSizeHeader_LargeValue_EncodesBigEndianCorrectly ()
+	{
+		// Arrange - value that requires all 8 bytes: 0x0001020304050607
+		const ulong testSize = 0x0001020304050607UL;
+		var data = CreateExtendedSizeBoxWithClaimedSize ("mdat", testSize, new byte[10]);
+
+		// Assert - verify the 64-bit value is encoded in big-endian format
+		// Extended size is at bytes 8-15
+		Assert.AreEqual (0x00, data[8]);
+		Assert.AreEqual (0x01, data[9]);
+		Assert.AreEqual (0x02, data[10]);
+		Assert.AreEqual (0x03, data[11]);
+		Assert.AreEqual (0x04, data[12]);
+		Assert.AreEqual (0x05, data[13]);
+		Assert.AreEqual (0x06, data[14]);
+		Assert.AreEqual (0x07, data[15]);
+	}
+
+	/// <summary>
+	/// Creates an MP4 extended size box where claimed size matches actual data.
+	/// </summary>
+	static byte[] CreateExtendedSizeBoxWithActualSize (string type, byte[] content)
+	{
+		var headerSize = 16;
+		var actualSize = (ulong)(headerSize + content.Length);
+		return CreateExtendedSizeBoxWithClaimedSize (type, actualSize, content);
+	}
+
+	/// <summary>
+	/// Creates an MP4 box with extended (64-bit) size header.
+	/// Format: size(4)=1 + type(4) + extended_size(8) + data
+	/// </summary>
+	static byte[] CreateExtendedSizeBoxWithClaimedSize (string type, ulong claimedSize, byte[] content)
+	{
+		var headerSize = 16;
+		var data = new byte[headerSize + content.Length];
+
+		// Size field = 1 (signals extended size)
+		data[0] = 0;
+		data[1] = 0;
+		data[2] = 0;
+		data[3] = 1;
+
+		// Type
+		data[4] = (byte)type[0];
+		data[5] = (byte)type[1];
+		data[6] = (byte)type[2];
+		data[7] = (byte)type[3];
+
+		// Extended size (big-endian 64-bit)
+		data[8] = (byte)(claimedSize >> 56);
+		data[9] = (byte)(claimedSize >> 48);
+		data[10] = (byte)(claimedSize >> 40);
+		data[11] = (byte)(claimedSize >> 32);
+		data[12] = (byte)(claimedSize >> 24);
+		data[13] = (byte)(claimedSize >> 16);
+		data[14] = (byte)(claimedSize >> 8);
+		data[15] = (byte)claimedSize;
+
+		// Content
+		Array.Copy (content, 0, data, headerSize, content.Length);
+
+		return data;
+	}
+
+	#endregion
 }

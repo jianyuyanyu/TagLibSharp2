@@ -121,6 +121,146 @@ public class SyncLyricsFrameTests
 		Assert.AreEqual (2500u, parsed.Frame.SyncItems[1].Timestamp);
 	}
 
+	[TestMethod]
+	public void ClearSyncItems_RemovesAllItems ()
+	{
+		var frame = new SyncLyricsFrame ();
+		frame.AddSyncItem ("Line 1", 0);
+		frame.AddSyncItem ("Line 2", 1000);
+
+		frame.ClearSyncItems ();
+
+		Assert.IsEmpty (frame.SyncItems);
+	}
+
+	[TestMethod]
+	public void RenderContent_EmptyLanguage_UsesDefault ()
+	{
+		var frame = new SyncLyricsFrame {
+			Language = "",
+			Description = "Test"
+		};
+		frame.AddSyncItem ("Test", 0);
+
+		var rendered = frame.RenderContent ();
+		var parsed = SyncLyricsFrame.Read (rendered.Span, Id3v2Version.V24);
+
+		Assert.IsTrue (parsed.IsSuccess);
+		Assert.AreEqual ("eng", parsed.Frame!.Language);
+	}
+
+	[TestMethod]
+	public void RenderContent_ShortLanguage_IsPadded ()
+	{
+		var frame = new SyncLyricsFrame {
+			Language = "de",
+			Description = "Test"
+		};
+		frame.AddSyncItem ("Test", 0);
+
+		var rendered = frame.RenderContent ();
+		var parsed = SyncLyricsFrame.Read (rendered.Span, Id3v2Version.V24);
+
+		Assert.IsTrue (parsed.IsSuccess);
+		Assert.AreEqual ("de ", parsed.Frame!.Language);
+	}
+
+	[TestMethod]
+	public void RenderContent_LongLanguage_IsTruncated ()
+	{
+		var frame = new SyncLyricsFrame {
+			Language = "deutsch",
+			Description = "Test"
+		};
+		frame.AddSyncItem ("Test", 0);
+
+		var rendered = frame.RenderContent ();
+		var parsed = SyncLyricsFrame.Read (rendered.Span, Id3v2Version.V24);
+
+		Assert.IsTrue (parsed.IsSuccess);
+		Assert.AreEqual ("deu", parsed.Frame!.Language);
+	}
+
+	[TestMethod]
+	public void Read_InvalidEncoding_ReturnsFailure ()
+	{
+		// Build frame with invalid encoding byte (5)
+		var data = new byte[] { 5, (byte)'e', (byte)'n', (byte)'g', 2, 1 };
+
+		var result = SyncLyricsFrame.Read (data, Id3v2Version.V24);
+
+		Assert.IsFalse (result.IsSuccess);
+		StringAssert.Contains (result.Error, "encoding");
+	}
+
+	[TestMethod]
+	public void SyncLyricsItem_Equality_WorksCorrectly ()
+	{
+		var item1 = new SyncLyricsItem ("Hello", 1000);
+		var item2 = new SyncLyricsItem ("Hello", 1000);
+		var item3 = new SyncLyricsItem ("World", 1000);
+
+		Assert.IsTrue (item1 == item2);
+		Assert.IsFalse (item1 == item3);
+		Assert.IsTrue (item1 != item3);
+		Assert.AreEqual (item1.GetHashCode (), item2.GetHashCode ());
+	}
+
+	[TestMethod]
+	public void SyncLyricsItem_EqualsObject_WorksCorrectly ()
+	{
+		var item1 = new SyncLyricsItem ("Hello", 1000);
+		object item2 = new SyncLyricsItem ("Hello", 1000);
+		object notAnItem = "not an item";
+
+		Assert.IsTrue (item1.Equals (item2));
+		Assert.IsFalse (item1.Equals (notAnItem));
+		Assert.IsFalse (item1.Equals (null));
+	}
+
+	[TestMethod]
+	public void Read_DifferentContentTypes_ParseCorrectly ()
+	{
+		foreach (var contentType in new[] { SyncLyricsType.Other, SyncLyricsType.TextTranscription,
+			SyncLyricsType.PartNames, SyncLyricsType.Events, SyncLyricsType.Trivia,
+			SyncLyricsType.WebPageUrls, SyncLyricsType.ImageUrls }) {
+
+			var data = BuildSyltFrame (
+				TextEncodingType.Utf8,
+				"eng",
+				TimestampFormat.Milliseconds,
+				contentType,
+				"",
+				[("Test", 0u)]);
+
+			var result = SyncLyricsFrame.Read (data, Id3v2Version.V24);
+
+			Assert.IsTrue (result.IsSuccess);
+			Assert.AreEqual (contentType, result.Frame!.ContentType);
+		}
+	}
+
+	[TestMethod]
+	public void RenderContent_Utf16WithBom_RoundTrips ()
+	{
+		var frame = new SyncLyricsFrame {
+			Encoding = TextEncodingType.Utf16WithBom,
+			Language = "jpn",
+			Description = "日本語",
+			ContentType = SyncLyricsType.Lyrics
+		};
+		frame.AddSyncItem ("こんにちは", 0);
+		frame.AddSyncItem ("世界", 1000);
+
+		var rendered = frame.RenderContent ();
+		var parsed = SyncLyricsFrame.Read (rendered.Span, Id3v2Version.V24);
+
+		Assert.IsTrue (parsed.IsSuccess);
+		Assert.AreEqual ("日本語", parsed.Frame!.Description);
+		Assert.HasCount (2, parsed.Frame.SyncItems);
+		Assert.AreEqual ("こんにちは", parsed.Frame.SyncItems[0].Text);
+	}
+
 	static byte[] BuildSyltFrame (
 		TextEncodingType encoding,
 		string language,
