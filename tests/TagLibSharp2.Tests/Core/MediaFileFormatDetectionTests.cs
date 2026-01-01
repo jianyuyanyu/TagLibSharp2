@@ -317,10 +317,10 @@ public class MediaFileFormatDetectionTests
 		data[3] = (byte)'S';
 		data[4] = 0; // version
 		data[5] = 0x02; // BOS flag
-		// granule position (8 bytes) - zeros
-		// serial number (4 bytes) - zeros
-		// page sequence (4 bytes) - zeros
-		// CRC (4 bytes) - zeros
+						// granule position (8 bytes) - zeros
+						// serial number (4 bytes) - zeros
+						// page sequence (4 bytes) - zeros
+						// CRC (4 bytes) - zeros
 		data[26] = 1; // segment count
 		data[27] = (byte)codecMagic.Length; // segment size
 
