@@ -720,4 +720,86 @@ public class ApeTagTests
 	}
 
 	#endregion
+
+	#region Result Type Equality Tests
+
+	[TestMethod]
+	public void ApeTagParseResult_Equality_WorksCorrectly ()
+	{
+		// Arrange
+		var tag1 = CreateCompleteTag (new Dictionary<string, string> { { "Title", "Test" } });
+		var result1 = ApeTag.Parse (tag1);
+		var result2 = ApeTag.Parse (tag1);
+		var failure1 = ApeTagParseResult.Failure ("Error 1");
+		var failure2 = ApeTagParseResult.Failure ("Error 1");
+		var failure3 = ApeTagParseResult.Failure ("Error 2");
+
+		// Act & Assert
+		Assert.IsTrue (result1.IsSuccess);
+		Assert.IsTrue (result2.IsSuccess);
+
+		// Failures with same error are equal
+		Assert.IsTrue (failure1.Equals (failure2));
+		Assert.AreEqual (failure1.GetHashCode (), failure2.GetHashCode ());
+
+		// Failures with different errors aren't equal
+		Assert.IsFalse (failure1.Equals (failure3));
+
+		// Object equality
+		Assert.IsFalse (result1.Equals ((object?)null));
+		Assert.IsFalse (result1.Equals ("not a result"));
+		Assert.IsTrue (failure1.Equals ((object)failure2));
+	}
+
+	[TestMethod]
+	public void ApeTagFooterParseResult_Equality_WorksCorrectly ()
+	{
+		// Arrange
+		var footer = CreateValidFooter (2000, 64, 2, 0);
+		var result1 = ApeTagFooter.Parse (footer);
+		var failure = ApeTagFooterParseResult.Failure ("Error");
+
+		// Act & Assert
+		Assert.IsTrue (result1.IsSuccess);
+		Assert.IsFalse (failure.IsSuccess);
+		_ = result1.GetHashCode ();
+		_ = failure.GetHashCode ();
+		Assert.IsFalse (result1.Equals ((object?)null));
+	}
+
+	[TestMethod]
+	public void ApeTagHeaderParseResult_Equality_WorksCorrectly ()
+	{
+		// Arrange - create header by rendering one
+		var header = ApeTagHeader.Create (64, 2);
+		var headerData = header.Render ();
+		var result = ApeTagHeader.Parse (headerData);
+		var failure = ApeTagHeaderParseResult.Failure ("Error");
+
+		// Act & Assert
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsFalse (failure.IsSuccess);
+		_ = result.GetHashCode ();
+		_ = failure.GetHashCode ();
+		Assert.IsFalse (result.Equals ((object?)null));
+		Assert.IsTrue (failure.Equals ((object)failure));
+	}
+
+	[TestMethod]
+	public void ApeTagItemParseResult_Equality_WorksCorrectly ()
+	{
+		// Arrange
+		var item = CreateTextItem ("Title", "Test Song");
+		var result = ApeTagItem.Parse (item);
+		var failure = ApeTagItemParseResult.Failure ("Error");
+
+		// Act & Assert
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsFalse (failure.IsSuccess);
+		_ = result.GetHashCode ();
+		_ = failure.GetHashCode ();
+		Assert.IsFalse (result.Equals ((object?)null));
+	}
+
+	#endregion
 }

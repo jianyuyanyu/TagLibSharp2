@@ -1296,4 +1296,202 @@ public class DsfFileTests
 	}
 
 	#endregion
+
+	#region DsfAudioProperties Tests
+
+	[TestMethod]
+	public void Properties_AllProperties_ReturnCorrectValues ()
+	{
+		// Arrange
+		var data = CreateMinimalDsfFile (
+			sampleRate: 5644800,
+			channelCount: 2,
+			sampleCount: 5644800 * 120, // 2 minutes at DSD128
+			hasMetadata: false);
+
+		// Act
+		var result = DsfFile.Parse (data);
+
+		// Assert
+		Assert.IsTrue (result.IsSuccess);
+		var props = result.File!.Properties;
+		Assert.IsNotNull (props);
+		Assert.AreEqual (TimeSpan.FromMinutes (2), props!.Duration);
+		Assert.AreEqual (5644800, props.SampleRate);
+		Assert.AreEqual (2, props.Channels);
+		Assert.AreEqual (1, props.BitsPerSample);
+		Assert.AreEqual (DsfSampleRate.DSD128, props.DsdRate);
+		Assert.AreEqual (DsfChannelType.Stereo, props.ChannelType);
+		Assert.AreEqual (4096u, props.BlockSizePerChannel);
+	}
+
+	[TestMethod]
+	public void Properties_MonoChannel_ReturnsCorrectChannelType ()
+	{
+		// Arrange
+		var data = CreateMinimalDsfFile (
+			sampleRate: 2822400,
+			channelCount: 1,
+			sampleCount: 2822400,
+			hasMetadata: false);
+
+		// Act
+		var result = DsfFile.Parse (data);
+
+		// Assert
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (DsfChannelType.Mono, result.File!.Properties!.ChannelType);
+		Assert.AreEqual (1, result.File.Properties.Channels);
+	}
+
+	[TestMethod]
+	public void Properties_Surround_ReturnsCorrectChannelType ()
+	{
+		// Arrange
+		var data = CreateMinimalDsfFile (
+			sampleRate: 2822400,
+			channelCount: 6,
+			sampleCount: 2822400,
+			hasMetadata: false);
+
+		// Act
+		var result = DsfFile.Parse (data);
+
+		// Assert
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (DsfChannelType.Surround51, result.File!.Properties!.ChannelType);
+		Assert.AreEqual (6, result.File.Properties.Channels);
+	}
+
+	#endregion
+
+	#region Async Tests
+
+	[TestMethod]
+	public async Task SaveToFileAsync_WritesAndReads_Correctly ()
+	{
+		// Arrange
+		var tempPath = Path.GetTempFileName ();
+		try {
+			// Create file with metadata, read it, modify, and save
+			var data = CreateDsfWithId3v2 (
+				sampleRate: 2822400,
+				channelCount: 2,
+				title: "Async Test",
+				artist: "Test Artist");
+			File.WriteAllBytes (tempPath, data);
+
+			var readResult = await DsfFile.ReadFromFileAsync (tempPath);
+			Assert.IsTrue (readResult.IsSuccess);
+			var file = readResult.File!;
+			file.Tag!.Title = "Modified Async";
+
+			// Act
+			await file.SaveToFileAsync ();
+
+			// Assert
+			var verifyResult = await DsfFile.ReadFromFileAsync (tempPath);
+			Assert.IsTrue (verifyResult.IsSuccess);
+			Assert.AreEqual ("Modified Async", verifyResult.File!.Tag!.Title);
+		} finally {
+			if (File.Exists (tempPath))
+				File.Delete (tempPath);
+		}
+	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_WithoutSourcePath_ReturnsFailure ()
+	{
+		// Arrange - parse in-memory (no SourcePath)
+		var data = CreateMinimalDsfFile (2822400, 2, 2822400, hasMetadata: false);
+		var parseResult = DsfFile.Parse (data);
+		Assert.IsTrue (parseResult.IsSuccess);
+		var file = parseResult.File!;
+
+		// Act
+		var result = await file.SaveToFileAsync ();
+
+		// Assert - should fail because no SourcePath
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsTrue (result.Error!.Contains ("source path"));
+	}
+
+	#endregion
+
+	#region Result Type Tests
+
+	[TestMethod]
+	public void DsfFileParseResult_Equality_WorksCorrectly ()
+	{
+		// Arrange
+		var data = CreateMinimalDsfFile (2822400, 2, 2822400, hasMetadata: false);
+		var result1 = DsfFile.Parse (data);
+		var result2 = DsfFile.Parse (data);
+		var failure1 = DsfFileParseResult.Failure ("Error 1");
+		var failure2 = DsfFileParseResult.Failure ("Error 1");
+		var failure3 = DsfFileParseResult.Failure ("Error 2");
+
+		// Act & Assert - Success results with different file instances aren't equal
+		Assert.IsFalse (result1.Equals (result2));
+
+		// Failures with same error are equal
+		Assert.IsTrue (failure1.Equals (failure2));
+		Assert.AreEqual (failure1.GetHashCode (), failure2.GetHashCode ());
+
+		// Failures with different errors aren't equal
+		Assert.IsFalse (failure1.Equals (failure3));
+
+		// Object equality
+		Assert.IsFalse (result1.Equals ((object?)null));
+		Assert.IsFalse (result1.Equals ("not a result"));
+	}
+
+	[TestMethod]
+	public void DsfDsdChunkParseResult_Equality_WorksCorrectly ()
+	{
+		// Arrange
+		var data = CreateDsdChunk (28, 1000, 0);
+		var result1 = DsfDsdChunk.Parse (data);
+		var result2 = DsfDsdChunk.Parse (data);
+		var failure = DsfDsdChunkParseResult.Failure ("Error");
+
+		// Act & Assert
+		Assert.IsTrue (result1.IsSuccess);
+		Assert.IsTrue (result2.IsSuccess);
+		Assert.IsFalse (failure.IsSuccess);
+		Assert.IsFalse (result1.Equals ((object?)null));
+	}
+
+	[TestMethod]
+	public void DsfFmtChunkParseResult_Equality_WorksCorrectly ()
+	{
+		// Arrange - full CreateFmtChunk signature
+		var data = CreateFmtChunk (1, 0, 2, 2, 2822400, 1, 2822400, 4096);
+		var result = DsfFmtChunk.Parse (data);
+		var failure = DsfFmtChunkParseResult.Failure ("Error");
+
+		// Act & Assert
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsFalse (failure.IsSuccess);
+		_ = result.GetHashCode ();
+		_ = failure.GetHashCode ();
+	}
+
+	[TestMethod]
+	public void DsfDataChunkParseResult_Equality_WorksCorrectly ()
+	{
+		// Arrange - use CreateDataChunkHeader
+		var headerData = CreateDataChunkHeader (4096 * 2 + 12);
+		var fullData = new byte[4096 * 2 + 12];
+		headerData.CopyTo (fullData, 0);
+		var result = DsfDataChunk.Parse (fullData);
+		var failure = DsfDataChunkParseResult.Failure ("Error");
+
+		// Act & Assert
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsFalse (failure.IsSuccess);
+		_ = result.GetHashCode ();
+	}
+
+	#endregion
 }
