@@ -7,9 +7,11 @@ Practical recipes for common audio tagging tasks.
 1. [Reading Tags](#reading-tags)
 2. [Writing Tags](#writing-tags)
 3. [Album Art](#album-art)
-4. [Batch Operations](#batch-operations)
-5. [Format Conversion](#format-conversion)
-6. [Advanced Patterns](#advanced-patterns)
+4. [MP4/M4A Files](#mp4m4a-files)
+5. [Ogg Opus Files](#ogg-opus-files)
+6. [Batch Operations](#batch-operations)
+7. [Format Conversion](#format-conversion)
+8. [Advanced Patterns](#advanced-patterns)
 
 ---
 
@@ -284,6 +286,178 @@ mp3.Id3v2Tag!.Pictures = [];
 var pictures = mp3.Id3v2Tag!.Pictures.ToList();
 pictures.RemoveAll(p => p.PictureType == PictureType.BackCover);
 mp3.Id3v2Tag!.Pictures = pictures.ToArray();
+```
+
+---
+
+## MP4/M4A Files
+
+### Read MP4/M4A Metadata
+
+```csharp
+using TagLibSharp2.Mp4;
+
+var result = Mp4File.ReadFromFile("song.m4a");
+if (result.IsSuccess)
+{
+    var mp4 = result.File!;
+
+    // Basic metadata
+    Console.WriteLine($"Title: {mp4.Title}");
+    Console.WriteLine($"Artist: {mp4.Artist}");
+    Console.WriteLine($"Album: {mp4.Album}");
+    Console.WriteLine($"Year: {mp4.Year}");
+    Console.WriteLine($"Track: {mp4.Track}/{mp4.TotalTracks}");
+
+    // Audio properties
+    Console.WriteLine($"Duration: {mp4.Duration}");
+    Console.WriteLine($"Codec: {mp4.AudioCodec}");  // Aac, Alac, or Unknown
+    Console.WriteLine($"Sample Rate: {mp4.Properties?.SampleRate} Hz");
+    Console.WriteLine($"Bitrate: {mp4.Properties?.Bitrate} kbps");
+    Console.WriteLine($"Channels: {mp4.Properties?.Channels}");
+
+    // Album art
+    if (mp4.CoverArt is { } cover)
+    {
+        Console.WriteLine($"Cover: {cover.MimeType}, {cover.Data.Length} bytes");
+        File.WriteAllBytes("cover.jpg", cover.Data.ToArray());
+    }
+}
+```
+
+### Write MP4/M4A Metadata
+
+```csharp
+using TagLibSharp2.Mp4;
+
+var result = Mp4File.ReadFromFile("song.m4a");
+if (result.IsSuccess)
+{
+    var mp4 = result.File!;
+
+    // Basic tags
+    mp4.Title = "My Song";
+    mp4.Artist = "My Artist";
+    mp4.Album = "My Album";
+    mp4.Year = 2024;
+    mp4.Track = 1;
+    mp4.TotalTracks = 12;
+    mp4.DiscNumber = 1;
+    mp4.TotalDiscs = 2;
+    mp4.Genre = "Rock";
+
+    // Extended metadata
+    mp4.Composer = "Composer Name";
+    mp4.AlbumArtist = "Album Artist";
+    mp4.Grouping = "Holiday";
+    mp4.Description = "Song description";
+    mp4.Copyright = "2024 Record Label";
+
+    // Compilation flag
+    mp4.IsCompilation = true;
+
+    // MusicBrainz IDs
+    mp4.MusicBrainzTrackId = "f4e7c9d8-1234-5678-9abc-def012345678";
+    mp4.MusicBrainzReleaseId = "a1b2c3d4-5678-90ab-cdef-1234567890ab";
+
+    // Save (uses SourcePath)
+    mp4.SaveToFile();
+
+    // Or save to different location
+    mp4.SaveToFile("output.m4a");
+}
+```
+
+### Add Album Art to MP4
+
+```csharp
+using TagLibSharp2.Mp4;
+
+var result = Mp4File.ReadFromFile("song.m4a");
+if (result.IsSuccess)
+{
+    var mp4 = result.File!;
+
+    // Add cover art (auto-detects JPEG vs PNG)
+    var imageBytes = File.ReadAllBytes("cover.jpg");
+    mp4.SetCoverArt(new BinaryData(imageBytes));
+
+    mp4.SaveToFile();
+}
+```
+
+### Async MP4 Operations
+
+```csharp
+using TagLibSharp2.Mp4;
+
+var result = await Mp4File.ReadFromFileAsync("song.m4a");
+if (result.IsSuccess)
+{
+    var mp4 = result.File!;
+    mp4.Title = "Updated Title";
+
+    await mp4.SaveToFileAsync();
+}
+```
+
+---
+
+## Ogg Opus Files
+
+### Read Opus with R128 Gain
+
+```csharp
+using TagLibSharp2.Ogg;
+
+var result = OggOpusFile.ReadFromFile("song.opus");
+if (result.IsSuccess)
+{
+    var opus = result.File!;
+
+    // Basic metadata (via Vorbis Comment)
+    Console.WriteLine($"Title: {opus.VorbisComment?.Title}");
+    Console.WriteLine($"Artist: {opus.VorbisComment?.Artist}");
+
+    // Audio properties
+    var props = opus.Properties;
+    Console.WriteLine($"Duration: {props?.Duration}");
+    Console.WriteLine($"Sample Rate: {props?.SampleRate} Hz");
+    Console.WriteLine($"Channels: {props?.Channels}");
+
+    // R128 gain (per RFC 7845)
+    Console.WriteLine($"Output Gain: {props?.OutputGain} dB");
+    Console.WriteLine($"R128 Track Gain: {props?.R128TrackGain}");
+    Console.WriteLine($"R128 Album Gain: {props?.R128AlbumGain}");
+
+    // Multi-stream info
+    Console.WriteLine($"Mapping Family: {props?.MappingFamily}");
+    Console.WriteLine($"Stream Count: {props?.StreamCount}");
+    Console.WriteLine($"Coupled Count: {props?.CoupledCount}");
+}
+```
+
+### Write Opus Metadata
+
+```csharp
+using TagLibSharp2.Ogg;
+
+var result = OggOpusFile.ReadFromFile("song.opus");
+if (result.IsSuccess)
+{
+    var opus = result.File!;
+    var vorbis = opus.VorbisComment ?? new VorbisComment();
+
+    vorbis.Title = "My Song";
+    vorbis.Artist = "My Artist";
+
+    // Set R128 gain tags
+    vorbis.SetValue("R128_TRACK_GAIN", "-512");  // -2 dB in Q7.8
+    vorbis.SetValue("R128_ALBUM_GAIN", "256");   // +1 dB in Q7.8
+
+    var data = File.ReadAllBytes("song.opus");
+    opus.SaveToFile("song.opus", data);
+}
 ```
 
 ---

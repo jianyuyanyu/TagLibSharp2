@@ -13,7 +13,7 @@ A modern .NET library for reading and writing metadata in media files.
 - Result-based error handling (no exceptions)
 
 **Choose TagLib# if you need:**
-- MP4/M4A, ASF/WMA, or APE support (not yet implemented here)
+- ASF/WMA or APE support (not yet implemented here)
 - A battle-tested library used in production for years
 
 See the [Migration Guide](docs/MIGRATION-FROM-TAGLIB.md) for detailed comparison.
@@ -25,28 +25,31 @@ See the [Migration Guide](docs/MIGRATION-FROM-TAGLIB.md) for detailed comparison
 - **Performance-First**: Zero-allocation parsing with `Span<T>` and `ArrayPool<T>`
 - **Multi-Target**: Supports .NET Standard 2.0/2.1, .NET 8.0, and .NET 10.0
 - **Format Support**:
-  - Audio: MP3 (ID3v1/ID3v2), FLAC, OGG Vorbis, WAV (RIFF INFO/ID3v2), AIFF (ID3v2)
-  - Planned: MP4/M4A, ASF/WMA, APE, Opus, DSF
+  - Audio: MP3 (ID3v1/ID3v2), FLAC, OGG Vorbis, Ogg Opus, WAV (RIFF INFO/ID3v2), AIFF (ID3v2), MP4/M4A (AAC/ALAC)
+  - Planned: ASF/WMA, APE, DSF
 
 ## Format Support Matrix
 
-| Feature | MP3 | FLAC | Ogg Vorbis | WAV | AIFF |
-|---------|:---:|:----:|:----------:|:---:|:----:|
-| **Read metadata** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Write metadata** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Audio properties** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Async I/O** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Album art** | ✅ | ✅ | ✅ | ✅¹ | ✅¹ |
-| **ReplayGain** | ✅ | ✅ | ✅ | ✅¹ | ✅¹ |
-| **MusicBrainz IDs** | ✅ | ✅ | ✅ | ✅¹ | ✅¹ |
-| **Lyrics** | ✅ | ✅² | ✅² | ✅¹ | ✅¹ |
-| **Performer roles** | ✅ | ✅ | ✅ | ✅¹ | ✅¹ |
-| **BWF broadcast metadata** | — | — | — | ✅ | — |
-| **Surround sound info** | — | — | — | ✅³ | — |
+| Feature | MP3 | FLAC | Ogg Vorbis | Ogg Opus | WAV | AIFF | MP4/M4A |
+|---------|:---:|:----:|:----------:|:--------:|:---:|:----:|:-------:|
+| **Read metadata** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Write metadata** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Audio properties** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Async I/O** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Album art** | ✅ | ✅ | ✅ | ✅ | ✅¹ | ✅¹ | ✅ |
+| **ReplayGain** | ✅ | ✅ | ✅ | ✅⁴ | ✅¹ | ✅¹ | ✅⁵ |
+| **MusicBrainz IDs** | ✅ | ✅ | ✅ | ✅ | ✅¹ | ✅¹ | ✅ |
+| **Lyrics** | ✅ | ✅² | ✅² | ✅² | ✅¹ | ✅¹ | ✅ |
+| **Performer roles** | ✅ | ✅ | ✅ | ✅ | ✅¹ | ✅¹ | — |
+| **BWF broadcast metadata** | — | — | — | — | ✅ | — | — |
+| **Surround sound info** | — | — | — | — | ✅³ | — | ✅⁶ |
 
 ¹ Via embedded ID3v2 tag
 ² Via Vorbis Comment LYRICS field
 ³ Via WAVEFORMATEXTENSIBLE (channel mask, valid bits per sample)
+⁴ Via R128 gain tags (RFC 7845)
+⁵ Via iTunes ----:com.apple.iTunes:replaygain_* atoms
+⁶ Via channel layout in stsd/esds
 
 ### Tag Format by Container
 
@@ -55,8 +58,10 @@ See the [Migration Guide](docs/MIGRATION-FROM-TAGLIB.md) for detailed comparison
 | MP3 | ID3v2 | ID3v1 | ID3v2 preferred |
 | FLAC | Vorbis Comment | — | Native only |
 | Ogg Vorbis | Vorbis Comment | — | Native only |
+| Ogg Opus | Vorbis Comment | — | Native only |
 | WAV | RIFF INFO | ID3v2, bext (BWF) | ID3v2 preferred |
 | AIFF | ID3 chunk | — | Native only |
+| MP4/M4A | iTunes atoms (ilst) | — | Native only |
 
 ## Installation
 
@@ -75,17 +80,27 @@ dotnet build
 ## Quick Start
 
 ```csharp
+using TagLibSharp2.Core;
 using TagLibSharp2.Mpeg;
 using TagLibSharp2.Xiph;
 using TagLibSharp2.Ogg;
 using TagLibSharp2.Riff;
 using TagLibSharp2.Aiff;
+using TagLibSharp2.Mp4;
 
-// Read MP3 tags (prefers ID3v2, falls back to ID3v1)
-var result = Mp3File.ReadFromFile("song.mp3");
+// Auto-detect format using MediaFile factory
+var result = MediaFile.Open("song.m4a");
 if (result.IsSuccess)
 {
-    var mp3 = result.File!;
+    Console.WriteLine($"Format: {result.Format}");
+    Console.WriteLine($"{result.Tag?.Title} by {result.Tag?.Artist}");
+}
+
+// Read MP3 tags (prefers ID3v2, falls back to ID3v1)
+var mp3Result = Mp3File.ReadFromFile("song.mp3");
+if (mp3Result.IsSuccess)
+{
+    var mp3 = mp3Result.File!;
     Console.WriteLine($"{mp3.Title} by {mp3.Artist}");
 
     // Modify and save
@@ -93,9 +108,23 @@ if (result.IsSuccess)
     mp3.SaveToFile("song.mp3", File.ReadAllBytes("song.mp3"));
 }
 
+// MP4/M4A files with iTunes metadata
+var mp4Result = Mp4File.ReadFromFile("song.m4a");
+if (mp4Result.IsSuccess)
+{
+    var mp4 = mp4Result.File!;
+    Console.WriteLine($"{mp4.Title} - {mp4.Duration}");
+    Console.WriteLine($"Codec: {mp4.AudioCodec}, {mp4.Properties?.SampleRate}Hz");
+}
+
 // FLAC and Ogg Vorbis work the same way
 var flac = FlacFile.ReadFromFile("song.flac").File;
 var ogg = OggVorbisFile.ReadFromFile("song.ogg").File;
+
+// Ogg Opus (RFC 7845) with R128 gain
+var opusResult = OggOpusFile.ReadFromFile("song.opus");
+var opus = opusResult.File;
+Console.WriteLine($"Opus: {opus?.Properties?.Duration}, R128 gain: {opus?.Properties?.OutputGain}dB");
 
 // WAV files support both RIFF INFO and ID3v2 tags
 WavFile.TryParse(new BinaryData(File.ReadAllBytes("song.wav")), out var wav);
@@ -108,7 +137,7 @@ aiff.Tag = new Id3v2Tag { Title = "Updated Title" };
 aiff.SaveToFile("song.aiff");
 
 // Async support for high-throughput scenarios
-var asyncResult = await Mp3File.ReadFromFileAsync("song.mp3");
+var asyncResult = await Mp4File.ReadFromFileAsync("song.m4a");
 ```
 
 See the [examples](examples/) directory for more comprehensive usage patterns.
@@ -198,9 +227,23 @@ This is a clean-room rewrite of media tagging functionality, designed from speci
 - [x] WAV chunk preservation (fact, cue, smpl and other chunks)
 - [x] All formats preserve unknown/unrecognized data during round-trip
 
+### Phase 10: Ogg Opus ✅
+- [x] OpusHead packet parsing (RFC 7845)
+- [x] R128 gain tags (output gain, album gain, track gain)
+- [x] Multi-stream support (mapping families 0, 1, 255)
+- [x] Stream/coupled count validation per RFC 7845
+
+### Phase 11: MP4/M4A ✅
+- [x] ISO 14496-12 box parsing (ftyp, moov, mdat, etc.)
+- [x] iTunes-style metadata atoms (ilst with ©nam, ©ART, etc.)
+- [x] AAC audio properties via esds parsing
+- [x] ALAC audio properties via alac magic cookie
+- [x] Album art (covr atom) with JPEG/PNG detection
+- [x] MusicBrainz IDs and ReplayGain via freeform atoms
+- [x] Atomic file writing with mdat relocation
+- [x] MediaFile factory integration for format auto-detection
+
 ### Future
-- [ ] MP4/M4A (AAC/ALAC) with iTunes atoms
-- [ ] Opus audio format
 - [ ] DSF (DSD) format
 - [ ] ASF/WMA format
 - [ ] APE tags for WavPack/Musepack

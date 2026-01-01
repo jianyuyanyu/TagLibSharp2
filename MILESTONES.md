@@ -8,11 +8,11 @@
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| **Tests Passing** | 1,964 | Solid foundation |
-| **Source Files** | 70+ | Core + 6 formats |
-| **Formats Complete** | 6 of 22 | MP3, FLAC, OGG Vorbis, Opus, WAV, AIFF (all read+write) |
-| **Format Coverage** | ~27% | Significant work remaining |
-| **Core Infrastructure** | ✅ 100% | Tag, BinaryData, IFileSystem, Picture |
+| **Tests Passing** | 2,318 | Solid foundation |
+| **Source Files** | 100+ | Core + 7 formats |
+| **Formats Complete** | 7 of 22 | MP3, FLAC, OGG Vorbis, Ogg Opus, WAV, AIFF, MP4/M4A (all read+write) |
+| **Format Coverage** | ~32% | Significant work remaining |
+| **Core Infrastructure** | ✅ 100% | Tag, BinaryData, IFileSystem, Picture, MediaFile factory |
 
 ---
 
@@ -23,10 +23,10 @@ Based on multi-perspective analysis, the original roadmap is reordered:
 | Original Priority | Revised Priority | Format | Rationale |
 |-------------------|------------------|--------|-----------|
 | P0-1 WAV | **✅ COMPLETE** | WAV | Full read/write with RIFF INFO + ID3v2 + bext (BWF) |
-| P0-3 MP4/M4A | **P0-1 MP4/M4A** | ⬆️ Moved UP | Apple ecosystem is massive; 25% of lossless libraries |
+| P0-3 MP4/M4A | **✅ COMPLETE** | MP4/M4A | Full read/write with iTunes atoms + AAC/ALAC |
 | P0-7 VBR Headers | **✅ COMPLETE** | VBR | Xing/VBRI header parsing for accurate MP3 duration |
 | P0-6 APE Tag | **P0-3 APE Tag** | Same | Blocks WavPack/Musepack/Monkey's Audio |
-| P0-5 Opus | **✅ COMPLETE** | Opus | Full read/write with OpusHead + OpusTags |
+| P0-5 Opus | **✅ COMPLETE** | Opus | Full read/write with OpusHead + OpusTags + R128 gain |
 | P0-2 AIFF | **✅ COMPLETE** | AIFF | Full read/write with FORM container + COMM + ID3 |
 | P0-4 DSF | **P0-5 DSF** | ⬇️ Demoted | DSD is vocal minority, not market size |
 | P1 Musepack | **SKIP** | ❌ Remove | Dead format (last release 2009) |
@@ -36,7 +36,7 @@ Based on multi-perspective analysis, the original roadmap is reordered:
 ## Milestone Map
 
 ### Milestone 1: Technical Debt & Infrastructure
-**Duration:** 1 week | **Status:** Mostly Complete
+**Duration:** 1 week | **Status:** ✅ Complete
 
 Fix blocking issues before new formats:
 
@@ -46,13 +46,13 @@ Fix blocking issues before new formats:
 | Extract `SyncsafeInteger.cs` static class | 1h | 🔶 In Id3v2Tag (adequate for now) |
 | Create `ExtendedFloat.cs` (80-bit IEEE 754) | 4h | ✅ Complete |
 | Fix DSD duration overflow (use double) | 1h | ❌ Not started (DSF not yet implemented) |
-| Format detection factory | 4h | ❌ Not started |
+| Format detection factory | 4h | ✅ Complete (MediaFile.Open) |
 | Complete IDisposable pattern | 4h | ❌ Not started |
 
 **Exit Criteria:**
-- All utility classes extracted and tested
-- No integer overflow on DSD files
-- Format detection working for existing formats
+- ✅ All utility classes extracted and tested
+- ❌ No integer overflow on DSD files (DSF not yet implemented)
+- ✅ Format detection working for all formats (MediaFile factory)
 
 ---
 
@@ -78,29 +78,34 @@ Complete the formats we already read:
 ---
 
 ### Milestone 3: MP4/M4A (Critical Path)
-**Duration:** 1.5-2 weeks | **Status:** Not Started | **Complexity:** 10/10
+**Duration:** 1.5-2 weeks | **Status:** ✅ Complete | **Complexity:** 10/10
 
 Highest business value (Apple ecosystem):
 
 | Task | Effort | Notes |
 |------|--------|-------|
-| Atom tree navigation | 3d | moov/udta/meta/ilst path |
-| Standard atoms (©nam, ©ART, ©alb, etc.) | 2d | Text atoms |
-| trkn/disk parsing | 1d | Track/disc number pairs |
-| covr atom (cover art) | 1d | JPEG/PNG images |
-| Freeform atoms (----/mean/name/data) | 2d | Custom fields |
-| Audio properties from stsd/mvhd | 1d | Duration, sample rate |
-| Round-trip tests | 2d | iTunes compatibility |
+| Atom tree navigation | 3d | ✅ moov/udta/meta/ilst path |
+| Standard atoms (©nam, ©ART, ©alb, etc.) | 2d | ✅ Text atoms |
+| trkn/disk parsing | 1d | ✅ Track/disc number pairs |
+| covr atom (cover art) | 1d | ✅ JPEG/PNG images |
+| Freeform atoms (----/mean/name/data) | 2d | ✅ Custom fields, MusicBrainz, ReplayGain |
+| Audio properties from stsd/mvhd | 1d | ✅ Duration, sample rate, bitrate, channels |
+| AAC esds parsing | 1d | ✅ Complete |
+| ALAC magic cookie | 1d | ✅ Complete |
+| Atomic file write | 1d | ✅ Complete with mdat relocation |
+| MediaFile factory integration | 0.5d | ✅ Complete |
+| Round-trip tests | 2d | ✅ iTunes compatibility verified |
 
 **Exit Criteria:**
-- iTunes-tagged files read correctly
-- Write operations don't break iTunes compatibility
-- ALAC and AAC variants both work
+- ✅ iTunes-tagged files read correctly
+- ✅ Write operations don't break iTunes compatibility
+- ✅ ALAC and AAC variants both work
+- ✅ MediaFile.Open auto-detects MP4/M4A format
 
-**Risks:**
-- Complex atom tree structure
-- Extended size atoms (>4GB files)
-- iTunes quirks (non-standard v2.3 sizes)
+**Risks Mitigated:**
+- ✅ Complex atom tree structure - handled
+- ✅ Extended size atoms (>4GB files) - supported
+- ✅ iTunes quirks - compatible
 
 ---
 
@@ -157,6 +162,31 @@ Studio format + shared container:
 - Test coverage: Polyfills, OggCrc, Id3v1Genre (+51 tests)
 - 1,939 total tests
 
+### 🎯 v0.3.0 - ✅ RELEASED 2025-12-30
+
+**Added:**
+- Ogg Opus full support (read/write)
+- OpusHead parsing per RFC 7845
+- R128 gain tags (output gain, album gain, track gain)
+- Multi-stream support (mapping families 0, 1, 255)
+- Stream/coupled count validation
+- Security validation (max packet size, parameter checks)
+- 2,078 total tests
+
+### 🎯 v0.4.0 - ✅ RELEASED 2025-12-31
+
+**Added:**
+- **MP4/M4A full support** (read/write)
+- ISO 14496-12 box parsing (ftyp, moov, mdat, etc.)
+- iTunes-style metadata atoms (ilst)
+- AAC audio properties via esds parsing
+- ALAC audio properties via magic cookie
+- Album art (covr atom) with JPEG/PNG detection
+- MusicBrainz IDs and ReplayGain via freeform atoms
+- Atomic file writing with mdat relocation
+- **MediaFile factory** with format auto-detection
+- 2,318 total tests (88.67% code coverage)
+
 ---
 
 ### Milestone 5: Opus & APE Tag
@@ -168,13 +198,15 @@ Modern lossy + infrastructure for P1 formats:
 |------|--------|-------|
 | Opus OpusHead parsing | 1d | ✅ Complete |
 | Opus OpusTags parsing | 1d | ✅ Complete |
-| Opus R128 gain handling | 0.5d | ❌ Not started (OutputGain field available) |
+| Opus R128 gain handling | 0.5d | ✅ Complete (OutputGain, R128TrackGain, R128AlbumGain) |
+| Multi-stream support | 0.5d | ✅ Complete (mapping families 0, 1, 255) |
 | APE Tag v2 format | 3d | ❌ Not started |
 | APE tag in MP3 | 1d | ❌ Not started |
 | Round-trip tests | 1d | ✅ Opus complete |
 
 **Exit Criteria:**
 - ✅ Opus files read correctly
+- ✅ R128 gain values properly exposed
 - ❌ APE tags read/write in isolation
 - ❌ MP3 with APE+ID3v2+ID3v1 handled correctly
 
@@ -281,14 +313,15 @@ Production readiness:
 ## Timeline Summary
 
 ```
-✅ COMPLETE: Technical Debt + MP3/FLAC Write + WAV/RIFF + AIFF
+✅ COMPLETE: Technical Debt + MP3/FLAC Write + WAV/RIFF + AIFF + Opus + MP4/M4A
 ✅ v0.1.0 RELEASED: 2025-12-26 (MP3, FLAC, OGG Vorbis, WAV, AIFF)
 ✅ v0.2.0 RELEASED: 2025-12-29 (ID3v2.2, unsync, BWF, WAVEFORMATEXTENSIBLE)
 ✅ v0.2.1 RELEASED: 2025-12-29 (Error context, test coverage)
+✅ v0.3.0 RELEASED: 2025-12-30 (Ogg Opus with R128 gain)
+✅ v0.4.0 RELEASED: 2025-12-31 (MP4/M4A + MediaFile factory)
 
 NEXT UP:
-- MP4/M4A Implementation (critical path - Apple ecosystem)
-- Opus & APE Tag
+- APE Tag format (unlocks WavPack/Monkey's Audio)
 - DSF (DSD format)
          >>> BETA RELEASE (v0.5.0) <<<
 - WMA/ASF + DFF + WavPack
@@ -348,7 +381,7 @@ NEXT UP:
 - ✅ Zero data loss bugs
 
 ### Beta Release
-- 8 P0 formats complete (need: MP4/M4A, Opus, DSF)
+- 8 P0 formats complete (have: 7, need: DSF)
 - Production Roon deployment (beta users)
 - Cross-tagger compatibility verified
 
@@ -371,5 +404,5 @@ NEXT UP:
 
 ---
 
-*Last Updated: 2025-12-29 (v0.2.1)*
+*Last Updated: 2025-12-31 (v0.4.0)*
 *Sources: Audiophile analysis, Dev PM analysis, Audio Product analysis, Project Management analysis*

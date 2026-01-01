@@ -15,14 +15,14 @@ dotnet add package TagLibSharp2
 ```csharp
 using TagLibSharp2.Core;
 
-var result = MediaFile.Open("music.mp3");  // Also works with .flac, .ogg
+var result = MediaFile.Open("music.mp3");  // Also works with .flac, .ogg, .m4a, .opus
 if (result.IsSuccess)
 {
     Console.WriteLine($"Title:  {result.Tag?.Title}");
     Console.WriteLine($"Artist: {result.Tag?.Artist}");
     Console.WriteLine($"Album:  {result.Tag?.Album}");
     Console.WriteLine($"Year:   {result.Tag?.Year}");
-    Console.WriteLine($"Format: {result.Format}");  // Mp3, Flac, or OggVorbis
+    Console.WriteLine($"Format: {result.Format}");  // Mp3, Flac, OggVorbis, OggOpus, or Mp4
 }
 else
 {
@@ -65,6 +65,26 @@ if (ogg.IsSuccess)
     var file = ogg.File!;
     Console.WriteLine($"Title: {file.VorbisComment?.Title}");
 }
+
+// Ogg Opus files (RFC 7845)
+var opus = OggOpusFile.ReadFromFile("song.opus");
+if (opus.IsSuccess)
+{
+    var file = opus.File!;
+    Console.WriteLine($"Title: {file.VorbisComment?.Title}");
+    Console.WriteLine($"R128 Gain: {file.Properties?.OutputGain}dB");
+}
+
+// MP4/M4A files
+using TagLibSharp2.Mp4;
+var mp4 = Mp4File.ReadFromFile("song.m4a");
+if (mp4.IsSuccess)
+{
+    var file = mp4.File!;
+    Console.WriteLine($"Title: {file.Title}");
+    Console.WriteLine($"Duration: {file.Duration}");
+    Console.WriteLine($"Codec: {file.AudioCodec}");  // Aac, Alac, or Unknown
+}
 ```
 
 ## Writing Tags
@@ -105,6 +125,29 @@ if (result.IsSuccess)
 
     var originalData = File.ReadAllBytes("song.flac");
     flac.SaveToFile("song.flac", originalData);
+}
+```
+
+### MP4/M4A Files
+
+```csharp
+using TagLibSharp2.Mp4;
+
+var result = Mp4File.ReadFromFile("song.m4a");
+if (result.IsSuccess)
+{
+    var mp4 = result.File!;
+
+    // Modify tags
+    mp4.Title = "My Song";
+    mp4.Artist = "My Artist";
+    mp4.Album = "My Album";
+    mp4.Year = 2024;
+    mp4.Track = 1;
+    mp4.TotalTracks = 12;
+
+    // Save changes (reads original data from SourcePath)
+    mp4.SaveToFile();
 }
 ```
 

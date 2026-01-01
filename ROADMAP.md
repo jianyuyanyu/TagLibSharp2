@@ -27,7 +27,7 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 | Syncsafe integer utilities | 🔶 | In Id3v2Tag, could be extracted |
 | Extended float (80-bit) for AIFF | ✅ | ExtendedFloat class with full ToDouble/FromDouble/ToBytes support |
 | ITagLibStream interface | ❌ | Stream abstraction from spec (alternative to IFileSystem) |
-| Format detection factory | ❌ | Magic byte detection per spec |
+| Format detection factory | ✅ | MediaFile.Open with magic byte detection |
 
 ---
 
@@ -87,16 +87,16 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 | Binary items | ❌ |
 | Cover art | ❌ |
 
-### MP4/iTunes Atoms
+### MP4/iTunes Atoms ✅ Complete
 | Feature | Status |
 |---------|--------|
-| Read | ❌ |
-| Write | ❌ |
-| Standard atoms (©nam, ©ART, etc.) | ❌ |
-| trkn/disk parsing | ❌ |
-| covr (cover art) | ❌ |
-| Freeform atoms (----) | ❌ |
-| Extended size atoms | ❌ |
+| Read | ✅ |
+| Write | ✅ |
+| Standard atoms (©nam, ©ART, etc.) | ✅ |
+| trkn/disk parsing | ✅ |
+| covr (cover art) | ✅ |
+| Freeform atoms (----) | ✅ |
+| Extended size atoms | ✅ |
 
 ### ASF/WMA Tags
 | Feature | Status |
@@ -183,15 +183,18 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 | Pictures (via ID3v2) | ✅ |
 | Write | ✅ |
 
-### AAC/ALAC (M4A/MP4)
+### AAC/ALAC (M4A/MP4) ✅ Complete
 | Feature | Status |
 |---------|--------|
-| Atom navigation | ❌ |
-| moov/udta/meta/ilst path | ❌ |
-| Audio properties from stsd | ❌ |
-| Duration from mvhd/mdhd | ❌ |
-| Tag read | ❌ |
-| Tag write | ❌ |
+| Atom navigation | ✅ |
+| moov/udta/meta/ilst path | ✅ |
+| Audio properties from stsd | ✅ |
+| AAC properties via esds | ✅ |
+| ALAC properties via magic cookie | ✅ |
+| Duration from mvhd/mdhd | ✅ |
+| Tag read | ✅ |
+| Tag write | ✅ |
+| MediaFile factory integration | ✅ |
 
 ### DSF (DSD)
 | Feature | Status |
@@ -254,10 +257,11 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
    - COMM chunk with 80-bit float
    - ID3 chunk
 
-3. **MP4/M4A** - Apple ecosystem (AAC/ALAC)
+3. **MP4/M4A** ✅ - Apple ecosystem (AAC/ALAC)
    - Atom navigation
    - iTunes metadata atoms
    - Cover art
+   - MediaFile factory integration
 
 4. **DSF** - DSD primary format
    - DSD/fmt chunk parsing
@@ -334,12 +338,12 @@ Consider adding compatibility shim for TagLib# consumers:
 | WAV | ✅ | ✅ | Complete with RIFF + INFO + ID3v2 + BWF + WAVEFORMATEXTENSIBLE |
 | AIFF | ✅ | ✅ | Complete with FORM + COMM + ID3 + AIFC |
 | VBR Headers | ✅ | ✅ | Complete with Xing/VBRI parsing |
-| MP4/M4A | 6-8 | High | Complex atom tree navigation |
+| MP4/M4A | ✅ | ✅ | Complete with ISO 14496-12 parsing + iTunes atoms + AAC/ALAC |
 | DSF | 3-4 | Low | Simple chunk format |
-| Opus | ✅ | ✅ | Complete with OpusHead + OpusTags |
+| Opus | ✅ | ✅ | Complete with OpusHead + OpusTags + R128 gain |
 | APE Tags | 2-3 | Medium | Needed for multiple formats |
 | ASF/WMA | 5-6 | High | GUID-based, complex |
 
 ---
 
-*Last Updated: 2025-12-29 (v0.3.0)*
+*Last Updated: 2025-12-31 (v0.4.0)*
