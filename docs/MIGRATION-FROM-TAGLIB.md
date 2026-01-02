@@ -463,17 +463,17 @@ async Task<string?> GetTitleAsync(string path, CancellationToken ct = default)
 
 TagLibSharp2 is under active development. These TagLib# features are planned but not yet implemented:
 
-- **Formats**: ASF/WMA, WavPack, Musepack, DFF
+- **Formats**: ASF/WMA, Musepack
 
 ## New Features Not in TagLib#
 
 TagLibSharp2 includes several features not available in TagLib#:
 
-- **Automatic format detection**: `MediaFile.Open()` auto-detects MP3, FLAC, Ogg Vorbis
-- **Batch processing**: `BatchProcessor` for parallel file operations with progress
-- **Tag validation**: `TagValidator` for metadata quality checks
-- **Tag copying**: `Tag.CopyTo()` for cross-format metadata copying
-- **Async I/O**: Full async support throughout the API
+- **Automatic format detection**: `MediaFile.Open()` auto-detects MP3, FLAC, Ogg Vorbis, Ogg Opus, Ogg FLAC, WAV, AIFF, MP4/M4A, DSF, DFF, WavPack, and Monkey's Audio
+- **DSD audio support**: Native DSF and DFF format support for high-resolution DSD audio
+- **Lossless format breadth**: WavPack and Monkey's Audio support with APE tag handling
+- **Async I/O**: Full async support throughout the API with cancellation token support
+- **Result-based error handling**: No exceptions for invalid files, predictable control flow
 
 ## Getting Help
 
