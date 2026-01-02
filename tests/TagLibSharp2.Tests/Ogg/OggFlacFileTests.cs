@@ -315,8 +315,7 @@ public class OggFlacFileTests
 		WriteOggPage (ms, headerPacket, 0, true, false, 0, 0);
 
 		// Ogg page 2: Vorbis comment (if included)
-		if (includeVorbisComment)
-		{
+		if (includeVorbisComment) {
 			var commentPacket = CreateVorbisCommentPacket ();
 			WriteOggPage (ms, commentPacket, 1, false, false, headerPacket.Length, 1);
 		}
@@ -442,8 +441,7 @@ public class OggFlacFileTests
 
 		WriteUInt32LE (ms, (uint)comments.Count);
 
-		foreach (var comment in comments)
-		{
+		foreach (var comment in comments) {
 			var bytes = System.Text.Encoding.UTF8.GetBytes (comment);
 			WriteUInt32LE (ms, (uint)bytes.Length);
 			ms.Write (bytes);
@@ -482,8 +480,7 @@ public class OggFlacFileTests
 
 		// Segment table
 		var remaining = data.Length;
-		for (int i = 0; i < numSegments; i++)
-		{
+		for (int i = 0; i < numSegments; i++) {
 			var segSize = Math.Min (255, remaining);
 			ms.WriteByte ((byte)segSize);
 			remaining -= segSize;

@@ -135,8 +135,8 @@ public sealed class OggFlacFile
 			return OggFlacFileParseResult.Failure ($"Expected STREAMINFO block, got type {blockType}");
 
 		var blockSize = (firstPacket[blockOffset + 1] << 16) |
-		                (firstPacket[blockOffset + 2] << 8) |
-		                firstPacket[blockOffset + 3];
+						(firstPacket[blockOffset + 2] << 8) |
+						firstPacket[blockOffset + 3];
 
 		if (blockSize != 34)
 			return OggFlacFileParseResult.Failure ($"Invalid STREAMINFO size: {blockSize}");
@@ -178,8 +178,7 @@ public sealed class OggFlacFile
 
 	private void CalculateProperties ()
 	{
-		if (SampleRate <= 0 || TotalSamples == 0)
-		{
+		if (SampleRate <= 0 || TotalSamples == 0) {
 			Properties = null;
 			return;
 		}
@@ -188,8 +187,7 @@ public sealed class OggFlacFile
 		var duration = TimeSpan.FromSeconds (durationSeconds);
 
 		var bitrate = 0;
-		if (_originalData.Length > 0 && durationSeconds > 0)
-		{
+		if (_originalData.Length > 0 && durationSeconds > 0) {
 			bitrate = (int)(_originalData.Length * 8 / durationSeconds / 1000);
 		}
 
@@ -210,11 +208,9 @@ public sealed class OggFlacFile
 		_metadataBlocks.Clear ();
 
 		var offset = 0;
-		while (offset < data.Length - 27)
-		{
+		while (offset < data.Length - 27) {
 			// Skip to next Ogg page
-			if (!data.Slice (offset, 4).SequenceEqual (OggMagic))
-			{
+			if (!data.Slice (offset, 4).SequenceEqual (OggMagic)) {
 				offset++;
 				continue;
 			}
@@ -230,36 +226,30 @@ public sealed class OggFlacFile
 			var packetStart = segmentTableEnd;
 
 			// Check if this packet contains a FLAC metadata block
-			if (packetStart < data.Length)
-			{
+			if (packetStart < data.Length) {
 				var blockHeader = data[packetStart];
 				var blockType = (byte)(blockHeader & 0x7F);
 
 				// Only process known metadata block types (0-6)
-				if (blockType <= 6)
-				{
+				if (blockType <= 6) {
 					var blockSizeOffset = packetStart + 1;
-					if (blockSizeOffset + 3 < data.Length)
-					{
+					if (blockSizeOffset + 3 < data.Length) {
 						var blockSize = (data[blockSizeOffset] << 16) |
-						                (data[blockSizeOffset + 1] << 8) |
-						                data[blockSizeOffset + 2];
+										(data[blockSizeOffset + 1] << 8) |
+										data[blockSizeOffset + 2];
 
 						var blockDataStart = blockSizeOffset + 3;
-						if (blockDataStart + blockSize <= data.Length)
-						{
+						if (blockDataStart + blockSize <= data.Length) {
 							var blockData = data.Slice (blockDataStart, blockSize);
 
 							if (blockType == 4) // VORBIS_COMMENT
 							{
 								var result = VorbisComment.Read (blockData);
-								if (result.IsSuccess)
-								{
+								if (result.IsSuccess) {
 									VorbisComment = result.Tag;
 								}
-							}
-							else if (blockType != 0) // Don't store STREAMINFO (it's in the header packet)
-							{
+							} else if (blockType != 0) // Don't store STREAMINFO (it's in the header packet)
+							  {
 								// Preserve other blocks (PADDING, APPLICATION, SEEKTABLE, CUESHEET, PICTURE)
 								_metadataBlocks.Add (new FlacMetadataBlock (blockType, blockData.ToArray ()));
 							}
@@ -287,8 +277,7 @@ public sealed class OggFlacFile
 
 		// Sum segment sizes (max 255 segments * 255 bytes = 65,025 bytes per page)
 		var dataSize = 0;
-		for (int i = 0; i < numSegments; i++)
-		{
+		for (int i = 0; i < numSegments; i++) {
 			dataSize += data[offset + 27 + i];
 		}
 
@@ -313,8 +302,7 @@ public sealed class OggFlacFile
 
 		// Calculate packet size from segment table
 		var packetSize = 0;
-		for (int i = 0; i < numSegments; i++)
-		{
+		for (int i = 0; i < numSegments; i++) {
 			packetSize += data[27 + i];
 		}
 
@@ -369,21 +357,18 @@ public sealed class OggFlacFile
 		var blocksToWrite = new List<(byte type, byte[] data)> ();
 
 		// Add VorbisComment if present
-		if (VorbisComment is not null)
-		{
+		if (VorbisComment is not null) {
 			var commentData = VorbisComment.Render ();
 			blocksToWrite.Add ((4, commentData.ToArray ()));
 		}
 
 		// Add preserved metadata blocks (PICTURE, CUESHEET, SEEKTABLE, etc.)
-		foreach (var block in _metadataBlocks)
-		{
+		foreach (var block in _metadataBlocks) {
 			blocksToWrite.Add ((block.Type, block.Data));
 		}
 
 		// Write each metadata block as a separate Ogg page
-		for (int i = 0; i < blocksToWrite.Count; i++)
-		{
+		for (int i = 0; i < blocksToWrite.Count; i++) {
 			var (blockType, blockData) = blocksToWrite[i];
 			var isLastBlock = (i == blocksToWrite.Count - 1);
 
@@ -407,8 +392,7 @@ public sealed class OggFlacFile
 		}
 
 		// Remaining pages: Audio data (renumbered)
-		if (headerInfo.AudioDataStart < originalData.Length)
-		{
+		if (headerInfo.AudioDataStart < originalData.Length) {
 			var audioPages = originalData.Slice (headerInfo.AudioDataStart);
 			var fixedAudio = OggPageHelper.RenumberAudioPages (audioPages, headerInfo.SerialNumber, startSequence: nextSequence);
 			builder.Write (fixedAudio, 0, fixedAudio.Length);
@@ -434,8 +418,7 @@ public sealed class OggFlacFile
 
 		// Find where audio data starts (after header and comment pages)
 		var offset = pageSize;
-		while (offset < data.Length - 27)
-		{
+		while (offset < data.Length - 27) {
 			if (!data.Slice (offset, 4).SequenceEqual (OggMagic))
 				break;
 
@@ -445,8 +428,7 @@ public sealed class OggFlacFile
 
 			// Check if this page contains audio data (EOS flag or page after metadata)
 			// For FLAC in Ogg, audio pages have granule position > 0 typically
-			if (nextPageResult.Segments.Count > 0 && nextPageResult.Segments[0].Length > 0)
-			{
+			if (nextPageResult.Segments.Count > 0 && nextPageResult.Segments[0].Length > 0) {
 				var firstByte = nextPageResult.Segments[0][0];
 				// FLAC metadata blocks have type in lower 7 bits (0-6)
 				// Audio frames start with sync code 0xFF (or continuation)
@@ -468,8 +450,7 @@ public sealed class OggFlacFile
 
 		var result = new byte[totalSize];
 		var offset = 0;
-		for (int i = 0; i < segments.Count; i++)
-		{
+		for (int i = 0; i < segments.Count; i++) {
 			segments[i].CopyTo (result, offset);
 			offset += segments[i].Length;
 		}
@@ -513,8 +494,7 @@ public sealed class OggFlacFile
 			return OggFlacFileParseResult.Failure ($"Failed to read file: {readResult.Error}");
 
 		var result = Parse (readResult.Data!);
-		if (result.IsSuccess)
-		{
+		if (result.IsSuccess) {
 			result.File!._sourcePath = path;
 			result.File._sourceFileSystem = fs;
 		}
@@ -535,8 +515,7 @@ public sealed class OggFlacFile
 			return OggFlacFileParseResult.Failure ($"Failed to read file: {readResult.Error}");
 
 		var result = Parse (readResult.Data!);
-		if (result.IsSuccess)
-		{
+		if (result.IsSuccess) {
 			result.File!._sourcePath = path;
 			result.File._sourceFileSystem = fs;
 		}
