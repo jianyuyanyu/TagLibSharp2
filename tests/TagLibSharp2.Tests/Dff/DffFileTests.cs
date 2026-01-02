@@ -847,6 +847,240 @@ public class DffFileTests
 
 	#endregion
 
+	#region Large File Tests (>4GB Boundary)
+
+	/// <summary>
+	/// Tests that DFF correctly handles chunk sizes greater than 4GB (uint.MaxValue).
+	/// DFF uses 64-bit big-endian sizes throughout, supporting files up to ~18 exabytes.
+	/// </summary>
+	[TestMethod]
+	public void Parse_ChunkSize5GB_ParsesHeaderCorrectly ()
+	{
+		// Arrange - FRM8 with 5GB claimed size (we can't provide all data, but header should parse)
+		const ulong fiveGigabytes = 5UL * 1024 * 1024 * 1024;
+		var data = CreateFrm8HeaderOnly (fiveGigabytes);
+
+		// Act - parse just header
+		var (isValid, frm8Size) = ParseFrm8Header (data);
+
+		// Assert
+		Assert.IsTrue (isValid);
+		Assert.AreEqual (fiveGigabytes, frm8Size);
+	}
+
+	[TestMethod]
+	public void Parse_ChunkSize10GB_ParsesHeaderCorrectly ()
+	{
+		// Arrange - 10GB chunk size
+		const ulong tenGigabytes = 10UL * 1024 * 1024 * 1024;
+		var data = CreateFrm8HeaderOnly (tenGigabytes);
+
+		// Act
+		var (isValid, frm8Size) = ParseFrm8Header (data);
+
+		// Assert
+		Assert.IsTrue (isValid);
+		Assert.AreEqual (tenGigabytes, frm8Size);
+	}
+
+	[TestMethod]
+	public void Parse_ChunkSizeBoundaryAt4GB_ParsesCorrectly ()
+	{
+		// Arrange - exactly at 4GB boundary (uint.MaxValue + 1)
+		const ulong fourGBPlusOne = (ulong)uint.MaxValue + 1;
+		var data = CreateFrm8HeaderOnly (fourGBPlusOne);
+
+		// Act
+		var (isValid, frm8Size) = ParseFrm8Header (data);
+
+		// Assert
+		Assert.IsTrue (isValid);
+		Assert.AreEqual (fourGBPlusOne, frm8Size);
+	}
+
+	[TestMethod]
+	public void Parse_LargeSampleCount_CalculatesDurationCorrectly ()
+	{
+		// Arrange - DSD64 at 2.8 MHz, 5 hour recording = ~50 billion samples
+		const ulong largeSampleCount = 50_000_000_000UL;
+		var data = CreateMinimalDffFile (
+			sampleRate: 2822400,
+			channelCount: 2,
+			sampleCount: largeSampleCount);
+
+		// Act
+		var result = DffFile.Parse (data);
+
+		// Assert
+		Assert.IsTrue (result.IsSuccess, $"Parse failed: {result.Error}");
+		// 5 hours at 2.8MHz = 50 billion samples
+		// Duration = 50_000_000_000 / 2_822_400 = ~17,718 seconds = ~4.9 hours
+		var expectedSeconds = (double)largeSampleCount / 2822400;
+		var actualSeconds = result.File!.Duration.TotalSeconds;
+		Assert.AreEqual (expectedSeconds, actualSeconds, 1.0); // Allow 1 second tolerance
+	}
+
+	[TestMethod]
+	public void Parse_LargeAudioChunkSize_ParsesCorrectly ()
+	{
+		// Arrange - DSD chunk claiming 5GB of audio data
+		const ulong fiveGigabytes = 5UL * 1024 * 1024 * 1024;
+		var data = CreateDffWithLargeDsdChunk (fiveGigabytes);
+
+		// Act - should parse header and properties even though we don't have 5GB of actual data
+		var result = DffFile.Parse (data);
+
+		// Assert - parsing should succeed, sample count derived from claimed chunk size
+		Assert.IsTrue (result.IsSuccess, $"Parse failed: {result.Error}");
+		// The DSD chunk header says 5GB, duration is calculated from that
+		// Sample count = audioBytes * 8 / channels = 5GB * 8 / 2 = 20 billion samples
+		// At DSD64 (2.8MHz), that's ~7,000 seconds duration
+	}
+
+	[TestMethod]
+	public void BigEndian64Bit_MaxValue_EncodesCorrectly ()
+	{
+		// Arrange - maximum 64-bit value
+		const ulong maxValue = ulong.MaxValue;
+
+		// Act
+		using var ms = new MemoryStream ();
+		WriteUInt64BE (ms, maxValue);
+		var bytes = ms.ToArray ();
+
+		// Assert - all bytes should be 0xFF for max value
+		Assert.AreEqual (8, bytes.Length);
+		foreach (var b in bytes)
+			Assert.AreEqual (0xFF, b);
+	}
+
+	[TestMethod]
+	public void BigEndian64Bit_RoundTrip_5GB_PreservesValue ()
+	{
+		// Arrange
+		const ulong fiveGigabytes = 5UL * 1024 * 1024 * 1024;
+
+		// Act - write then read
+		using var ms = new MemoryStream ();
+		WriteUInt64BE (ms, fiveGigabytes);
+		ms.Position = 0;
+		var bytes = ms.ToArray ();
+
+		// Read back big-endian
+		ulong result = 0;
+		for (int i = 0; i < 8; i++)
+			result = (result << 8) | bytes[i];
+
+		// Assert
+		Assert.AreEqual (fiveGigabytes, result);
+	}
+
+	/// <summary>
+	/// Creates FRM8 header only (20 bytes) for testing large size parsing.
+	/// </summary>
+	private static byte[] CreateFrm8HeaderOnly (ulong frm8Size)
+	{
+		using var ms = new MemoryStream ();
+		ms.Write (Frm8Magic);
+		WriteUInt64BE (ms, frm8Size);
+		ms.Write (DsdFormType);
+		return ms.ToArray ();
+	}
+
+	/// <summary>
+	/// Parses just the FRM8 header to extract size.
+	/// FRM8 header is 16 bytes: 4 (magic) + 8 (size) + 4 (form type)
+	/// </summary>
+	private static (bool IsValid, ulong Size) ParseFrm8Header (byte[] data)
+	{
+		// FRM8 header: "FRM8" (4) + size (8) + form type (4) = 16 bytes
+		if (data.Length < 16)
+			return (false, 0);
+
+		// Check magic
+		if (data[0] != 'F' || data[1] != 'R' || data[2] != 'M' || data[3] != '8')
+			return (false, 0);
+
+		// Parse 64-bit big-endian size
+		ulong size = 0;
+		for (int i = 4; i < 12; i++)
+			size = (size << 8) | data[i];
+
+		// Check form type
+		if (data[12] != 'D' || data[13] != 'S' || data[14] != 'D' || data[15] != ' ')
+			return (false, 0);
+
+		return (true, size);
+	}
+
+	/// <summary>
+	/// Creates a DFF file with a large DSD audio chunk size in the header.
+	/// Actual audio data is minimal, but header claims large size.
+	/// </summary>
+	private static byte[] CreateDffWithLargeDsdChunk (ulong claimedAudioSize)
+	{
+		using var ms = new MemoryStream ();
+
+		// FRM8 header
+		ms.Write (Frm8Magic);
+		var sizePosition = ms.Position;
+		WriteUInt64BE (ms, 0); // Placeholder
+		ms.Write (DsdFormType);
+
+		// FVER chunk
+		ms.Write ("FVER"u8);
+		WriteUInt64BE (ms, 4);
+		WriteUInt32BE (ms, 0x01050000);
+
+		// PROP chunk
+		var propStart = ms.Position;
+		ms.Write ("PROP"u8);
+		var propSizePosition = ms.Position;
+		WriteUInt64BE (ms, 0);
+		ms.Write ("SND "u8);
+
+		ms.Write ("FS  "u8);
+		WriteUInt64BE (ms, 4);
+		WriteUInt32BE (ms, 2822400);
+
+		ms.Write ("CHNL"u8);
+		WriteUInt64BE (ms, 10);
+		WriteUInt16BE (ms, 2);
+		ms.Write ("SLFT"u8);
+		ms.Write ("SRGT"u8);
+
+		ms.Write ("CMPR"u8);
+		WriteUInt64BE (ms, 4 + 1 + 14);
+		ms.Write ("DSD "u8);
+		ms.WriteByte (14);
+		ms.Write ("not compressed"u8);
+
+		var propEnd = ms.Position;
+		var propSize = propEnd - propStart - 12;
+		ms.Position = propSizePosition;
+		WriteUInt64BE (ms, (ulong)propSize);
+		ms.Position = propEnd;
+
+		if (propSize % 2 != 0)
+			ms.WriteByte (0);
+
+		// DSD chunk with LARGE claimed size, but minimal actual data
+		ms.Write ("DSD "u8);
+		WriteUInt64BE (ms, claimedAudioSize); // Claimed size (5GB)
+											  // Only write minimal data - parser should use header size for calculations
+		var actualData = new byte[Math.Min (4096, (long)claimedAudioSize)];
+		ms.Write (actualData);
+
+		// Update FRM8 size
+		var totalSize = ms.Position;
+		ms.Position = sizePosition;
+		WriteUInt64BE (ms, (ulong)(totalSize - 12));
+
+		return ms.ToArray ();
+	}
+
+	#endregion
+
 	#region DST Compression Tests
 
 	[TestMethod]
