@@ -495,7 +495,35 @@ public sealed class Mp4Tag : Tag
 		if (!_atoms.TryGetValue (atomId, out var dataAtoms) || dataAtoms.Count == 0)
 			return null;
 
-		return dataAtoms[0].ToUtf8String ();
+		// If there's only one value, return it directly
+		if (dataAtoms.Count == 1)
+			return dataAtoms[0].ToUtf8String ();
+
+		// Multiple values: join with separator (common for multiple artists, genres, etc.)
+		var values = new List<string> (dataAtoms.Count);
+		for (var i = 0; i < dataAtoms.Count; i++) {
+			var text = dataAtoms[i].ToUtf8String ();
+			if (!string.IsNullOrEmpty (text))
+				values.Add (text!);
+		}
+		return values.Count > 0 ? string.Join ("; ", values) : null;
+	}
+
+	/// <summary>
+	/// Gets all text values for an atom (for multi-value fields).
+	/// </summary>
+	IReadOnlyList<string> GetTexts (string atomId)
+	{
+		if (!_atoms.TryGetValue (atomId, out var dataAtoms) || dataAtoms.Count == 0)
+			return Array.Empty<string> ();
+
+		var values = new List<string> (dataAtoms.Count);
+		for (var i = 0; i < dataAtoms.Count; i++) {
+			var text = dataAtoms[i].ToUtf8String ();
+			if (!string.IsNullOrEmpty (text))
+				values.Add (text!);
+		}
+		return values;
 	}
 
 	void SetText (string atomId, string? value)

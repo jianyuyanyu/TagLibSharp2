@@ -1048,4 +1048,64 @@ public class Mp4TagTests
 		Assert.AreEqual ("jpn", reFile.Language);
 		Assert.AreEqual ("Digital", reFile.MediaType);
 	}
+
+	#region Duplicate Atoms Tests
+
+	[TestMethod]
+	public void GetText_MultipleDataAtoms_JoinsValues ()
+	{
+		// Create a tag with multiple artist data atoms (simulating duplicate atom scenario)
+		var data = TestBuilders.Mp4.CreateMinimalM4a (Mp4CodecType.Aac);
+		var result = Mp4File.Read (data);
+		var file = result.File!;
+
+		// Ensure tag exists by setting a property first
+		file.Title = "Test";
+
+		var tag = (Mp4Tag)file.Tag!;
+
+		// Set multiple data atoms for the artist field using internal API
+		var dataAtoms = new List<Mp4DataAtom> {
+			new Mp4DataAtom (Mp4AtomMapping.TypeUtf8, BinaryData.FromStringUtf8 ("Artist One")),
+			new Mp4DataAtom (Mp4AtomMapping.TypeUtf8, BinaryData.FromStringUtf8 ("Artist Two")),
+		};
+		tag.SetAtoms (Mp4AtomMapping.Artist, dataAtoms);
+
+		// Should return both values joined with separator
+		Assert.AreEqual ("Artist One; Artist Two", file.Artist);
+	}
+
+	[TestMethod]
+	public void GetText_SingleDataAtom_ReturnsSingleValue ()
+	{
+		var data = TestBuilders.Mp4.CreateMinimalM4a (Mp4CodecType.Aac);
+		var result = Mp4File.Read (data);
+		var file = result.File!;
+
+		// Ensure tag exists by setting a property first
+		file.Title = "Test";
+
+		var tag = (Mp4Tag)file.Tag!;
+
+		// Set single data atom
+		var dataAtoms = new List<Mp4DataAtom> {
+			new Mp4DataAtom (Mp4AtomMapping.TypeUtf8, BinaryData.FromStringUtf8 ("Solo Artist"))
+		};
+		tag.SetAtoms (Mp4AtomMapping.Artist, dataAtoms);
+
+		Assert.AreEqual ("Solo Artist", file.Artist);
+	}
+
+	[TestMethod]
+	public void GetText_EmptyDataAtoms_ReturnsNull ()
+	{
+		var data = TestBuilders.Mp4.CreateMinimalM4a (Mp4CodecType.Aac);
+		var result = Mp4File.Read (data);
+		var file = result.File!;
+
+		// Don't set any atoms - should return null
+		Assert.IsNull (file.Artist);
+	}
+
+	#endregion
 }
