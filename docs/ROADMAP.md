@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-TagLibSharp2 currently supports **13 of 20** required formats with comprehensive tag support. The library has mature read/write capabilities for major formats (MP3, FLAC, MP4, Ogg, WAV, AIFF, DSD, ASF/WMA). Remaining gaps are Musepack, Speex, TrueAudio, and tracker formats.
+TagLibSharp2 currently supports **14 of 20** required formats with comprehensive tag support. The library has mature read/write capabilities for major formats (MP3, FLAC, MP4, Ogg, WAV, AIFF, DSD, ASF/WMA, Musepack). Remaining gaps are Speex, TrueAudio, and tracker formats.
 
 ---
 
@@ -27,7 +27,7 @@ TagLibSharp2 currently supports **13 of 20** required formats with comprehensive
 | WMA/ASF | P1 | ✅ | ✅ | ❌ | - | Read complete, write pending |
 | DFF | P1 | ✅ | ✅ | ✅ | - | Recently added |
 | WavPack | P1 | ✅ | ✅ | ✅ | - | Recently added |
-| Musepack | P1 | ❌ | ❌ | ❌ | MEDIUM | Uses APE tags |
+| Musepack | P1 | ✅ | ✅ | ✅ | - | SV7 and SV8 support |
 | Ogg FLAC | P1 | ✅ | ✅ | ✅ | - | Recently added |
 | Speex | P1 | ❌ | ❌ | ❌ | LOW | Uses Vorbis Comment |
 | TrueAudio | P2 | ❌ | ❌ | ❌ | LOW | Uses ID3v2 |
@@ -237,7 +237,7 @@ These items from the requirements are explicitly not planned:
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Format coverage | 13/20 (65%) | 20/20 (100%) |
+| Format coverage | 14/20 (70%) | 20/20 (100%) |
 | Test coverage | ~85% | >90% |
 | Round-trip tests | Partial | All formats |
 | Cross-tagger compat | Untested | 7 major taggers |
