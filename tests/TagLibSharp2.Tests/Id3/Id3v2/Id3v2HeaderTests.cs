@@ -232,12 +232,132 @@ public class Id3v2HeaderTests
 
 
 
+	// ═══════════════════════════════════════════════════════════════
+	// Footer Tests (TDD - ID3v2.4 footer support)
+	// ═══════════════════════════════════════════════════════════════
+
+	[TestMethod]
+	public void RenderFooter_Creates10BytesWithMagic3DI ()
+	{
+		// ID3v2.4 footer uses "3DI" magic (reverse of "ID3")
+		var header = new Id3v2Header (4, 0, Id3v2HeaderFlags.Footer, 1024);
+
+		var footer = header.RenderFooter ();
+
+		Assert.AreEqual (10, footer.Length);
+		Assert.AreEqual ((byte)'3', footer[0]);
+		Assert.AreEqual ((byte)'D', footer[1]);
+		Assert.AreEqual ((byte)'I', footer[2]);
+	}
+
+	[TestMethod]
+	public void RenderFooter_PreservesVersionAndSize ()
+	{
+		var header = new Id3v2Header (4, 0, Id3v2HeaderFlags.Footer, 5000);
+
+		var footer = header.RenderFooter ();
+
+		// Version bytes at offset 3-4
+		Assert.AreEqual (4, footer[3]);
+		Assert.AreEqual (0, footer[4]);
+		// Flags at offset 5
+		Assert.AreEqual (0x10, footer[5]); // Footer flag
+										   // Syncsafe size at offset 6-9 (5000 = 0x00, 0x00, 0x27, 0x08)
+		Assert.AreEqual (0, footer[6]);
+		Assert.AreEqual (0, footer[7]);
+		Assert.AreEqual (39, footer[8]);  // (5000 >> 7) & 0x7F = 39
+		Assert.AreEqual (8, footer[9]);   // 5000 & 0x7F = 8
+	}
+
+	[TestMethod]
+	public void ReadFooter_ValidFooter_ParsesCorrectly ()
+	{
+		var footerData = CreateFooter (version: 4, revision: 0, flags: 0x10, size: 2048);
+
+		var result = Id3v2Header.ReadFooter (footerData);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (4, result.Header.MajorVersion);
+		Assert.AreEqual (0x10, (byte)result.Header.Flags);
+		Assert.AreEqual (2048u, result.Header.TagSize);
+	}
+
+	[TestMethod]
+	public void ReadFooter_WrongMagic_ReturnsNotFound ()
+	{
+		// "ID3" magic instead of "3DI"
+		var data = CreateHeader (version: 4, revision: 0, flags: 0x10, size: 1000);
+
+		var result = Id3v2Header.ReadFooter (data);
+
+		Assert.IsTrue (result.IsNotFound);
+	}
+
+	[TestMethod]
+	public void ReadFooter_TooShort_ReturnsFailure ()
+	{
+		var data = new byte[] { (byte)'3', (byte)'D', (byte)'I', 4, 0 };
+
+		var result = Id3v2Header.ReadFooter (data);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsFalse (result.IsNotFound);
+		Assert.IsNotNull (result.Error);
+	}
+
+	[TestMethod]
+	public void RenderFooter_RoundTrip_PreservesData ()
+	{
+		var original = new Id3v2Header (4, 0, Id3v2HeaderFlags.Footer | Id3v2HeaderFlags.Unsynchronization, 3000);
+
+		var footer = original.RenderFooter ();
+		var result = Id3v2Header.ReadFooter (footer.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (original.MajorVersion, result.Header.MajorVersion);
+		Assert.AreEqual (original.MinorVersion, result.Header.MinorVersion);
+		Assert.AreEqual (original.TagSize, result.Header.TagSize);
+		Assert.AreEqual (original.Flags, result.Header.Flags);
+	}
+
+	[TestMethod]
+	public void ReadFooter_V23_ReturnsFailure ()
+	{
+		// Footer is only valid for v2.4
+		var footerData = CreateFooter (version: 3, revision: 0, flags: 0x10, size: 1000);
+
+		var result = Id3v2Header.ReadFooter (footerData);
+
+		// Should reject non-v2.4 footer
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNotNull (result.Error);
+	}
+
 	static byte[] CreateHeader (byte version, byte revision, byte flags, uint size)
 	{
 		var data = new byte[10];
 		data[0] = (byte)'I';
 		data[1] = (byte)'D';
 		data[2] = (byte)'3';
+		data[3] = version;
+		data[4] = revision;
+		data[5] = flags;
+
+		// Encode size as syncsafe integer
+		data[6] = (byte)((size >> 21) & 0x7F);
+		data[7] = (byte)((size >> 14) & 0x7F);
+		data[8] = (byte)((size >> 7) & 0x7F);
+		data[9] = (byte)(size & 0x7F);
+
+		return data;
+	}
+
+	static byte[] CreateFooter (byte version, byte revision, byte flags, uint size)
+	{
+		var data = new byte[10];
+		data[0] = (byte)'3';
+		data[1] = (byte)'D';
+		data[2] = (byte)'I';
 		data[3] = version;
 		data[4] = revision;
 		data[5] = flags;

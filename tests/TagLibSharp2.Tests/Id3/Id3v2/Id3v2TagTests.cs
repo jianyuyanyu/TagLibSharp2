@@ -333,7 +333,75 @@ public class Id3v2TagTests
 		Assert.IsGreaterThan (100, data.Length);
 	}
 
+	// ═══════════════════════════════════════════════════════════════
+	// Footer Tests (TDD - ID3v2.4 footer support)
+	// ═══════════════════════════════════════════════════════════════
 
+	[TestMethod]
+	public void Render_WithFooter_Includes10ByteFooter ()
+	{
+		// ID3v2.4 only - footer is 10 bytes with "3DI" magic
+		var tag = new Id3v2Tag (Id3v2Version.V24) { Title = "Test" };
+
+		var dataWithoutFooter = tag.Render (paddingSize: 0, withFooter: false);
+		var dataWithFooter = tag.Render (paddingSize: 0, withFooter: true);
+
+		// Footer adds exactly 10 bytes
+		Assert.AreEqual (dataWithoutFooter.Length + 10, dataWithFooter.Length);
+	}
+
+	[TestMethod]
+	public void Render_WithFooter_EndsWithMagic3DI ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24) { Title = "Test" };
+
+		var data = tag.Render (paddingSize: 0, withFooter: true);
+
+		// Footer magic "3DI" at end
+		Assert.AreEqual ((byte)'3', data[data.Length - 10]);
+		Assert.AreEqual ((byte)'D', data[data.Length - 9]);
+		Assert.AreEqual ((byte)'I', data[data.Length - 8]);
+	}
+
+	[TestMethod]
+	public void Render_WithFooter_SetsFooterFlagInHeader ()
+	{
+		var tag = new Id3v2Tag (Id3v2Version.V24) { Title = "Test" };
+
+		var data = tag.Render (paddingSize: 0, withFooter: true);
+
+		// Header flags at offset 5, footer flag is 0x10 (bit 4)
+		Assert.IsTrue ((data[5] & 0x10) != 0, "Footer flag should be set in header");
+	}
+
+	[TestMethod]
+	public void Render_WithFooter_RoundTripPreservesData ()
+	{
+		var original = new Id3v2Tag (Id3v2Version.V24) {
+			Title = "Test Title",
+			Artist = "Test Artist"
+		};
+
+		var rendered = original.Render (paddingSize: 0, withFooter: true);
+		var result = Id3v2Tag.Read (rendered.Span);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("Test Title", result.Tag!.Title);
+		Assert.AreEqual ("Test Artist", result.Tag.Artist);
+	}
+
+	[TestMethod]
+	public void Render_V23WithFooter_DoesNotIncludeFooter ()
+	{
+		// Footer is only valid for v2.4, v2.3 should ignore
+		var tag = new Id3v2Tag (Id3v2Version.V23) { Title = "Test" };
+
+		var dataWithoutFooter = tag.Render (paddingSize: 0, withFooter: false);
+		var dataWithFooter = tag.Render (paddingSize: 0, withFooter: true);
+
+		// V2.3 should NOT add footer even when requested
+		Assert.AreEqual (dataWithoutFooter.Length, dataWithFooter.Length);
+	}
 
 	[TestMethod]
 	public void AlbumArtist_GetSet_Works ()

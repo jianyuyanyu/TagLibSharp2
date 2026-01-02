@@ -1574,14 +1574,15 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <inheritdoc/>
-	public override BinaryData Render () => Render (DefaultPaddingSize);
+	public override BinaryData Render () => Render (DefaultPaddingSize, withFooter: false);
 
 	/// <summary>
 	/// Renders the tag to binary data with specified padding.
 	/// </summary>
 	/// <param name="paddingSize">The amount of padding to include.</param>
+	/// <param name="withFooter">If true and version is 2.4, includes a footer.</param>
 	/// <returns>The rendered tag data.</returns>
-	public BinaryData Render (int paddingSize)
+	public BinaryData Render (int paddingSize, bool withFooter = false)
 	{
 		// Render all frames and calculate size in single pass
 		var frameDataList = new List<BinaryData> ((_frames.Count + _pictures.Count + _comments.Count) * 2);
@@ -1723,20 +1724,31 @@ public sealed class Id3v2Tag : Tag
 
 		var totalSize = framesSize + paddingSize;
 
-		// Render header
+		// Footer is only valid for ID3v2.4
+		var includeFooter = withFooter && Version == 4;
+
+		// Render header with optional footer flag
+		var flags = includeFooter ? Id3v2HeaderFlags.Footer : Id3v2HeaderFlags.None;
 		var header = new Id3v2Header (
 			(byte)Version,
 			0,
-			Id3v2HeaderFlags.None,
+			flags,
 			(uint)totalSize);
 
-		using var builder = new BinaryDataBuilder (Id3v2Header.HeaderSize + totalSize);
+		var outputSize = Id3v2Header.HeaderSize + totalSize +
+			(includeFooter ? Id3v2Header.FooterSize : 0);
+
+		using var builder = new BinaryDataBuilder (outputSize);
 		builder.Add (header.Render ());
 
 		foreach (var frameData in frameDataList)
 			builder.Add (frameData);
 
 		builder.AddZeros (paddingSize);
+
+		// Append footer if requested (v2.4 only)
+		if (includeFooter)
+			builder.Add (header.RenderFooter ());
 
 		return builder.ToBinaryData ();
 	}

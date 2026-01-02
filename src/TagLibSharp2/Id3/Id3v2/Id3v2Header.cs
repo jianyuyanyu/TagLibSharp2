@@ -156,6 +156,76 @@ public readonly struct Id3v2Header : IEquatable<Id3v2Header>
 	}
 
 	/// <summary>
+	/// Renders this header as a footer (ID3v2.4 only).
+	/// </summary>
+	/// <returns>A 10-byte footer with "3DI" magic.</returns>
+	/// <remarks>
+	/// The footer is identical to the header except the magic bytes are "3DI" instead of "ID3".
+	/// </remarks>
+	public BinaryData RenderFooter ()
+	{
+		using var builder = new BinaryDataBuilder (FooterSize);
+
+		// Magic "3DI" (reverse of "ID3")
+		builder.Add ((byte)'3');
+		builder.Add ((byte)'D');
+		builder.Add ((byte)'I');
+
+		// Version
+		builder.Add (MajorVersion);
+		builder.Add (MinorVersion);
+
+		// Flags
+		builder.Add ((byte)Flags);
+
+		// Size as syncsafe integer
+		builder.Add ((byte)((TagSize >> 21) & 0x7F));
+		builder.Add ((byte)((TagSize >> 14) & 0x7F));
+		builder.Add ((byte)((TagSize >> 7) & 0x7F));
+		builder.Add ((byte)(TagSize & 0x7F));
+
+		return builder.ToBinaryData ();
+	}
+
+	/// <summary>
+	/// Attempts to read an ID3v2 footer from the provided data.
+	/// </summary>
+	/// <param name="data">The data to parse (must be at least 10 bytes).</param>
+	/// <returns>A result indicating success, failure, or not found.</returns>
+	/// <remarks>
+	/// Footers are only valid in ID3v2.4. The footer has "3DI" magic instead of "ID3".
+	/// </remarks>
+	public static Id3v2HeaderReadResult ReadFooter (ReadOnlySpan<byte> data)
+	{
+		// Check minimum length
+		if (data.Length < FooterSize)
+			return Id3v2HeaderReadResult.Failure ("Data is too short for ID3v2 footer");
+
+		// Check for "3DI" magic (reverse of "ID3")
+		if (data[0] != '3' || data[1] != 'D' || data[2] != 'I')
+			return Id3v2HeaderReadResult.NotFound ();
+
+		var majorVersion = data[3];
+		var minorVersion = data[4];
+		var flags = (Id3v2HeaderFlags)data[5];
+
+		// Footer is only valid for ID3v2.4
+		if (majorVersion != 4)
+			return Id3v2HeaderReadResult.Failure ($"Footer only valid in ID3v2.4, found version 2.{majorVersion}");
+
+		// Validate syncsafe size bytes (MSB must be 0)
+		if ((data[6] & 0x80) != 0 || (data[7] & 0x80) != 0 ||
+			(data[8] & 0x80) != 0 || (data[9] & 0x80) != 0)
+			return Id3v2HeaderReadResult.Failure ("Invalid syncsafe integer in size field");
+
+		// Decode syncsafe integer
+		var tagSize = DecodeSyncsafe (data.Slice (6, 4));
+
+		var header = new Id3v2Header (majorVersion, minorVersion, flags, tagSize);
+		return Id3v2HeaderReadResult.Success (header, FooterSize);
+	}
+
+	/// <summary>
 	/// Decodes a 4-byte syncsafe integer.
 	/// </summary>
 	static uint DecodeSyncsafe (ReadOnlySpan<byte> data) =>
