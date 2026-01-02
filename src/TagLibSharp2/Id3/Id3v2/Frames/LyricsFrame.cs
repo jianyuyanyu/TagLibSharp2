@@ -219,8 +219,11 @@ public sealed class LyricsFrame
 		var isLittleEndian = data[0] == 0xFF && data[1] == 0xFE;
 		var isBigEndian = data[0] == 0xFE && data[1] == 0xFF;
 
-		if (!isLittleEndian && !isBigEndian)
-			return string.Empty;
+		if (!isLittleEndian && !isBigEndian) {
+			// No BOM found - fall back to little-endian (Windows default)
+			// This handles buggy taggers that don't write BOM
+			return System.Text.Encoding.Unicode.GetString (data);
+		}
 
 		// Skip BOM
 		data = data.Slice (2);

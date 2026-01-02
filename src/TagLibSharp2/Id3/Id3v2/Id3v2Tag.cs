@@ -1116,6 +1116,27 @@ public sealed class Id3v2Tag : Tag
 					break;
 
 				frameSize = GetFrameSize (frameData.Slice (4, 4), header.MajorVersion);
+
+				// iTunes quirk: sometimes writes v2.3 tags with syncsafe frame sizes
+				// If the big-endian size looks wrong, try syncsafe interpretation
+				// Only do this if the bytes could actually be valid syncsafe (no MSB set)
+				if (header.MajorVersion == 3 && (frameSize <= 0 ||
+					frameSize > remaining - frameHeaderSize ||
+					frameSize > frameData.Length - frameHeaderSize)) {
+					var sizeData = frameData.Slice (4, 4);
+					var couldBeSyncsafe = (sizeData[0] & 0x80) == 0 &&
+										  (sizeData[1] & 0x80) == 0 &&
+										  (sizeData[2] & 0x80) == 0 &&
+										  (sizeData[3] & 0x80) == 0;
+					if (couldBeSyncsafe) {
+						var syncsafeSize = GetFrameSizeSyncsafe (sizeData);
+						if (syncsafeSize > 0 &&
+							syncsafeSize <= remaining - frameHeaderSize &&
+							syncsafeSize <= frameData.Length - frameHeaderSize) {
+							frameSize = syncsafeSize;
+						}
+					}
+				}
 			}
 
 			if (frameSize <= 0 ||
@@ -2208,10 +2229,7 @@ public sealed class Id3v2Tag : Tag
 	{
 		if (version == 4) {
 			// Syncsafe integer (7 bits per byte, max 28 bits = 268MB)
-			return ((data[0] & 0x7F) << 21) |
-				   ((data[1] & 0x7F) << 14) |
-				   ((data[2] & 0x7F) << 7) |
-				   (data[3] & 0x7F);
+			return GetFrameSizeSyncsafe (data);
 		} else {
 			// Big-endian 32-bit unsigned, cast to uint to avoid overflow when MSB >= 0x80.
 			// Values > int.MaxValue are unrealistic for frame sizes and will fail
@@ -2221,6 +2239,18 @@ public sealed class Id3v2Tag : Tag
 						 ((uint)data[2] << 8) |
 						 (uint)data[3]);
 		}
+	}
+
+	/// <summary>
+	/// Decodes a syncsafe integer (7 bits per byte) used in ID3v2.4 frame sizes.
+	/// Also used as fallback for buggy taggers that write syncsafe sizes in v2.3.
+	/// </summary>
+	static int GetFrameSizeSyncsafe (ReadOnlySpan<byte> data)
+	{
+		return ((data[0] & 0x7F) << 21) |
+			   ((data[1] & 0x7F) << 14) |
+			   ((data[2] & 0x7F) << 7) |
+			   (data[3] & 0x7F);
 	}
 
 	static int GetExtendedHeaderSize (ReadOnlySpan<byte> data, byte version)

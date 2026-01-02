@@ -87,14 +87,12 @@ The Roon docs identify specific edge cases that must be handled robustly:
 
 | Edge Case | Status | Action |
 |-----------|--------|--------|
-| iTunes ID3v2.3 with v2.2-like sizes | ⚠️ Partial | Add fallback detection |
-| iTunes ID3v2.4 non-syncsafe frame sizes | ⚠️ Partial | Add heuristic detection |
+| iTunes ID3v2.3 with syncsafe sizes | ✅ | Syncsafe fallback when big-endian fails |
+| UTF-16 without BOM fallback | ✅ | Falls back to little-endian (Windows default) |
 | Duplicate ID3v2 tags | ❌ | Handle gracefully |
-| Non-standard UTF-16 BOM in lyrics | ❌ | Add BOM detection |
 | Apple proprietary v2.3 frames | ⚠️ Partial | Add TSOA, TSOT, TSOP, WFED, MVNM, MVIN |
 | MP4 duplicate atoms | ⚠️ Partial | Merge list types |
-| Syncsafe integer fallback | ⚠️ Partial | Add buggy writer detection |
-| ID3v2.4 genre separator | ❌ | Use " / " per spec, not space |
+| ID3v2.4 genre separator | ⚠️ Partial | Already handles both null and "/" |
 
 ---
 
@@ -213,14 +211,14 @@ These items from the requirements are explicitly not planned:
 6. ✅ Register in MediaFile factory
 
 ### Sprint 2: Edge Cases & Compatibility (IN PROGRESS)
-1. Fix ID3v2.4 genre separator
-2. Add iTunes quirk detection
+1. ✅ Fix UTF-16 BOM fallback in TextFrame and LyricsFrame
+2. ✅ Add iTunes syncsafe fallback for v2.3 tags
 3. Handle duplicate tags gracefully
 4. Add cross-tagger compatibility tests
-5. Fix BOM detection in lyrics frames
+5. Add remaining Apple proprietary frames
 
 ### Sprint 3: Format Expansion (1-2 weeks effort)
-1. Add Musepack support
+1. ✅ Add Musepack support (SV7 and SV8)
 2. Add Speex support
 3. Add TrueAudio support
 4. Verify all Roon-specific fields

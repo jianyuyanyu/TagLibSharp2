@@ -130,8 +130,11 @@ public sealed class TextFrame
 		var isLittleEndian = data[0] == 0xFF && data[1] == 0xFE;
 		var isBigEndian = data[0] == 0xFE && data[1] == 0xFF;
 
-		if (!isLittleEndian && !isBigEndian)
-			return string.Empty; // No valid BOM
+		if (!isLittleEndian && !isBigEndian) {
+			// No BOM found - fall back to little-endian (Windows default)
+			// This handles buggy taggers that don't write BOM
+			return DecodeTextUtf16 (data, isLittleEndian: true);
+		}
 
 		// Skip BOM
 		data = data.Slice (2);
