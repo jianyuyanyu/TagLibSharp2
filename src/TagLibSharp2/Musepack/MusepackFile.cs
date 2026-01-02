@@ -6,6 +6,7 @@ using TagLibSharp2.Ape;
 using TagLibSharp2.Core;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CA2000 // Dispose objects before losing scope - factory method pattern
 
 namespace TagLibSharp2.Musepack;
 
@@ -46,8 +47,9 @@ public readonly struct MusepackFileParseResult : IEquatable<MusepackFileParseRes
 /// Represents a Musepack (.mpc, .mp+, .mpp) audio file.
 /// Supports both SV7 (MP+) and SV8 (MPCK) stream formats.
 /// </summary>
-public sealed class MusepackFile
+public sealed class MusepackFile : IDisposable
 {
+	private bool _disposed;
 	private const int MinHeaderSize = 4;
 
 	// SV7 magic: "MP+" followed by version nibble
@@ -493,4 +495,20 @@ public sealed class MusepackFile
 	}
 
 	#endregion
+
+	/// <summary>
+	/// Releases resources held by this instance.
+	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		ApeTag = null;
+		Properties = null;
+		_originalData = [];
+		_sourcePath = null;
+		_sourceFileSystem = null;
+		_disposed = true;
+	}
 }

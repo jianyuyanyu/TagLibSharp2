@@ -24,9 +24,10 @@ namespace TagLibSharp2.Mpeg;
 /// [ID3v1 tag] (optional, last 128 bytes)
 /// </code>
 /// </remarks>
-public sealed class Mp3File
+public sealed class Mp3File : IDisposable
 {
 	const int Id3v1Size = 128;
+	bool _disposed;
 
 	/// <summary>
 	/// Gets the source file path if the file was read from disk.
@@ -453,6 +454,21 @@ public sealed class Mp3File
 			return FileWriteResult.Failure ("No source path available. File was not read from disk.");
 
 		return SaveToFile (SourcePath!, fileSystem);
+	}
+
+	/// <summary>
+	/// Releases resources held by this instance.
+	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		Id3v2Tag = null;
+		Id3v1Tag = null;
+		SourcePath = null;
+		_sourceFileSystem = null;
+		_disposed = true;
 	}
 }
 

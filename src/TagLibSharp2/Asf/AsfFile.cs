@@ -10,8 +10,10 @@ namespace TagLibSharp2.Asf;
 /// <summary>
 /// Represents an ASF/WMA audio file.
 /// </summary>
-public sealed class AsfFile
+public sealed class AsfFile : IDisposable
 {
+	bool _disposed;
+
 	/// <summary>
 	/// Gets the ASF tag.
 	/// </summary>
@@ -216,6 +218,19 @@ public sealed class AsfFile
 		var codec = streamProps?.CodecName;
 
 		return new AudioProperties (duration, bitrate, sampleRate, bitsPerSample, channels, codec);
+	}
+
+	/// <summary>
+	/// Releases resources held by this instance.
+	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		SourcePath = null;
+		_sourceFileSystem = null;
+		_disposed = true;
 	}
 }
 

@@ -10,6 +10,7 @@ using TagLibSharp2.Ape;
 using TagLibSharp2.Core;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CA2000 // Dispose objects before losing scope - factory method pattern
 
 namespace TagLibSharp2.WavPack;
 
@@ -49,8 +50,9 @@ public readonly struct WavPackFileParseResult : IEquatable<WavPackFileParseResul
 /// <summary>
 /// Represents a WavPack (.wv) file.
 /// </summary>
-public sealed class WavPackFile
+public sealed class WavPackFile : IDisposable
 {
+	private bool _disposed;
 	private const int MagicSize = 4;
 	private const int BlockHeaderSize = 32;
 	private static readonly byte[] Magic = "wvpk"u8.ToArray ();
@@ -483,4 +485,20 @@ public sealed class WavPackFile
 	}
 
 	#endregion
+
+	/// <summary>
+	/// Releases resources held by this instance.
+	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		ApeTag = null;
+		Properties = null;
+		_originalData = Array.Empty<byte> ();
+		_sourcePath = null;
+		_sourceFileSystem = null;
+		_disposed = true;
+	}
 }

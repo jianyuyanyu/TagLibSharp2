@@ -12,6 +12,7 @@ using TagLibSharp2.Core;
 using TagLibSharp2.Xiph;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CA2000 // Dispose objects before losing scope - factory method pattern
 
 namespace TagLibSharp2.Ogg;
 
@@ -51,7 +52,7 @@ public readonly struct OggFlacFileParseResult : IEquatable<OggFlacFileParseResul
 /// <summary>
 /// Represents an Ogg FLAC (.oga/.ogg) file.
 /// </summary>
-public sealed class OggFlacFile
+public sealed class OggFlacFile : IDisposable
 {
 	private const int MinHeaderSize = 27; // Minimum Ogg page header
 	private static readonly byte[] OggMagic = "OggS"u8.ToArray ();
@@ -61,6 +62,7 @@ public sealed class OggFlacFile
 	private string? _sourcePath;
 	private IFileSystem? _sourceFileSystem;
 	private readonly List<FlacMetadataBlock> _metadataBlocks = new ();
+	private bool _disposed;
 
 	private OggFlacFile () { }
 
@@ -589,8 +591,22 @@ public sealed class OggFlacFile
 	}
 
 	/// <summary>
-	/// Represents a FLAC metadata block (PICTURE, CUESHEET, etc.) for preservation during writes.
+	/// Releases resources held by this instance.
 	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		VorbisComment = null;
+		Properties = null;
+		_originalData = Array.Empty<byte> ();
+		_sourcePath = null;
+		_sourceFileSystem = null;
+		_metadataBlocks.Clear ();
+		_disposed = true;
+	}
+
 	private readonly struct FlacMetadataBlock
 	{
 		/// <summary>Block type (0=STREAMINFO, 1=PADDING, 2=APPLICATION, 3=SEEKTABLE, 4=VORBIS_COMMENT, 5=CUESHEET, 6=PICTURE)</summary>

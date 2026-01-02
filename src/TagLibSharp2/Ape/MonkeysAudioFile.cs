@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using TagLibSharp2.Core;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CA2000 // Dispose objects before losing scope - factory method pattern
 
 namespace TagLibSharp2.Ape;
 
@@ -48,8 +49,9 @@ public readonly struct MonkeysAudioFileParseResult : IEquatable<MonkeysAudioFile
 /// <summary>
 /// Represents a Monkey's Audio (.ape) file.
 /// </summary>
-public sealed class MonkeysAudioFile
+public sealed class MonkeysAudioFile : IDisposable
 {
+	private bool _disposed;
 	private const int MagicSize = 4;
 	private static readonly byte[] Magic = "MAC "u8.ToArray ();
 
@@ -463,6 +465,22 @@ public sealed class MonkeysAudioFile
 	}
 
 	#endregion
+
+	/// <summary>
+	/// Releases resources held by this instance.
+	/// </summary>
+	public void Dispose ()
+	{
+		if (_disposed)
+			return;
+
+		ApeTag = null;
+		Properties = null;
+		_originalData = Array.Empty<byte> ();
+		_sourcePath = null;
+		_sourceFileSystem = null;
+		_disposed = true;
+	}
 
 	private readonly struct ParseResult
 	{
