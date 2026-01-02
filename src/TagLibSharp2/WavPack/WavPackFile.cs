@@ -61,8 +61,9 @@ public sealed class WavPackFile
 		32000, 44100, 48000, 64000, 88200, 96000, 192000
 	];
 
-	// Metadata sub-block IDs
-	private const byte MetaIdSampleRate = 0x27; // Custom sample rate
+	// Metadata sub-block IDs (bits 4-0 of the ID byte)
+	// Note: bit 5 (0x20) is the "optional data" flag, not part of the ID
+	private const byte MetaIdSampleRate = 0x07; // Custom sample rate (appears as 0x27 with optional flag)
 	private const byte MetaIdChannelInfo = 0x0D; // Multi-channel info
 
 	private byte[] _originalData = Array.Empty<byte> ();
@@ -136,12 +137,9 @@ public sealed class WavPackFile
 
 		// Bits 23-26: sample rate index (0-14 = table lookup, 15 = custom)
 		var sampleRateIndex = (int)((flags >> 23) & 0xF);
-		if (sampleRateIndex < SampleRateTable.Length)
-		{
+		if (sampleRateIndex < SampleRateTable.Length) {
 			file.SampleRate = SampleRateTable[sampleRateIndex];
-		}
-		else
-		{
+		} else {
 			// Custom sample rate - parse from metadata sub-block 0x27
 			file.SampleRate = ParseCustomSampleRate (data) ?? 44100;
 		}
@@ -150,8 +148,7 @@ public sealed class WavPackFile
 		// Bit 10: false stereo (decorrelation disabled)
 		// For multi-channel, we need to parse metadata sub-block 0x0D
 		var channelCount = ParseMultiChannelCount (data);
-		if (channelCount > 0)
-		{
+		if (channelCount > 0) {
 			file.Channels = channelCount;
 		}
 
@@ -169,8 +166,7 @@ public sealed class WavPackFile
 
 	private void CalculateProperties ()
 	{
-		if (SampleRate <= 0 || TotalSamples == 0)
-		{
+		if (SampleRate <= 0 || TotalSamples == 0) {
 			Properties = null;
 			return;
 		}
@@ -180,8 +176,7 @@ public sealed class WavPackFile
 
 		// Calculate bitrate from file size
 		var bitrate = 0;
-		if (_originalData.Length > 0 && durationSeconds > 0)
-		{
+		if (_originalData.Length > 0 && durationSeconds > 0) {
 			bitrate = (int)(_originalData.Length * 8 / durationSeconds / 1000);
 		}
 
@@ -198,14 +193,13 @@ public sealed class WavPackFile
 	private void ParseApeTag (ReadOnlySpan<byte> data)
 	{
 		var result = ApeTag.Parse (data);
-		if (result.IsSuccess)
-		{
+		if (result.IsSuccess) {
 			ApeTag = result.Tag;
 		}
 	}
 
 	/// <summary>
-	/// Parse custom sample rate from metadata sub-block 0x27.
+	/// Parse custom sample rate from metadata sub-block 0x07.
 	/// Per WavPack spec, when sample rate index is 15, the actual rate is in this sub-block.
 	/// </summary>
 	private static int? ParseCustomSampleRate (ReadOnlySpan<byte> data)
@@ -217,48 +211,55 @@ public sealed class WavPackFile
 		if (data.Length < 8)
 			return null;
 
-		var blockSize = (int)BinaryPrimitives.ReadUInt32LittleEndian (data.Slice (4, 4));
-		var blockEnd = Math.Min (8 + blockSize, data.Length);
+		var blockSize = BinaryPrimitives.ReadUInt32LittleEndian (data.Slice (4, 4));
+		// Bounds check: blockSize shouldn't exceed reasonable file size
+		if (blockSize > int.MaxValue - 8)
+			return null;
 
-		while (offset + 2 <= blockEnd)
-		{
+		var blockEnd = Math.Min (8 + (int)blockSize, data.Length);
+
+		while (offset + 2 <= blockEnd) {
 			// Sub-block header: [0] ID, [1] size in words (2 bytes each)
 			var subBlockId = data[offset];
-			var sizeWords = data[offset + 1];
 
 			// Large sub-block flag (ID bit 7 set means 3-byte size field)
 			var hasLargeSize = (subBlockId & 0x80) != 0;
-			var actualId = (byte)(subBlockId & 0x3F); // Lower 6 bits are the ID
+			var actualId = (byte)(subBlockId & 0x1F); // Lower 5 bits are the ID per WavPack spec
 
 			int subBlockSize;
 			int dataOffset;
-			if (hasLargeSize)
-			{
+			if (hasLargeSize) {
 				if (offset + 4 > blockEnd)
 					break;
-				// 3-byte size (24-bit) in words
-				subBlockSize = ((data[offset + 1] | (data[offset + 2] << 8) | (data[offset + 3] << 16)) * 2);
-				dataOffset = offset + 4;
-			}
-			else
-			{
+				// 3-byte size (24-bit) in words, multiply by 2 for bytes
+				var sizeWords = data[offset + 1] | (data[offset + 2] << 8) | (data[offset + 3] << 16);
+				// Bounds check to prevent overflow
+				if (sizeWords > (int.MaxValue / 2))
+					break;
 				subBlockSize = sizeWords * 2;
+				dataOffset = offset + 4;
+			} else {
+				subBlockSize = data[offset + 1] * 2;
 				dataOffset = offset + 2;
 			}
 
+			// Prevent infinite loop: ensure we make forward progress
+			if (subBlockSize < 0 || dataOffset + subBlockSize <= offset)
+				break;
+
+			// Bounds check for data access
+			if (dataOffset + subBlockSize > blockEnd)
+				break;
+
 			// Odd size flag (bit 6) indicates last byte is padding
 			var hasOddByte = (subBlockId & 0x40) != 0;
-			var actualSize = hasOddByte ? subBlockSize - 1 : subBlockSize;
+			var actualSize = hasOddByte && subBlockSize > 0 ? subBlockSize - 1 : subBlockSize;
 
-			if (actualId == MetaIdSampleRate && actualSize >= 3)
-			{
+			if (actualId == MetaIdSampleRate && actualSize >= 3) {
 				// Sample rate stored as 3-byte little-endian value
-				if (dataOffset + 3 <= data.Length)
-				{
-					return data[dataOffset] |
-					       (data[dataOffset + 1] << 8) |
-					       (data[dataOffset + 2] << 16);
-				}
+				return data[dataOffset] |
+					   (data[dataOffset + 1] << 8) |
+					   (data[dataOffset + 2] << 16);
 			}
 
 			offset = dataOffset + subBlockSize;
@@ -279,39 +280,46 @@ public sealed class WavPackFile
 		if (data.Length < 8)
 			return 0;
 
-		var blockSize = (int)BinaryPrimitives.ReadUInt32LittleEndian (data.Slice (4, 4));
-		var blockEnd = Math.Min (8 + blockSize, data.Length);
+		var blockSize = BinaryPrimitives.ReadUInt32LittleEndian (data.Slice (4, 4));
+		// Bounds check: blockSize shouldn't exceed reasonable file size
+		if (blockSize > int.MaxValue - 8)
+			return 0;
 
-		while (offset + 2 <= blockEnd)
-		{
+		var blockEnd = Math.Min (8 + (int)blockSize, data.Length);
+
+		while (offset + 2 <= blockEnd) {
 			var subBlockId = data[offset];
-			var sizeWords = data[offset + 1];
 
 			var hasLargeSize = (subBlockId & 0x80) != 0;
-			var actualId = (byte)(subBlockId & 0x3F);
+			var actualId = (byte)(subBlockId & 0x1F); // Lower 5 bits are the ID
 
 			int subBlockSize;
 			int dataOffset;
-			if (hasLargeSize)
-			{
+			if (hasLargeSize) {
 				if (offset + 4 > blockEnd)
 					break;
-				subBlockSize = ((data[offset + 1] | (data[offset + 2] << 8) | (data[offset + 3] << 16)) * 2);
-				dataOffset = offset + 4;
-			}
-			else
-			{
+				var sizeWords = data[offset + 1] | (data[offset + 2] << 8) | (data[offset + 3] << 16);
+				// Bounds check to prevent overflow
+				if (sizeWords > (int.MaxValue / 2))
+					break;
 				subBlockSize = sizeWords * 2;
+				dataOffset = offset + 4;
+			} else {
+				subBlockSize = data[offset + 1] * 2;
 				dataOffset = offset + 2;
 			}
 
-			if (actualId == MetaIdChannelInfo && subBlockSize >= 1)
-			{
+			// Prevent infinite loop: ensure we make forward progress
+			if (subBlockSize < 0 || dataOffset + subBlockSize <= offset)
+				break;
+
+			// Bounds check for data access
+			if (dataOffset + subBlockSize > blockEnd)
+				break;
+
+			if (actualId == MetaIdChannelInfo && subBlockSize >= 1) {
 				// First byte contains channel count
-				if (dataOffset < data.Length)
-				{
-					return data[dataOffset];
-				}
+				return data[dataOffset];
 			}
 
 			offset = dataOffset + subBlockSize;
@@ -350,8 +358,7 @@ public sealed class WavPackFile
 		ms.Write (audioData, 0, audioData.Length);
 
 		// Append APE tag if present
-		if (ApeTag is not null)
-		{
+		if (ApeTag is not null) {
 			var tagData = ApeTag.Render ().ToArray ();
 			ms.Write (tagData, 0, tagData.Length);
 		}
@@ -400,8 +407,7 @@ public sealed class WavPackFile
 			return WavPackFileParseResult.Failure ($"Failed to read file: {readResult.Error}");
 
 		var result = Parse (readResult.Data!);
-		if (result.IsSuccess)
-		{
+		if (result.IsSuccess) {
 			result.File!._sourcePath = path;
 			result.File._sourceFileSystem = fs;
 		}
@@ -422,8 +428,7 @@ public sealed class WavPackFile
 			return WavPackFileParseResult.Failure ($"Failed to read file: {readResult.Error}");
 
 		var result = Parse (readResult.Data!);
-		if (result.IsSuccess)
-		{
+		if (result.IsSuccess) {
 			result.File!._sourcePath = path;
 			result.File._sourceFileSystem = fs;
 		}

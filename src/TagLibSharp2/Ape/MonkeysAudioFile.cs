@@ -60,6 +60,10 @@ public sealed class MonkeysAudioFile
 	private const int DescriptorSize = 52;
 	private const int HeaderSize = 24;
 
+	// Format flags for old format
+	private const int FlagBits8 = 0x0001;
+	private const int FlagBits24 = 0x0008;
+
 	// Minimum sizes
 	private const int MinOldFormatSize = 4 + 2 + 26; // Magic + version + old header
 	private const int MinNewFormatSize = 4 + DescriptorSize + HeaderSize;
@@ -119,15 +123,12 @@ public sealed class MonkeysAudioFile
 
 		var file = new MonkeysAudioFile { Version = version };
 
-		if (version >= NewFormatVersion)
-		{
+		if (version >= NewFormatVersion) {
 			// New format with descriptor
 			var parseResult = ParseNewFormat (data, file);
 			if (!parseResult.IsSuccess)
 				return MonkeysAudioFileParseResult.Failure (parseResult.Error!);
-		}
-		else
-		{
+		} else {
 			// Old format without descriptor
 			var parseResult = ParseOldFormat (data, file);
 			if (!parseResult.IsSuccess)
@@ -208,49 +209,67 @@ public sealed class MonkeysAudioFile
 
 		var offset = MagicSize + 2; // After magic and version
 
-		// APE_HEADER_OLD format:
-		// [2] compression type
+		// APE_HEADER_OLD format (per MAC SDK source):
+		// [0-1] compression type
 		file.CompressionLevel = BinaryPrimitives.ReadUInt16LittleEndian (data.Slice (offset, 2));
 		offset += 2;
 
-		// [2] format flags
+		// [2-3] format flags
+		var formatFlags = BinaryPrimitives.ReadUInt16LittleEndian (data.Slice (offset, 2));
 		offset += 2;
 
-		// [2] channels
+		// [4-5] channels
 		file.Channels = BinaryPrimitives.ReadUInt16LittleEndian (data.Slice (offset, 2));
 		offset += 2;
 
-		// [4] sample rate
+		// [6-9] sample rate
 		file.SampleRate = (int)BinaryPrimitives.ReadUInt32LittleEndian (data.Slice (offset, 4));
 		offset += 4;
 
-		// [4] header bytes
+		// [10-13] header bytes (skip)
 		offset += 4;
 
-		// [4] terminating bytes
+		// [14-17] terminating bytes (skip)
 		offset += 4;
 
-		// [4] total frames
+		// [18-21] total frames
 		file.TotalFrames = BinaryPrimitives.ReadUInt32LittleEndian (data.Slice (offset, 4));
 		offset += 4;
 
-		// [4] final frame blocks
+		// [22-25] final frame blocks
 		file.FinalFrameBlocks = BinaryPrimitives.ReadUInt32LittleEndian (data.Slice (offset, 4));
-		offset += 4;
 
-		// [2] bits per sample
-		file.BitsPerSample = BinaryPrimitives.ReadUInt16LittleEndian (data.Slice (offset, 2));
+		// Bits per sample is derived from format flags, not stored directly
+		if ((formatFlags & FlagBits8) != 0)
+			file.BitsPerSample = 8;
+		else if ((formatFlags & FlagBits24) != 0)
+			file.BitsPerSample = 24;
+		else
+			file.BitsPerSample = 16; // Default
 
-		// Old format has fixed blocks per frame based on version/compression
-		file.BlocksPerFrame = 73728; // Default for old format
+		// BlocksPerFrame calculated based on version and compression per APE spec
+		file.BlocksPerFrame = CalculateOldFormatBlocksPerFrame (file.Version, file.CompressionLevel);
 
 		return ParseResult.Success ();
 	}
 
+	private static uint CalculateOldFormatBlocksPerFrame (int version, int compressionLevel)
+	{
+		// Per APE format specification:
+		// - version < 3830: 73728
+		// - version 3830-3899 with compression >= 4000 (Extra High+): 73728 * 4
+		// - version 3830-3899 with compression < 4000: 73728
+		// - version 3900-3979: 73728 * 4
+		if (version < 3830)
+			return 73728;
+		if (version < 3900)
+			return (uint)(compressionLevel >= 4000 ? 73728 * 4 : 73728);
+		return 73728 * 4; // 3900-3979
+	}
+
 	private void CalculateProperties ()
 	{
-		if (SampleRate <= 0 || TotalFrames == 0)
-		{
+		if (SampleRate <= 0 || TotalFrames == 0) {
 			Properties = null;
 			return;
 		}
@@ -265,8 +284,7 @@ public sealed class MonkeysAudioFile
 
 		// Calculate bitrate from file size if we have original data
 		var bitrate = 0;
-		if (_originalData.Length > 0 && durationSeconds > 0)
-		{
+		if (_originalData.Length > 0 && durationSeconds > 0) {
 			bitrate = (int)(_originalData.Length * 8 / durationSeconds / 1000);
 		}
 
@@ -285,8 +303,7 @@ public sealed class MonkeysAudioFile
 	{
 		// APEv2 tag is at end of file, look for footer
 		var result = ApeTag.Parse (data);
-		if (result.IsSuccess)
-		{
+		if (result.IsSuccess) {
 			ApeTag = result.Tag;
 		}
 	}
@@ -321,8 +338,7 @@ public sealed class MonkeysAudioFile
 		ms.Write (audioData, 0, audioData.Length);
 
 		// Append APE tag if present
-		if (ApeTag is not null)
-		{
+		if (ApeTag is not null) {
 			var tagData = ApeTag.Render ().ToArray ();
 			ms.Write (tagData, 0, tagData.Length);
 		}
@@ -371,8 +387,7 @@ public sealed class MonkeysAudioFile
 			return MonkeysAudioFileParseResult.Failure ($"Failed to read file: {readResult.Error}");
 
 		var result = Parse (readResult.Data!);
-		if (result.IsSuccess)
-		{
+		if (result.IsSuccess) {
 			result.File!._sourcePath = path;
 			result.File._sourceFileSystem = fs;
 		}
@@ -393,8 +408,7 @@ public sealed class MonkeysAudioFile
 			return MonkeysAudioFileParseResult.Failure ($"Failed to read file: {readResult.Error}");
 
 		var result = Parse (readResult.Data!);
-		if (result.IsSuccess)
-		{
+		if (result.IsSuccess) {
 			result.File!._sourcePath = path;
 			result.File._sourceFileSystem = fs;
 		}

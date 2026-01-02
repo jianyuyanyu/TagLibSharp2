@@ -383,8 +383,7 @@ public class WavPackFileTests
 	public void Parse_AllSampleRates ()
 	{
 		// Test all 15 standard sample rates
-		for (int i = 0; i < SampleRateTable.Length; i++)
-		{
+		for (int i = 0; i < SampleRateTable.Length; i++) {
 			var data = CreateMinimalWavPackFile (sampleRateIndex: i);
 			var result = WavPackFile.Parse (data);
 
