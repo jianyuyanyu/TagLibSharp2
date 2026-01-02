@@ -97,13 +97,21 @@ The Roon docs identify specific edge cases that must be handled robustly:
 ---
 
 ### 1.3 Cross-Tagger Compatibility Tests
-**Effort: Small | Business Value: High**
+**Status: Mostly Complete**
 
-Add explicit compatibility tests for files created by:
-- [ ] foobar2000
+Cross-tagger compatibility tests exist in `CrossTaggerCompatibilityTests.cs` and `Mp4CompatibilityTests.cs`:
+- [x] MusicBrainz Picard field names (TXXX descriptions)
+- [x] ReplayGain format (foobar2000, Mp3tag compatible)
+- [x] iTunes compilation flag ("1" value)
+- [x] Classical music fields (WORK, MOVEMENT)
+- [x] AcoustID fields
+- [x] R128 gain normalization
+- [x] Standard frame IDs and Vorbis Comment uppercase names
+
+Integration tests with real files (requires env vars):
+- [ ] foobar2000 (TEST_MP4_FOOBAR2000)
 - [ ] Mp3tag
 - [ ] iTunes
-- [ ] MusicBrainz Picard
 - [ ] VLC
 - [ ] MediaMonkey
 - [ ] Kid3
