@@ -1,6 +1,7 @@
 // Copyright (c) 2025 Stephen Shaw and contributors
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
+using TagLibSharp2.Ape;
 using TagLibSharp2.Id3.Id3v2;
 using TagLibSharp2.Id3.Id3v2.Frames;
 using TagLibSharp2.Xiph;
@@ -531,5 +532,235 @@ public sealed class CrossTaggerCompatibilityTests
 				return true;
 		}
 		return false;
+	}
+
+	// ═══════════════════════════════════════════════════════════════
+	// APE Tag Cross-Tagger Compatibility
+	// Used by: WavPack, Monkey's Audio, Musepack
+	// ═══════════════════════════════════════════════════════════════
+
+	/// <summary>
+	/// Tests that APE tag basic fields use Title-case names per APE spec.
+	/// APE uses Title-case for standard fields (Title, Artist, Album, etc.)
+	/// but UPPERCASE for extended fields like ReplayGain and MusicBrainz.
+	/// </summary>
+	[TestMethod]
+	public void ApeTag_BasicMetadata_UsesTitleCaseNames ()
+	{
+		var tag = new ApeTag ();
+		tag.Title = "Test Title";
+		tag.Artist = "Test Artist";
+		tag.Album = "Test Album";
+		tag.Year = "2024";
+		tag.Genre = "Rock";
+		tag.Track = 5;
+
+		var rendered = tag.Render ();
+		var parsed = ApeTag.Parse (rendered.Span);
+
+		Assert.IsTrue (parsed.IsSuccess);
+		// APE standard fields use Title-case per spec
+		Assert.AreEqual ("Test Title", parsed.Tag!.GetValue ("Title"));
+		Assert.AreEqual ("Test Artist", parsed.Tag.GetValue ("Artist"));
+		Assert.AreEqual ("Test Album", parsed.Tag.GetValue ("Album"));
+		Assert.AreEqual ("2024", parsed.Tag.GetValue ("Year"));
+		Assert.AreEqual ("Rock", parsed.Tag.GetValue ("Genre"));
+		Assert.AreEqual ("5", parsed.Tag.GetValue ("Track"));
+	}
+
+	/// <summary>
+	/// Tests that APE tag MusicBrainz fields use the standard field names.
+	/// </summary>
+	[TestMethod]
+	public void ApeTag_MusicBrainzFields_UseStandardNames ()
+	{
+		var tag = new ApeTag ();
+		tag.MusicBrainzTrackId = "f4e7c9d8-1234-5678-9abc-def012345678";
+		tag.MusicBrainzReleaseId = "a1b2c3d4-5678-90ab-cdef-123456789012";
+		tag.MusicBrainzArtistId = "12345678-90ab-cdef-1234-567890abcdef";
+		tag.MusicBrainzReleaseGroupId = "abcdef12-3456-7890-abcd-ef1234567890";
+		tag.MusicBrainzAlbumArtistId = "fedcba98-7654-3210-fedc-ba9876543210";
+
+		var rendered = tag.Render ();
+		var parsed = ApeTag.Parse (rendered.Span);
+
+		Assert.IsTrue (parsed.IsSuccess);
+
+		// APE tags use MUSICBRAINZ_ prefix with underscores (Picard compatible)
+		Assert.AreEqual ("f4e7c9d8-1234-5678-9abc-def012345678", parsed.Tag!.GetValue ("MUSICBRAINZ_TRACKID"));
+		Assert.AreEqual ("a1b2c3d4-5678-90ab-cdef-123456789012", parsed.Tag.GetValue ("MUSICBRAINZ_ALBUMID"));
+		Assert.AreEqual ("12345678-90ab-cdef-1234-567890abcdef", parsed.Tag.GetValue ("MUSICBRAINZ_ARTISTID"));
+		Assert.AreEqual ("abcdef12-3456-7890-abcd-ef1234567890", parsed.Tag.GetValue ("MUSICBRAINZ_RELEASEGROUPID"));
+		Assert.AreEqual ("fedcba98-7654-3210-fedc-ba9876543210", parsed.Tag.GetValue ("MUSICBRAINZ_ALBUMARTISTID"));
+	}
+
+	/// <summary>
+	/// Tests that APE tag ReplayGain fields use the standard format.
+	/// </summary>
+	[TestMethod]
+	public void ApeTag_ReplayGain_UsesStandardFormat ()
+	{
+		var tag = new ApeTag ();
+		tag.ReplayGainTrackGain = "-6.50 dB";
+		tag.ReplayGainTrackPeak = "0.988547";
+		tag.ReplayGainAlbumGain = "-7.20 dB";
+		tag.ReplayGainAlbumPeak = "0.995123";
+
+		var rendered = tag.Render ();
+		var parsed = ApeTag.Parse (rendered.Span);
+
+		Assert.IsTrue (parsed.IsSuccess);
+
+		Assert.AreEqual ("-6.50 dB", parsed.Tag!.GetValue ("REPLAYGAIN_TRACK_GAIN"));
+		Assert.AreEqual ("0.988547", parsed.Tag.GetValue ("REPLAYGAIN_TRACK_PEAK"));
+		Assert.AreEqual ("-7.20 dB", parsed.Tag.GetValue ("REPLAYGAIN_ALBUM_GAIN"));
+		Assert.AreEqual ("0.995123", parsed.Tag.GetValue ("REPLAYGAIN_ALBUM_PEAK"));
+	}
+
+	/// <summary>
+	/// Tests that APE tag extended metadata fields use the correct names.
+	/// APE standard fields are Title-case per spec.
+	/// </summary>
+	[TestMethod]
+	public void ApeTag_ExtendedMetadata_UsesTitleCaseNames ()
+	{
+		var tag = new ApeTag ();
+		tag.AlbumArtist = "Various Artists";
+		tag.Composer = "Test Composer";
+		tag.Conductor = "Test Conductor";
+		tag.Comment = "Test Comment";
+		tag.DiscNumber = 2;
+		tag.TotalDiscs = 3;
+
+		var rendered = tag.Render ();
+		var parsed = ApeTag.Parse (rendered.Span);
+
+		Assert.IsTrue (parsed.IsSuccess);
+
+		// APE standard fields use Title-case per spec
+		Assert.AreEqual ("Various Artists", parsed.Tag!.GetValue ("Album Artist"));
+		Assert.AreEqual ("Test Composer", parsed.Tag.GetValue ("Composer"));
+		Assert.AreEqual ("Test Conductor", parsed.Tag.GetValue ("Conductor"));
+		Assert.AreEqual ("Test Comment", parsed.Tag.GetValue ("Comment"));
+		// APE uses "2/3" format for disc with total
+		Assert.AreEqual ("2/3", parsed.Tag.GetValue ("Disc"));
+	}
+
+	/// <summary>
+	/// Tests that APE tag supports custom classical music fields via SetValue.
+	/// APE tags store custom fields directly - unlike ID3v2 with TXXX frames.
+	/// </summary>
+	[TestMethod]
+	public void ApeTag_ClassicalMusic_CustomFieldsWork ()
+	{
+		var tag = new ApeTag ();
+		// APE tags support arbitrary field names directly
+		tag.SetValue ("WORK", "Symphony No. 9 in D minor, Op. 125");
+		tag.SetValue ("MOVEMENT", "Allegro ma non troppo");
+		tag.SetValue ("MOVEMENTNUMBER", "1");
+		tag.SetValue ("MOVEMENTTOTAL", "4");
+
+		var rendered = tag.Render ();
+		var parsed = ApeTag.Parse (rendered.Span);
+
+		Assert.IsTrue (parsed.IsSuccess);
+
+		Assert.AreEqual ("Symphony No. 9 in D minor, Op. 125", parsed.Tag!.GetValue ("WORK"));
+		Assert.AreEqual ("Allegro ma non troppo", parsed.Tag.GetValue ("MOVEMENT"));
+		Assert.AreEqual ("1", parsed.Tag.GetValue ("MOVEMENTNUMBER"));
+		Assert.AreEqual ("4", parsed.Tag.GetValue ("MOVEMENTTOTAL"));
+	}
+
+	/// <summary>
+	/// Tests that APE tag can read case-insensitive field names.
+	/// Some tools write lowercase, some uppercase.
+	/// </summary>
+	[TestMethod]
+	public void ApeTag_CaseInsensitiveRead_Works ()
+	{
+		var tag = new ApeTag ();
+
+		// Set using lowercase directly
+		tag.SetValue ("title", "Case Test");
+		tag.SetValue ("artist", "Case Artist");
+		tag.SetValue ("album", "Case Album");
+
+		var rendered = tag.Render ();
+		var parsed = ApeTag.Parse (rendered.Span);
+
+		Assert.IsTrue (parsed.IsSuccess);
+
+		// Should read back via properties (case-insensitive)
+		Assert.AreEqual ("Case Test", parsed.Tag!.Title);
+		Assert.AreEqual ("Case Artist", parsed.Tag.Artist);
+		Assert.AreEqual ("Case Album", parsed.Tag.Album);
+	}
+
+	/// <summary>
+	/// Tests full round-trip of all APE tag metadata.
+	/// </summary>
+	[TestMethod]
+	public void ApeTag_AllMetadata_RoundTripsCorrectly ()
+	{
+		var tag = new ApeTag ();
+
+		// Basic metadata
+		tag.Title = "Symphony No. 9";
+		tag.Artist = "Berlin Philharmonic";
+		tag.Album = "Beethoven: Complete Symphonies";
+		tag.Year = "2024";
+		tag.Genre = "Classical";
+		tag.Track = 9;
+		tag.TotalTracks = 12;
+		tag.Comment = "Live recording";
+
+		// Extended metadata
+		tag.AlbumArtist = "Various Artists";
+		tag.Composer = "Ludwig van Beethoven";
+		tag.Conductor = "Herbert von Karajan";
+		tag.DiscNumber = 2;
+		tag.TotalDiscs = 5;
+
+		// Classical music (via SetValue since APE doesn't have built-in Work/Movement properties)
+		tag.SetValue ("WORK", "Symphony No. 9 in D minor, Op. 125");
+		tag.SetValue ("MOVEMENT", "Allegro ma non troppo");
+		tag.SetValue ("MOVEMENTNUMBER", "1");
+		tag.SetValue ("MOVEMENTTOTAL", "4");
+
+		// ReplayGain
+		tag.ReplayGainTrackGain = "-6.50 dB";
+		tag.ReplayGainAlbumGain = "-5.80 dB";
+
+		// MusicBrainz
+		tag.MusicBrainzTrackId = "12345678-1234-1234-1234-123456789012";
+		tag.MusicBrainzReleaseId = "abcdefab-cdef-abcd-efab-cdefabcdefab";
+
+		var rendered = tag.Render ();
+		var parsed = ApeTag.Parse (rendered.Span);
+
+		Assert.IsTrue (parsed.IsSuccess);
+		var result = parsed.Tag!;
+
+		Assert.AreEqual ("Symphony No. 9", result.Title);
+		Assert.AreEqual ("Berlin Philharmonic", result.Artist);
+		Assert.AreEqual ("Beethoven: Complete Symphonies", result.Album);
+		Assert.AreEqual ("2024", result.Year);
+		Assert.AreEqual ("Classical", result.Genre);
+		Assert.AreEqual (9u, result.Track);
+		Assert.AreEqual (12u, result.TotalTracks);
+		Assert.AreEqual ("Live recording", result.Comment);
+		Assert.AreEqual ("Various Artists", result.AlbumArtist);
+		Assert.AreEqual ("Ludwig van Beethoven", result.Composer);
+		Assert.AreEqual ("Herbert von Karajan", result.Conductor);
+		Assert.AreEqual (2u, result.DiscNumber);
+		Assert.AreEqual (5u, result.TotalDiscs);
+		Assert.AreEqual ("Symphony No. 9 in D minor, Op. 125", result.GetValue ("WORK"));
+		Assert.AreEqual ("Allegro ma non troppo", result.GetValue ("MOVEMENT"));
+		Assert.AreEqual ("1", result.GetValue ("MOVEMENTNUMBER"));
+		Assert.AreEqual ("4", result.GetValue ("MOVEMENTTOTAL"));
+		Assert.AreEqual ("-6.50 dB", result.ReplayGainTrackGain);
+		Assert.AreEqual ("-5.80 dB", result.ReplayGainAlbumGain);
+		Assert.AreEqual ("12345678-1234-1234-1234-123456789012", result.MusicBrainzTrackId);
+		Assert.AreEqual ("abcdefab-cdef-abcd-efab-cdefabcdefab", result.MusicBrainzReleaseId);
 	}
 }
