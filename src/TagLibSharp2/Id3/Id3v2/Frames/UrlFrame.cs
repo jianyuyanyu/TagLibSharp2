@@ -17,6 +17,7 @@ namespace TagLibSharp2.Id3.Id3v2.Frames;
 /// <list type="bullet">
 /// <item>WCOM: Commercial information</item>
 /// <item>WCOP: Copyright/legal information</item>
+/// <item>WFED: Podcast feed URL (Apple proprietary)</item>
 /// <item>WOAF: Official audio file webpage</item>
 /// <item>WOAR: Official artist/performer webpage</item>
 /// <item>WOAS: Official audio source webpage</item>
@@ -29,7 +30,7 @@ public sealed class UrlFrame
 {
 	static readonly HashSet<string> KnownUrlFrameIds = new (StringComparer.Ordinal)
 	{
-		"WCOM", "WCOP", "WOAF", "WOAR", "WOAS", "WORS", "WPAY", "WPUB"
+		"WCOM", "WCOP", "WFED", "WOAF", "WOAR", "WOAS", "WORS", "WPAY", "WPUB"
 	};
 
 	/// <summary>

@@ -140,6 +140,38 @@ public static class TestBuilders
 		}
 
 		/// <summary>
+		/// Creates a URL frame (W*** except WXXX) with the given URL.
+		/// </summary>
+		/// <param name="frameId">4-character frame ID (e.g., WOAR, WFED).</param>
+		/// <param name="url">URL content (Latin-1 encoded).</param>
+		/// <param name="version">ID3v2 major version (3 or 4).</param>
+		/// <returns>Complete frame bytes (header + content).</returns>
+		public static byte[] CreateUrlFrame (string frameId, string url, byte version)
+		{
+			var urlBytes = Encoding.Latin1.GetBytes (url);
+			return CreateFrame (frameId, urlBytes, version);
+		}
+
+		/// <summary>
+		/// Creates a complete ID3v2 tag with a single URL frame.
+		/// </summary>
+		/// <param name="frameId">4-character frame ID (e.g., WOAR, WFED).</param>
+		/// <param name="url">URL content.</param>
+		/// <param name="version">ID3v2 major version (3 or 4).</param>
+		/// <returns>Complete tag bytes (header + frame).</returns>
+		public static byte[] CreateTagWithUrlFrame (string frameId, string url, byte version)
+		{
+			var frame = CreateUrlFrame (frameId, url, version);
+			var header = CreateHeader (version, (uint)frame.Length);
+
+			var result = new byte[header.Length + frame.Length];
+			Array.Copy (header, result, header.Length);
+			Array.Copy (frame, 0, result, header.Length, frame.Length);
+
+			return result;
+		}
+
+		/// <summary>
 		/// Creates a complete ID3v2 tag with multiple text frames.
 		/// </summary>
 		/// <param name="version">ID3v2 major version (3 or 4).</param>

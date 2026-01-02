@@ -318,6 +318,22 @@ public abstract class Tag
 	public virtual bool IsCompilation { get => false; set { } }
 
 	/// <summary>
+	/// Gets or sets the podcast feed URL.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// For podcasts, this is the RSS/Atom feed URL where the podcast can be subscribed.
+	/// </para>
+	/// <para>
+	/// In ID3v2, this is stored in the Apple proprietary WFED frame.
+	/// Not all tag formats support this field. Default implementation returns null.
+	/// </para>
+	/// </remarks>
+#pragma warning disable CA1056 // URI properties should not be strings - ID3v2 URLs may be malformed
+	public virtual string? PodcastFeedUrl { get => null; set { } }
+#pragma warning restore CA1056
+
+	/// <summary>
 	/// Gets or sets the total number of tracks on the album/disc.
 	/// </summary>
 	/// <remarks>

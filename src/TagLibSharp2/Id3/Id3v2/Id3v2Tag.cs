@@ -510,6 +510,15 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// Reads from Apple's proprietary WFED frame used for podcast feeds.
+	/// </remarks>
+	public override string? PodcastFeedUrl {
+		get => GetUrl ("WFED");
+		set => SetUrl ("WFED", value);
+	}
+
+	/// <inheritdoc/>
 	public override string? Isrc {
 		get => GetTextFrame ("TSRC");
 		set => SetTextFrame ("TSRC", value);
@@ -884,25 +893,53 @@ public sealed class Id3v2Tag : Tag
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// Reads from Apple's MVNM frame first, then falls back to TXXX:MOVEMENT.
+	/// Writes to TXXX:MOVEMENT for compatibility with non-Apple software.
+	/// </remarks>
 	public override string? Movement {
-		get => GetUserText ("MOVEMENT");
+		get => GetTextFrame ("MVNM") ?? GetUserText ("MOVEMENT");
 		set => SetUserText ("MOVEMENT", value);
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// Reads from Apple's MVIN frame first (index part), then falls back to TXXX:MOVEMENTNUMBER.
+	/// Writes to TXXX:MOVEMENTNUMBER for compatibility with non-Apple software.
+	/// </remarks>
 	public override uint? MovementNumber {
 		get {
+			// Check Apple's MVIN frame first (format: "index" or "index/total")
+			var mvin = GetTextFrame ("MVIN");
+			if (!string.IsNullOrEmpty (mvin)) {
+				var index = mvin!.Split ('/')[0];
+				if (uint.TryParse (index, out var num))
+					return num;
+			}
+			// Fall back to TXXX:MOVEMENTNUMBER
 			var value = GetUserText ("MOVEMENTNUMBER");
-			return uint.TryParse (value, out var num) ? num : null;
+			return uint.TryParse (value, out var result) ? result : null;
 		}
 		set => SetUserText ("MOVEMENTNUMBER", value?.ToString (System.Globalization.CultureInfo.InvariantCulture));
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// Reads from Apple's MVIN frame first (total part), then falls back to TXXX:MOVEMENTTOTAL.
+	/// Writes to TXXX:MOVEMENTTOTAL for compatibility with non-Apple software.
+	/// </remarks>
 	public override uint? MovementTotal {
 		get {
+			// Check Apple's MVIN frame first (format: "index/total")
+			var mvin = GetTextFrame ("MVIN");
+			if (!string.IsNullOrEmpty (mvin)) {
+				var parts = mvin!.Split ('/');
+				if (parts.Length > 1 && uint.TryParse (parts[1], out var num))
+					return num;
+			}
+			// Fall back to TXXX:MOVEMENTTOTAL
 			var value = GetUserText ("MOVEMENTTOTAL");
-			return uint.TryParse (value, out var num) ? num : null;
+			return uint.TryParse (value, out var result) ? result : null;
 		}
 		set => SetUserText ("MOVEMENTTOTAL", value?.ToString (System.Globalization.CultureInfo.InvariantCulture));
 	}
@@ -1158,7 +1195,9 @@ public sealed class Id3v2Tag : Tag
 			}
 
 			// Handle text frames (T***) - exclude TXXX (user text) and TIPL/TMCL (involved people)
-			if (frameId[0] == 'T' && frameId != "TXXX" && frameId != "TIPL" && frameId != "TMCL") {
+			// Also handle Apple proprietary text frames: MVNM (movement name), MVIN (movement index/total)
+			if ((frameId[0] == 'T' && frameId != "TXXX" && frameId != "TIPL" && frameId != "TMCL") ||
+				frameId == "MVNM" || frameId == "MVIN") {
 				var frameResult = TextFrame.Read (frameId, frameContent, (Id3v2Version)header.MajorVersion);
 				if (frameResult.IsSuccess)
 					tag._frames.Add (frameResult.Frame!);
