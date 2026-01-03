@@ -20,10 +20,16 @@ A modern .NET library for reading and writing metadata in media files.
 | FLAC | ✅ | ✅ | ✅ |
 | Ogg Vorbis | ✅ | ✅ | ✅ |
 | Ogg Opus | ✅ | ✅ | ✅ |
+| Ogg FLAC | ✅ | ✅ | ✅ |
 | MP4/M4A (AAC/ALAC) | ✅ | ✅ | ✅ |
 | WAV (RIFF INFO/ID3v2) | ✅ | ✅ | ✅ |
 | AIFF/AIFC | ✅ | ✅ | ✅ |
 | DSF (DSD) | ✅ | ✅ | ✅ |
+| DFF (DSDIFF) | ✅ | ✅ | ✅ |
+| WavPack | ✅ | ✅ | ✅ |
+| Monkey's Audio (APE) | ✅ | ✅ | ✅ |
+| Musepack | ✅ | ✅ | ✅ |
+| ASF/WMA | ✅ | — | ✅ |
 | APE Tags (standalone) | ✅ | ✅ | — |
 
 ## Quick Start
