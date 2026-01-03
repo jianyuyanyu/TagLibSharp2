@@ -387,6 +387,124 @@ public class MusepackFileTests
 
 	#endregion
 
+	#region Async File I/O
+
+	[TestMethod]
+	public async Task SaveToFileAsync_PreservesAudioData ()
+	{
+		var data = CreateMinimalMusepackSV7File ();
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/test.mpc", data);
+
+		var readResult = await MusepackFile.ReadFromFileAsync ("/test.mpc", mockFs);
+		Assert.IsTrue (readResult.IsSuccess);
+
+		var file = readResult.File!;
+		file.EnsureApeTag ().Title = "Async Title";
+
+		var saveResult = await file.SaveToFileAsync ("/output.mpc", mockFs);
+		Assert.IsTrue (saveResult.IsSuccess, saveResult.Error);
+
+		// Re-read and verify
+		var verifyResult = await MusepackFile.ReadFromFileAsync ("/output.mpc", mockFs);
+		Assert.IsTrue (verifyResult.IsSuccess);
+		Assert.AreEqual ("Async Title", verifyResult.File!.ApeTag!.Title);
+	}
+
+	[TestMethod]
+	public void SaveToFile_WithoutPath_UsesSourcePath ()
+	{
+		var data = CreateMinimalMusepackSV7File ();
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/music/song.mpc", data);
+
+		var readResult = MusepackFile.ReadFromFile ("/music/song.mpc", mockFs);
+		Assert.IsTrue (readResult.IsSuccess);
+
+		var file = readResult.File!;
+		file.EnsureApeTag ().Title = "Updated";
+
+		var saveResult = file.SaveToFile (mockFs);
+		Assert.IsTrue (saveResult.IsSuccess, saveResult.Error);
+
+		// Verify saved to original path
+		var verifyResult = MusepackFile.ReadFromFile ("/music/song.mpc", mockFs);
+		Assert.AreEqual ("Updated", verifyResult.File!.ApeTag!.Title);
+	}
+
+	#endregion
+
+	#region Dispose Tests
+
+	[TestMethod]
+	public void Dispose_WithoutTag_DoesNotThrow ()
+	{
+		var data = CreateMinimalMusepackSV7File ();
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNull (result.File!.ApeTag);
+
+		result.File.Dispose (); // Should not throw
+	}
+
+	[TestMethod]
+	public void Dispose_CalledTwice_DoesNotThrow ()
+	{
+		var data = CreateMinimalMusepackSV7File ();
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		result.File!.Dispose ();
+		result.File.Dispose (); // Should not throw
+	}
+
+	#endregion
+
+	#region Result Type Tests
+
+	[TestMethod]
+	public void MusepackFileParseResult_Equals_SameError_ReturnsTrue ()
+	{
+		var result1 = MusepackFile.Parse (new byte[3]);
+		var result2 = MusepackFile.Parse (new byte[3]);
+
+		Assert.IsTrue (result1.Equals (result2));
+		Assert.IsTrue (result1 == result2);
+	}
+
+	[TestMethod]
+	public void MusepackFileParseResult_Equals_Object_ReturnsCorrectly ()
+	{
+		var result1 = MusepackFile.Parse (new byte[3]);
+		var result2 = MusepackFile.Parse (new byte[3]);
+		object boxed = result2;
+
+		Assert.IsTrue (result1.Equals (boxed));
+		Assert.IsFalse (result1.Equals ("not a result"));
+		Assert.IsFalse (result1.Equals (null));
+	}
+
+	[TestMethod]
+	public void MusepackFileParseResult_GetHashCode_SameError_SameHash ()
+	{
+		var result1 = MusepackFile.Parse (new byte[3]);
+		var result2 = MusepackFile.Parse (new byte[3]);
+
+		Assert.AreEqual (result1.GetHashCode (), result2.GetHashCode ());
+	}
+
+	[TestMethod]
+	public void MusepackFileParseResult_NotEquals_DifferentError_ReturnsTrue ()
+	{
+		var result1 = MusepackFile.Parse (new byte[3]);
+		var result2 = MusepackFile.Parse (new byte[10]);
+
+		Assert.IsFalse (result1.Equals (result2));
+		Assert.IsTrue (result1 != result2);
+	}
+
+	#endregion
+
 	#region Helper Methods
 
 	/// <summary>

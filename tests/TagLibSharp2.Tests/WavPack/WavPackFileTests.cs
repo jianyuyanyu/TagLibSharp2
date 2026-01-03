@@ -378,6 +378,148 @@ public class WavPackFileTests
 
 	#endregion
 
+	#region Async File I/O
+
+	[TestMethod]
+	public async Task SaveToFileAsync_PreservesAudioData ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/test.wv", data);
+
+		var readResult = await WavPackFile.ReadFromFileAsync ("/test.wv", mockFs);
+		Assert.IsTrue (readResult.IsSuccess);
+
+		var file = readResult.File!;
+		file.EnsureApeTag ().Title = "Async Title";
+
+		var saveResult = await file.SaveToFileAsync ("/output.wv", mockFs);
+		Assert.IsTrue (saveResult.IsSuccess, saveResult.Error);
+
+		// Re-read and verify
+		var verifyResult = await WavPackFile.ReadFromFileAsync ("/output.wv", mockFs);
+		Assert.IsTrue (verifyResult.IsSuccess);
+		Assert.AreEqual ("Async Title", verifyResult.File!.ApeTag!.Title);
+	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_WithoutPath_UsesSourcePath ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/music/song.wv", data);
+
+		var readResult = await WavPackFile.ReadFromFileAsync ("/music/song.wv", mockFs);
+		Assert.IsTrue (readResult.IsSuccess);
+
+		var file = readResult.File!;
+		file.EnsureApeTag ().Title = "Updated Async";
+
+		var saveResult = await file.SaveToFileAsync (mockFs);
+		Assert.IsTrue (saveResult.IsSuccess, saveResult.Error);
+
+		// Verify saved to original path
+		var verifyResult = await WavPackFile.ReadFromFileAsync ("/music/song.wv", mockFs);
+		Assert.AreEqual ("Updated Async", verifyResult.File!.ApeTag!.Title);
+	}
+
+	#endregion
+
+	#region Dispose Tests
+
+	[TestMethod]
+	public void Dispose_WithTag_ClearsTag ()
+	{
+		var data = CreateMinimalWavPackFileWithTag (title: "Test");
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.File!.ApeTag);
+
+		result.File.Dispose ();
+
+		Assert.IsNull (result.File.ApeTag);
+	}
+
+	[TestMethod]
+	public void Dispose_WithoutTag_DoesNotThrow ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNull (result.File!.ApeTag);
+
+		result.File.Dispose (); // Should not throw
+	}
+
+	[TestMethod]
+	public void Dispose_CalledTwice_DoesNotThrow ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		result.File!.Dispose ();
+		result.File.Dispose (); // Should not throw
+	}
+
+	#endregion
+
+	#region Result Type Tests
+
+	[TestMethod]
+	public void WavPackFileParseResult_Equals_SameFile_ReturnsTrue ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var result1 = WavPackFile.Parse (data);
+		var result2 = WavPackFile.Parse (data);
+
+		// Two different parse results with same structure
+		Assert.IsFalse (result1.Equals (result2)); // Different file instances
+	}
+
+	[TestMethod]
+	public void WavPackFileParseResult_Equals_SameError_ReturnsTrue ()
+	{
+		var result1 = WavPackFile.Parse (new byte[3]);
+		var result2 = WavPackFile.Parse (new byte[3]);
+
+		Assert.IsTrue (result1.Equals (result2));
+		Assert.IsTrue (result1 == result2);
+	}
+
+	[TestMethod]
+	public void WavPackFileParseResult_Equals_Object_ReturnsCorrectly ()
+	{
+		var result1 = WavPackFile.Parse (new byte[3]);
+		var result2 = WavPackFile.Parse (new byte[3]);
+		object boxed = result2;
+
+		Assert.IsTrue (result1.Equals (boxed));
+		Assert.IsFalse (result1.Equals ("not a result"));
+		Assert.IsFalse (result1.Equals (null));
+	}
+
+	[TestMethod]
+	public void WavPackFileParseResult_GetHashCode_SameError_SameHash ()
+	{
+		var result1 = WavPackFile.Parse (new byte[3]);
+		var result2 = WavPackFile.Parse (new byte[3]);
+
+		Assert.AreEqual (result1.GetHashCode (), result2.GetHashCode ());
+	}
+
+	[TestMethod]
+	public void WavPackFileParseResult_NotEquals_DifferentError_ReturnsTrue ()
+	{
+		var result1 = WavPackFile.Parse (new byte[3]);
+		var result2 = WavPackFile.Parse (new byte[10]);
+
+		Assert.IsFalse (result1.Equals (result2));
+		Assert.IsTrue (result1 != result2);
+	}
+
+	#endregion
+
 	#region Edge Cases
 
 	[TestMethod]
@@ -413,6 +555,173 @@ public class WavPackFileTests
 
 		Assert.IsTrue (result.IsSuccess, result.Error);
 		Assert.AreEqual (32, result.File!.BitsPerSample);
+	}
+
+	[TestMethod]
+	public void Parse_CustomSampleRate_ParsesFromMetadata ()
+	{
+		// Sample rate index 15 = custom, needs metadata sub-block 0x07
+		var data = CreateMinimalWavPackFileWithCustomSampleRate (88200);
+		var result = WavPackFile.Parse (data);
+
+		Assert.IsTrue (result.IsSuccess, result.Error);
+		Assert.AreEqual (88200, result.File!.SampleRate);
+	}
+
+	[TestMethod]
+	public void Parse_CustomSampleRate_FallbackToDefault ()
+	{
+		// Sample rate index 15 without metadata sub-block should fallback to 44100
+		var data = CreateMinimalWavPackFile (sampleRateIndex: 15);
+		var result = WavPackFile.Parse (data);
+
+		Assert.IsTrue (result.IsSuccess, result.Error);
+		Assert.AreEqual (44100, result.File!.SampleRate); // Default fallback
+	}
+
+	[TestMethod]
+	public void Parse_MultiChannel_ParsesChannelCount ()
+	{
+		var data = CreateMinimalWavPackFileWithChannelInfo (6);
+		var result = WavPackFile.Parse (data);
+
+		Assert.IsTrue (result.IsSuccess, result.Error);
+		Assert.AreEqual (6, result.File!.Channels);
+	}
+
+	[TestMethod]
+	public void EnsureApeTag_CreatesNewTag ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNull (result.File!.ApeTag);
+
+		var tag = result.File.EnsureApeTag ();
+
+		Assert.IsNotNull (tag);
+		Assert.AreSame (tag, result.File.ApeTag);
+	}
+
+	[TestMethod]
+	public void EnsureApeTag_ReturnsExistingTag ()
+	{
+		var data = CreateMinimalWavPackFileWithTag (title: "Test");
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.File!.ApeTag);
+
+		var existingTag = result.File.ApeTag;
+		var tag = result.File.EnsureApeTag ();
+
+		Assert.AreSame (existingTag, tag);
+	}
+
+	[TestMethod]
+	public void RemoveApeTag_ClearsTag ()
+	{
+		var data = CreateMinimalWavPackFileWithTag (title: "Test");
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.File!.ApeTag);
+
+		result.File.RemoveApeTag ();
+
+		Assert.IsNull (result.File.ApeTag);
+	}
+
+	[TestMethod]
+	public void Render_PreservesAudioData ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		var rendered = result.File!.Render (data);
+
+		Assert.IsNotNull (rendered);
+		Assert.IsTrue (rendered.Length >= 32); // At least header
+	}
+
+	[TestMethod]
+	public void Render_AddsApeTag ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		result.File!.EnsureApeTag ().Title = "Test Title";
+		var rendered = result.File.Render (data);
+
+		Assert.IsNotNull (rendered);
+		Assert.IsTrue (rendered.Length > data.Length);
+	}
+
+	[TestMethod]
+	public void SaveToFile_WithoutSourcePath_ReturnsError ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		var saveResult = result.File!.SaveToFile ();
+
+		Assert.IsFalse (saveResult.IsSuccess);
+		Assert.IsTrue (saveResult.Error!.Contains ("source path"));
+	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_WithoutSourcePath_ReturnsError ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		var saveResult = await result.File!.SaveToFileAsync ();
+
+		Assert.IsFalse (saveResult.IsSuccess);
+		Assert.IsTrue (saveResult.Error!.Contains ("source path"));
+	}
+
+	[TestMethod]
+	public void SaveToFile_WithPath_WritesFile ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var mockFs = new MockFileSystem ();
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		result.File!.EnsureApeTag ().Title = "Modified";
+		var saveResult = result.File.SaveToFile ("/output.wv", mockFs);
+
+		Assert.IsTrue (saveResult.IsSuccess, saveResult.Error);
+		Assert.IsTrue (mockFs.FileExists ("/output.wv"));
+	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_WithPath_WritesFile ()
+	{
+		var data = CreateMinimalWavPackFile ();
+		var mockFs = new MockFileSystem ();
+		var result = WavPackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		result.File!.EnsureApeTag ().Title = "Modified";
+		var saveResult = await result.File.SaveToFileAsync ("/output.wv", mockFs);
+
+		Assert.IsTrue (saveResult.IsSuccess, saveResult.Error);
+		Assert.IsTrue (mockFs.FileExists ("/output.wv"));
+	}
+
+	[TestMethod]
+	public void CalculateProperties_ZeroSampleRate_NoProperties ()
+	{
+		// Create file with sample rate index 15 (custom) but no metadata - defaults to 44100
+		var data = CreateMinimalWavPackFile (sampleRateIndex: 15, totalSamples: 0);
+		var result = WavPackFile.Parse (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNull (result.File!.Properties); // No properties when totalSamples is 0
 	}
 
 	#endregion
@@ -547,6 +856,85 @@ public class WavPackFileTests
 	{
 		s.WriteByte ((byte)v);
 		s.WriteByte ((byte)(v >> 8));
+	}
+
+	/// <summary>
+	/// Creates a WavPack file with custom sample rate in metadata sub-block 0x07.
+	/// </summary>
+	private static byte[] CreateMinimalWavPackFileWithCustomSampleRate (int sampleRate)
+	{
+		using var ms = new MemoryStream ();
+
+		// Block header (32 bytes)
+		ms.Write ("wvpk"u8);
+
+		// Calculate block size: header content (24 bytes) + metadata sub-block (6 bytes)
+		var blockSize = 24 + 6;
+		WriteUInt32LE (ms, (uint)blockSize);
+		WriteUInt16LE (ms, 0x410); // Version
+		ms.WriteByte (0); // Track
+		ms.WriteByte (0); // Index
+		WriteUInt32LE (ms, 44100); // Total samples
+		WriteUInt32LE (ms, 0); // Block index
+		WriteUInt32LE (ms, 44100); // Block samples
+
+		// Flags: sample rate index = 15 (custom), stereo, 16-bit
+		uint flags = 1; // 16-bit (bytesPerSample - 1 = 1)
+		flags |= 15u << 23; // Sample rate index 15 = custom
+		WriteUInt32LE (ms, flags);
+		WriteUInt32LE (ms, 0); // CRC
+
+		// Metadata sub-block 0x07 (custom sample rate)
+		// ID byte: 0x07 base ID | 0x20 optional flag | 0x40 odd size flag (if 3 bytes)
+		// Since we're writing 4 bytes (2 words), no odd flag needed
+		ms.WriteByte (0x27); // ID: 0x07 | 0x20 (optional flag)
+		ms.WriteByte (2); // Size in words (4 bytes)
+
+		// Sample rate as 3-byte little-endian (padded to 4 bytes)
+		ms.WriteByte ((byte)(sampleRate & 0xFF));
+		ms.WriteByte ((byte)((sampleRate >> 8) & 0xFF));
+		ms.WriteByte ((byte)((sampleRate >> 16) & 0xFF));
+		ms.WriteByte (0); // Padding to make even word count
+
+		return ms.ToArray ();
+	}
+
+	/// <summary>
+	/// Creates a WavPack file with multi-channel info in metadata sub-block 0x0D.
+	/// </summary>
+	private static byte[] CreateMinimalWavPackFileWithChannelInfo (int channelCount)
+	{
+		using var ms = new MemoryStream ();
+
+		// Block header (32 bytes)
+		ms.Write ("wvpk"u8);
+
+		// Calculate block size: header content (24 bytes) + metadata sub-block (4 bytes)
+		var blockSize = 24 + 4;
+		WriteUInt32LE (ms, (uint)blockSize);
+		WriteUInt16LE (ms, 0x410); // Version
+		ms.WriteByte (0); // Track
+		ms.WriteByte (0); // Index
+		WriteUInt32LE (ms, 44100); // Total samples
+		WriteUInt32LE (ms, 0); // Block index
+		WriteUInt32LE (ms, 44100); // Block samples
+
+		// Flags: 44100 Hz (index 9), stereo, 16-bit
+		uint flags = 1; // 16-bit
+		flags |= 9u << 23; // Sample rate index 9 = 44100
+		WriteUInt32LE (ms, flags);
+		WriteUInt32LE (ms, 0); // CRC
+
+		// Metadata sub-block 0x0D (channel info)
+		// ID byte: 0x0D base ID | 0x20 optional flag
+		ms.WriteByte (0x2D); // ID: 0x0D | 0x20 (optional flag)
+		ms.WriteByte (1); // Size in words (2 bytes)
+
+		// Channel count
+		ms.WriteByte ((byte)channelCount);
+		ms.WriteByte (0); // Padding
+
+		return ms.ToArray ();
 	}
 
 	#endregion

@@ -377,6 +377,38 @@ public static class AsfTestBuilder
 	}
 
 	/// <summary>
+	/// Creates a minimal WMA file with extended content description metadata.
+	/// </summary>
+	public static byte[] CreateMinimalWmaWithExtended (
+		string? album = null,
+		string? genre = null,
+		string? year = null,
+		uint? track = null)
+	{
+		var descriptors = new List<AsfDescriptor> ();
+		if (album is not null)
+			descriptors.Add (AsfDescriptor.CreateString ("WM/AlbumTitle", album));
+		if (genre is not null)
+			descriptors.Add (AsfDescriptor.CreateString ("WM/Genre", genre));
+		if (year is not null)
+			descriptors.Add (AsfDescriptor.CreateString ("WM/Year", year));
+		if (track.HasValue)
+			descriptors.Add (AsfDescriptor.CreateDword ("WM/TrackNumber", track.Value));
+
+		var fileProps = CreateFilePropertiesObject (1000, 128000);
+		var streamProps = CreateAudioStreamPropertiesObject ();
+		var extendedDesc = CreateExtendedContentDescriptionObject ([.. descriptors]);
+
+		var header = CreateHeaderObject (fileProps, streamProps, extendedDesc);
+		var data = CreateDataObject (0);
+
+		var result = new byte[header.Length + data.Length];
+		Array.Copy (header, result, header.Length);
+		Array.Copy (data, 0, result, header.Length, data.Length);
+		return result;
+	}
+
+	/// <summary>
 	/// Creates a UTF-16LE encoded string with null terminator.
 	/// </summary>
 	public static byte[] CreateUtf16String (string value)
