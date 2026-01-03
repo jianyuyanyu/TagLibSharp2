@@ -7,6 +7,7 @@
 // - IFF-based chunk structure (FRM8 container)
 // - No native metadata (ID3v2 is unofficial extension)
 
+using System.Buffers.Binary;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TagLibSharp2.Dff;
 using TagLibSharp2.Dsf;
@@ -442,6 +443,203 @@ public class DffFileTests
 		Assert.AreEqual ("Modified", reparsed.File!.Id3v2Tag!.Title);
 		Assert.AreEqual (5644800, reparsed.File.SampleRate);
 		Assert.AreEqual (2, reparsed.File.Channels);
+	}
+
+	[TestMethod]
+	public void RoundTrip_ModifyMetadata_PreservesAudioBytesExactly ()
+	{
+		// Arrange - create DFF with known audio pattern (0xAA, 0xBB, 0xCC repeating)
+		var audioSize = 4096;
+		var original = TestBuilders.Dff.CreateWithKnownAudioPattern (audioSize: audioSize);
+
+		var parseResult = DffFile.Parse (original);
+		Assert.IsTrue (parseResult.IsSuccess, $"Initial parse failed: {parseResult.Error}");
+		var file = parseResult.File!;
+
+		// Find the DSD chunk offset in original (after FRM8 header + FVER + PROP chunks)
+		var dsdChunkOffset = FindDsdChunkOffset (original);
+		var originalAudio = original.AsSpan (dsdChunkOffset + 12, audioSize); // Skip "DSD " + 8-byte size
+
+		// Act - add metadata and render
+		file.EnsureId3v2Tag ();
+		file.Id3v2Tag!.Title = "Test Title With Many Characters";
+		file.Id3v2Tag.Artist = "Test Artist";
+		file.Id3v2Tag.Album = "Test Album";
+		var rendered = file.Render ();
+
+		// Assert - audio data should be byte-for-byte identical
+		var renderedDsdOffset = FindDsdChunkOffset (rendered.ToArray ());
+		var renderedAudio = rendered.Span.Slice (renderedDsdOffset + 12, audioSize);
+
+		Assert.IsTrue (originalAudio.SequenceEqual (renderedAudio),
+			"Audio data was not preserved byte-for-byte during metadata modification");
+
+		// Also verify the known pattern is still correct
+		for (int i = 0; i < audioSize; i++) {
+			var expected = (byte)(0xAA + (i % 3) * 0x11);
+			Assert.AreEqual (expected, renderedAudio[i],
+				$"Audio byte at offset {i} was modified: expected 0x{expected:X2}, got 0x{renderedAudio[i]:X2}");
+		}
+	}
+
+	[TestMethod]
+	public void RoundTrip_EnlargeMetadata_PreservesAudioBytes ()
+	{
+		// Arrange - start with small metadata
+		var audioSize = 4096;
+		var original = TestBuilders.Dff.CreateWithKnownAudioPattern (audioSize: audioSize);
+		var parseResult = DffFile.Parse (original);
+		Assert.IsTrue (parseResult.IsSuccess);
+		var file = parseResult.File!;
+
+		// Get original audio data
+		var dsdChunkOffset = FindDsdChunkOffset (original);
+		var originalAudio = original.AsSpan (dsdChunkOffset + 12, audioSize);
+
+		// Act - add large metadata (much bigger than before)
+		file.EnsureId3v2Tag ();
+		file.Id3v2Tag!.Title = new string ('T', 500);
+		file.Id3v2Tag.Artist = new string ('A', 500);
+		file.Id3v2Tag.Album = new string ('B', 500);
+		file.Id3v2Tag.Comment = new string ('C', 1000);
+		var rendered = file.Render ();
+
+		// Assert - audio unchanged
+		var renderedDsdOffset = FindDsdChunkOffset (rendered.ToArray ());
+		var renderedAudio = rendered.Span.Slice (renderedDsdOffset + 12, audioSize);
+		Assert.IsTrue (originalAudio.SequenceEqual (renderedAudio),
+			"Audio data was corrupted when enlarging metadata");
+	}
+
+	[TestMethod]
+	public void RoundTrip_ShrinkMetadata_PreservesAudioBytes ()
+	{
+		// Arrange - start with large metadata
+		var original = TestBuilders.Dff.CreateWithId3v2 (
+			title: new string ('T', 500),
+			artist: new string ('A', 500),
+			album: new string ('B', 500));
+		var parseResult = DffFile.Parse (original);
+		Assert.IsTrue (parseResult.IsSuccess);
+		var file = parseResult.File!;
+
+		// Get original audio data (pattern is 0x69 from CreateMinimal)
+		var audioSize = 4096;
+		var dsdChunkOffset = FindDsdChunkOffset (original);
+		var originalAudio = original.AsSpan (dsdChunkOffset + 12, audioSize);
+
+		// Act - shrink to minimal metadata
+		file.Id3v2Tag!.Title = "X";
+		file.Id3v2Tag.Artist = "Y";
+		file.Id3v2Tag.Album = "Z";
+		var rendered = file.Render ();
+
+		// Assert - audio unchanged
+		var renderedDsdOffset = FindDsdChunkOffset (rendered.ToArray ());
+		var renderedAudio = rendered.Span.Slice (renderedDsdOffset + 12, audioSize);
+		Assert.IsTrue (originalAudio.SequenceEqual (renderedAudio),
+			"Audio data was corrupted when shrinking metadata");
+	}
+
+	[TestMethod]
+	public void RoundTrip_RemoveId3v2_PreservesAudioBytes ()
+	{
+		// Arrange - start with ID3v2 tag
+		var original = TestBuilders.Dff.CreateWithId3v2 (title: "Test", artist: "Artist");
+		var parseResult = DffFile.Parse (original);
+		Assert.IsTrue (parseResult.IsSuccess);
+		var file = parseResult.File!;
+		Assert.IsNotNull (file.Id3v2Tag);
+
+		// Get original audio data
+		var audioSize = 4096;
+		var dsdChunkOffset = FindDsdChunkOffset (original);
+		var originalAudio = original.AsSpan (dsdChunkOffset + 12, audioSize);
+
+		// Act - remove ID3v2 tag
+		file.Id3v2Tag = null;
+		var rendered = file.Render ();
+
+		// Assert - no ID3v2 tag in output
+		var reparsed = DffFile.Parse (rendered.Span);
+		Assert.IsTrue (reparsed.IsSuccess);
+		Assert.IsNull (reparsed.File!.Id3v2Tag);
+
+		// Assert - audio unchanged
+		var renderedDsdOffset = FindDsdChunkOffset (rendered.ToArray ());
+		var renderedAudio = rendered.Span.Slice (renderedDsdOffset + 12, audioSize);
+		Assert.IsTrue (originalAudio.SequenceEqual (renderedAudio),
+			"Audio data was corrupted when removing ID3v2 tag");
+	}
+
+	[TestMethod]
+	public void Render_UpdatesFrm8SizeCorrectly ()
+	{
+		// Arrange - file without ID3
+		var original = TestBuilders.Dff.CreateMinimal ();
+		var originalFrm8Size = BinaryPrimitives.ReadUInt64BigEndian (original.AsSpan (4, 8));
+
+		var parseResult = DffFile.Parse (original);
+		Assert.IsTrue (parseResult.IsSuccess);
+		var file = parseResult.File!;
+
+		// Act - add ID3 tag
+		file.EnsureId3v2Tag ();
+		file.Id3v2Tag!.Title = "Test";
+		var rendered = file.Render ();
+
+		// Assert - FRM8 size updated correctly
+		var newFrm8Size = BinaryPrimitives.ReadUInt64BigEndian (rendered.Span.Slice (4, 8));
+		var expectedFrm8Size = (ulong)(rendered.Length - 12); // Total - FRM8 header
+
+		Assert.AreEqual (expectedFrm8Size, newFrm8Size,
+			$"FRM8 size mismatch: expected {expectedFrm8Size}, got {newFrm8Size}");
+		Assert.IsTrue (newFrm8Size > originalFrm8Size,
+			"FRM8 size should increase when adding ID3 tag");
+	}
+
+	[TestMethod]
+	public void Render_OddSizedId3Tag_AddsProperPadding ()
+	{
+		// Arrange
+		var original = TestBuilders.Dff.CreateMinimal ();
+		var parseResult = DffFile.Parse (original);
+		Assert.IsTrue (parseResult.IsSuccess);
+		var file = parseResult.File!;
+
+		// Act - create tag that will have odd byte count
+		file.EnsureId3v2Tag ();
+		file.Id3v2Tag!.Title = "X"; // Minimal tag
+		var rendered = file.Render ();
+
+		// Assert - file should be valid and reparseable
+		var reparsed = DffFile.Parse (rendered.Span);
+		Assert.IsTrue (reparsed.IsSuccess, $"Re-parse failed: {reparsed.Error}");
+		Assert.AreEqual ("X", reparsed.File!.Id3v2Tag!.Title);
+
+		// FRM8 size should match actual file size
+		var frm8Size = BinaryPrimitives.ReadUInt64BigEndian (rendered.Span.Slice (4, 8));
+		Assert.AreEqual ((ulong)(rendered.Length - 12), frm8Size);
+	}
+
+	/// <summary>
+	/// Finds the offset of the DSD chunk in a DFF file.
+	/// </summary>
+	static int FindDsdChunkOffset (byte[] data)
+	{
+		var offset = 16; // After FRM8 header (4 + 8 + 4)
+		while (offset < data.Length - 12) {
+			var chunkId = System.Text.Encoding.ASCII.GetString (data, offset, 4);
+			var chunkSize = BinaryPrimitives.ReadUInt64BigEndian (data.AsSpan (offset + 4, 8));
+
+			if (chunkId == "DSD ")
+				return offset;
+
+			offset += 12 + (int)chunkSize;
+			if (chunkSize % 2 != 0)
+				offset++; // IFF padding
+		}
+		throw new InvalidOperationException ("DSD chunk not found");
 	}
 
 	#endregion

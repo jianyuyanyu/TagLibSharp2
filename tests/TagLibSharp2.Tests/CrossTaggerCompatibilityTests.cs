@@ -1028,6 +1028,93 @@ public sealed class CrossTaggerCompatibilityTests
 	}
 
 	/// <summary>
+	/// Tests that DFF files preserve MusicBrainz, ReplayGain, and classical music metadata
+	/// via ID3v2 tags (the de facto standard for DFF tagging).
+	/// </summary>
+	[TestMethod]
+	[TestCategory ("Dff")]
+	public void DffFile_Id3v2Tag_PreservesExtendedMetadata ()
+	{
+		// Create DFF file with ID3v2 tag
+		var data = TestBuilders.Dff.CreateMinimal ();
+		var result = TagLibSharp2.Dff.DffFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess, result.Error);
+
+		var file = result.File!;
+		file.EnsureId3v2Tag ();
+		var tag = file.Id3v2Tag!;
+
+		// MusicBrainz IDs
+		tag.MusicBrainzTrackId = "12345678-1234-1234-1234-123456789012";
+		tag.MusicBrainzReleaseId = "abcdefab-cdef-abcd-efab-cdefabcdefab";
+		tag.MusicBrainzArtistId = "fedcba98-7654-3210-fedc-ba9876543210";
+
+		// ReplayGain (string format compatible with taggers)
+		tag.ReplayGainTrackGain = "-5.50 dB";
+		tag.ReplayGainTrackPeak = "0.950000";
+		tag.ReplayGainAlbumGain = "-4.20 dB";
+		tag.ReplayGainAlbumPeak = "0.980000";
+
+		// Classical music metadata
+		tag.Work = "Symphony No. 9";
+		tag.Movement = "Allegro ma non troppo";
+		tag.MovementNumber = 1;
+		tag.MovementTotal = 4;
+		tag.Conductor = "Herbert von Karajan";
+		tag.Composers = ["Ludwig van Beethoven"];
+
+		// Render and reparse
+		var rendered = file.Render ();
+		var reparsed = TagLibSharp2.Dff.DffFile.Parse (rendered.Span);
+		Assert.IsTrue (reparsed.IsSuccess, $"Reparse failed: {reparsed.Error}");
+
+		var reparsedTag = reparsed.File!.Id3v2Tag!;
+
+		// Verify MusicBrainz IDs
+		Assert.AreEqual ("12345678-1234-1234-1234-123456789012", reparsedTag.MusicBrainzTrackId);
+		Assert.AreEqual ("abcdefab-cdef-abcd-efab-cdefabcdefab", reparsedTag.MusicBrainzReleaseId);
+		Assert.AreEqual ("fedcba98-7654-3210-fedc-ba9876543210", reparsedTag.MusicBrainzArtistId);
+
+		// Verify ReplayGain
+		Assert.AreEqual ("-5.50 dB", reparsedTag.ReplayGainTrackGain);
+		Assert.AreEqual ("0.950000", reparsedTag.ReplayGainTrackPeak);
+		Assert.AreEqual ("-4.20 dB", reparsedTag.ReplayGainAlbumGain);
+		Assert.AreEqual ("0.980000", reparsedTag.ReplayGainAlbumPeak);
+
+		// Verify classical music metadata
+		Assert.AreEqual ("Symphony No. 9", reparsedTag.Work);
+		Assert.AreEqual ("Allegro ma non troppo", reparsedTag.Movement);
+		Assert.AreEqual ((uint)1, reparsedTag.MovementNumber);
+		Assert.AreEqual ((uint)4, reparsedTag.MovementTotal);
+		Assert.AreEqual ("Herbert von Karajan", reparsedTag.Conductor);
+		Assert.AreEqual (1, reparsedTag.Composers.Length);
+		Assert.AreEqual ("Ludwig van Beethoven", reparsedTag.Composers[0]);
+	}
+
+	/// <summary>
+	/// Tests that DFF files preserve embedded lyrics via ID3v2 USLT frame.
+	/// </summary>
+	[TestMethod]
+	[TestCategory ("Dff")]
+	public void DffFile_Id3v2Tag_PreservesLyrics ()
+	{
+		var data = TestBuilders.Dff.CreateMinimal ();
+		var result = TagLibSharp2.Dff.DffFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		var file = result.File!;
+		file.EnsureId3v2Tag ();
+		file.Id3v2Tag!.Lyrics = "These are the lyrics\nWith multiple lines";
+
+		var rendered = file.Render ();
+		var reparsed = TagLibSharp2.Dff.DffFile.Parse (rendered.Span);
+		Assert.IsTrue (reparsed.IsSuccess);
+
+		Assert.AreEqual ("These are the lyrics\nWith multiple lines",
+			reparsed.File!.Id3v2Tag!.Lyrics);
+	}
+
+	/// <summary>
 	/// Tests that APE tag format files (WavPack, Monkey's Audio, Musepack)
 	/// use MusicBrainz field names compatible with Picard.
 	/// </summary>

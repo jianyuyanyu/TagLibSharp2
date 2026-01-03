@@ -226,7 +226,7 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 
 | Format | Status | Notes |
 |--------|--------|-------|
-| DFF (DSDIFF) | ✅ | Read-only (no tag support) |
+| DFF (DSDIFF) | ✅ | ID3v2 tags (unofficial extension) |
 | WMA/ASF | ✅ | Full ASF container |
 | WavPack | ✅ | APE tags |
 | Musepack | ✅ | APE tags, SV7/SV8 |
@@ -380,7 +380,7 @@ Consider adding compatibility shim for TagLib# consumers:
 | MP4/M4A | ✅ | Complete with ISO 14496-12 parsing + iTunes atoms + AAC/ALAC |
 | Opus | ✅ | Complete with OpusHead + OpusTags + R128 gain |
 | DSF | ✅ | Complete with DSD chunk + ID3v2 at offset |
-| DFF | ✅ | Complete with read-only support |
+| DFF | ✅ | Complete with ID3v2 tag support |
 | APE Tags | ✅ | Complete with binary items + cover art |
 | WavPack | ✅ | Complete with APE tags |
 | ASF/WMA | ✅ | Complete with GUID-based parsing |

@@ -4118,5 +4118,101 @@ public static class TestBuilders
 
 			return builder.ToArray ();
 		}
+
+		/// <summary>
+		/// Creates a DFF file with ID3v2 metadata chunk (the writable format).
+		/// </summary>
+		public static byte[] CreateWithId3v2 (
+			string? title = null,
+			string? artist = null,
+			string? album = null,
+			int sampleRate = 2822400,
+			int channels = 2)
+		{
+			// First create base file without ID3
+			var baseFile = CreateMinimal (sampleRate, channels);
+
+			// If no metadata requested, return base file
+			if (string.IsNullOrEmpty (title) && string.IsNullOrEmpty (artist) && string.IsNullOrEmpty (album))
+				return baseFile;
+
+			// Parse and add ID3v2 tag
+			var parseResult = TagLibSharp2.Dff.DffFile.Parse (baseFile);
+			if (!parseResult.IsSuccess)
+				throw new InvalidOperationException ($"Failed to parse DFF: {parseResult.Error}");
+
+			var file = parseResult.File!;
+			file.EnsureId3v2Tag ();
+
+			if (!string.IsNullOrEmpty (title))
+				file.Id3v2Tag!.Title = title;
+			if (!string.IsNullOrEmpty (artist))
+				file.Id3v2Tag!.Artist = artist;
+			if (!string.IsNullOrEmpty (album))
+				file.Id3v2Tag!.Album = album;
+
+			return file.Render ().ToArray ();
+		}
+
+		/// <summary>
+		/// Creates a DFF file with a known audio pattern for byte-level verification.
+		/// The audio pattern repeats 0xAA, 0xBB, 0xCC throughout the DSD data.
+		/// </summary>
+		public static byte[] CreateWithKnownAudioPattern (
+			int sampleRate = 2822400,
+			int channels = 2,
+			int audioSize = 4096)
+		{
+			var builder = new BinaryDataBuilder ();
+
+			// Calculate chunk sizes
+			var fverChunkSize = 12 + 4;
+			var fsChunkDataSize = 4;
+			var chnlChunkDataSize = 2 + channels * 4;
+			var cmprChunkDataSize = 5;
+			var propContentSize = 4 + (12 + fsChunkDataSize) + (12 + chnlChunkDataSize) + (12 + cmprChunkDataSize);
+			var propChunkSize = 12 + propContentSize;
+			var dsdChunkSize = 12 + audioSize;
+			var formSize = 4 + fverChunkSize + propChunkSize + dsdChunkSize;
+
+			// FRM8 container
+			builder.Add (TestConstants.Magic.Frm8);
+			builder.AddUInt64BE ((ulong)formSize);
+			builder.Add (TestConstants.Magic.DsdType);
+
+			// FVER chunk
+			builder.AddStringLatin1 ("FVER");
+			builder.AddUInt64BE (4);
+			builder.AddUInt32BE (0x01050000);
+
+			// PROP chunk
+			builder.AddStringLatin1 ("PROP");
+			builder.AddUInt64BE ((ulong)propContentSize);
+			builder.AddStringLatin1 ("SND ");
+			builder.AddStringLatin1 ("FS  ");
+			builder.AddUInt64BE ((ulong)fsChunkDataSize);
+			builder.AddUInt32BE ((uint)sampleRate);
+			builder.AddStringLatin1 ("CHNL");
+			builder.AddUInt64BE ((ulong)chnlChunkDataSize);
+			builder.AddUInt16BE ((ushort)channels);
+			if (channels >= 1)
+				builder.AddStringLatin1 ("SLFT");
+			if (channels >= 2)
+				builder.AddStringLatin1 ("SRGT");
+			builder.AddStringLatin1 ("CMPR");
+			builder.AddUInt64BE ((ulong)cmprChunkDataSize);
+			builder.AddStringLatin1 ("DSD ");
+			builder.Add ((byte)0);
+			while (builder.Length % 8 != 0)
+				builder.Add ((byte)0);
+
+			// DSD chunk with known pattern (0xAA, 0xBB, 0xCC repeating)
+			builder.AddStringLatin1 ("DSD ");
+			builder.AddUInt64BE ((ulong)audioSize);
+			for (var i = 0; i < audioSize; i++)
+				builder.Add ((byte)(0xAA + (i % 3) * 0x11));
+
+			return builder.ToArray ();
+		}
 	}
 }
