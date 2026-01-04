@@ -284,9 +284,11 @@ public sealed class MusepackFile : IMediaFile
 
 		var offset = 0;
 
-		// Skip CRC/version byte
-		if (offset >= payload.Length) return;
-		offset++;
+		// Skip CRC32 (4 bytes) + Stream version (1 byte)
+		// Per Musepack SV8 spec, SH payload starts with these 5 bytes
+		if (payload.Length < 5)
+			return;
+		offset += 5;
 
 		// Sample count (variable-length integer)
 		var sampleCountResult = ReadVarInt (payload, offset);

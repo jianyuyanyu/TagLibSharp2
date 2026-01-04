@@ -746,7 +746,9 @@ public class MusepackFileTests
 		using var payloadMs = new MemoryStream ();
 
 		// SH payload:
-		// [0] CRC (skip for test - 1 byte for version indicator)
+		// [0-3] CRC32 placeholder (4 bytes)
+		payloadMs.Write (new byte[4]);
+		// [4] Stream version
 		payloadMs.WriteByte (8); // Version 8
 
 		// Sample count as variable-length integer
