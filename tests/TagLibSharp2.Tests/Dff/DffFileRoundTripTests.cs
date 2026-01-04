@@ -17,8 +17,8 @@ public class DffFileRoundTripTests
 	[TestMethod]
 	public void MinimalFile_PreservesStructure ()
 	{
-		// Arrange
-		var original = TestBuilders.Dff.CreateWithMetadata (title: "Test Title", artist: "Test Artist");
+		// Arrange - use CreateWithId3v2 since Render() only preserves ID3v2 tags
+		var original = TestBuilders.Dff.CreateWithId3v2 (title: "Test Title", artist: "Test Artist");
 
 		// Act
 		var result1 = DffFile.Read (original);
