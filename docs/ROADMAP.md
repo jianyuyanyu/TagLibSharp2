@@ -1,12 +1,12 @@
 # TagLibSharp2 Roadmap
 
 > Generated: January 2026
-> Last Updated: January 2026
-> Status: Active development - ASF/WMA complete, edge cases in progress
+> Last Updated: January 2026 (v0.5.0 release)
+> Status: Production ready - 15 formats complete, polish phase
 
 ## Executive Summary
 
-TagLibSharp2 currently supports **14 of 20** required formats with comprehensive tag support. The library has mature read/write capabilities for major formats (MP3, FLAC, MP4, Ogg, WAV, AIFF, DSD, ASF/WMA, Musepack). Remaining gaps are Speex, TrueAudio, and tracker formats.
+TagLibSharp2 currently supports **15 of 20** formats with comprehensive tag support and 90% test coverage. The library has mature read/write capabilities for all major formats. Remaining gaps are niche formats: Speex (obsolete), TrueAudio (niche), and tracker formats (demoscene).
 
 ---
 
@@ -24,7 +24,7 @@ TagLibSharp2 currently supports **14 of 20** required formats with comprehensive
 | DSF | P0 | ✅ | ✅ | ✅ | - | Recently added |
 | Ogg Vorbis | P0 | ✅ | ✅ | ✅ | - | Production ready |
 | Opus | P0 | ✅ | ✅ | ✅ | - | Production ready |
-| WMA/ASF | P1 | ✅ | ✅ | ❌ | - | Read complete, write pending |
+| WMA/ASF | P1 | ✅ | ✅ | ✅ | - | Production ready |
 | DFF | P1 | ✅ | ✅ | ✅ | - | Recently added |
 | WavPack | P1 | ✅ | ✅ | ✅ | - | Recently added |
 | Musepack | P1 | ✅ | ✅ | ✅ | - | SV7 and SV8 support |
@@ -80,19 +80,17 @@ src/TagLibSharp2/Asf/
 
 ---
 
-### 1.2 Edge Case Handling Improvements
-**Effort: Medium | Business Value: High**
+### 1.2 Edge Case Handling ✅ COMPLETE
+**Status: All edge cases implemented as of v0.5.0**
 
-The Roon docs identify specific edge cases that must be handled robustly:
-
-| Edge Case | Status | Action |
-|-----------|--------|--------|
+| Edge Case | Status | Implementation |
+|-----------|--------|----------------|
 | iTunes ID3v2.3 with syncsafe sizes | ✅ | Syncsafe fallback when big-endian fails |
 | UTF-16 without BOM fallback | ✅ | Falls back to little-endian (Windows default) |
-| Duplicate ID3v2 tags | ❌ | Handle gracefully |
-| Apple proprietary v2.3 frames | ⚠️ Partial | Add TSOA, TSOT, TSOP, WFED, MVNM, MVIN |
-| MP4 duplicate atoms | ⚠️ Partial | Merge list types |
-| ID3v2.4 genre separator | ⚠️ Partial | Already handles both null and "/" |
+| Duplicate ID3v2 tags | ✅ | `HasDuplicateTag` detection, auto-removed on save |
+| Apple proprietary v2.3 frames | ✅ | TSOA, TSOT, TSOP, WFED, MVNM, MVIN implemented |
+| MP4 duplicate atoms | ✅ | Multiple data atoms merged with "; " separator |
+| ID3v2.4 genre separator | ✅ | Handles both null and "/" separators |
 
 ---
 
@@ -218,12 +216,12 @@ These items from the requirements are explicitly not planned:
 5. ✅ Add comprehensive test suite (12 security tests)
 6. ✅ Register in MediaFile factory
 
-### Sprint 2: Edge Cases & Compatibility (IN PROGRESS)
+### Sprint 2: Edge Cases & Compatibility ✅ COMPLETE
 1. ✅ Fix UTF-16 BOM fallback in TextFrame and LyricsFrame
 2. ✅ Add iTunes syncsafe fallback for v2.3 tags
-3. Handle duplicate tags gracefully
-4. Add cross-tagger compatibility tests
-5. Add remaining Apple proprietary frames
+3. ✅ Handle duplicate tags gracefully (detection + auto-removal)
+4. ✅ Add cross-tagger compatibility tests
+5. ✅ Add remaining Apple proprietary frames (TSOA, TSOT, TSOP, WFED, MVNM, MVIN)
 
 ### Sprint 3: Format Expansion (1-2 weeks effort)
 1. ✅ Add Musepack support (SV7 and SV8)
@@ -241,13 +239,13 @@ These items from the requirements are explicitly not planned:
 
 ## Success Metrics
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Format coverage | 14/20 (70%) | 20/20 (100%) |
-| Test coverage | ~85% | >90% |
-| Round-trip tests | Partial | All formats |
-| Cross-tagger compat | Untested | 7 major taggers |
-| Edge case handling | Partial | All documented cases |
+| Metric | Current (v0.5.0) | Target |
+|--------|------------------|--------|
+| Format coverage | 15/20 (75%) | 20/20 (100%) |
+| Test coverage | 90.1% ✅ | >90% |
+| Round-trip tests | All 15 formats ✅ | All formats |
+| Cross-tagger compat | Unit tests ✅ | 7 major taggers |
+| Edge case handling | Complete ✅ | All documented cases |
 
 ---
 
