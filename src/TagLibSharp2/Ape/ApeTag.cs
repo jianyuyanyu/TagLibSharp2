@@ -331,6 +331,145 @@ public sealed class ApeTag : Tag
 		set => SetOrRemove (Keys.ReplayGainAlbumPeak, value);
 	}
 
+	/// <inheritdoc/>
+	public override string? R128TrackGain {
+		get => GetValue ("R128_TRACK_GAIN");
+		set => SetOrRemove ("R128_TRACK_GAIN", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? R128AlbumGain {
+		get => GetValue ("R128_ALBUM_GAIN");
+		set => SetOrRemove ("R128_ALBUM_GAIN", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Subtitle {
+		get => GetValue (Keys.Subtitle);
+		set => SetOrRemove (Keys.Subtitle, value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Publisher {
+		get => GetValue (Keys.Publisher);
+		set => SetOrRemove (Keys.Publisher, value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Isrc {
+		get => GetValue (Keys.Isrc);
+		set => SetOrRemove (Keys.Isrc, value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Barcode {
+		get => GetValue (Keys.Barcode);
+		set => SetOrRemove (Keys.Barcode, value);
+	}
+
+	/// <inheritdoc/>
+	public override string? CatalogNumber {
+		get => GetValue (Keys.CatalogNumber);
+		set => SetOrRemove (Keys.CatalogNumber, value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Language {
+		get => GetValue (Keys.Language);
+		set => SetOrRemove (Keys.Language, value);
+	}
+
+	/// <inheritdoc/>
+	public override string? Lyrics {
+		get => GetValue ("Lyrics");
+		set => SetOrRemove ("Lyrics", value);
+	}
+
+	// ═══════════════════════════════════════════════════════════════
+	// Sort Order Fields
+	// ═══════════════════════════════════════════════════════════════
+
+	/// <inheritdoc/>
+	public override string? TitleSort {
+		get => GetValue ("TitleSort") ?? GetValue ("TITLESORT");
+		set => SetOrRemove ("TitleSort", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ArtistSort {
+		get => GetValue ("ArtistSort") ?? GetValue ("ARTISTSORT");
+		set => SetOrRemove ("ArtistSort", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AlbumSort {
+		get => GetValue ("AlbumSort") ?? GetValue ("ALBUMSORT");
+		set => SetOrRemove ("AlbumSort", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AlbumArtistSort {
+		get => GetValue ("AlbumArtistSort") ?? GetValue ("ALBUMARTISTSORT");
+		set => SetOrRemove ("AlbumArtistSort", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ComposerSort {
+		get => GetValue ("ComposerSort") ?? GetValue ("COMPOSERSORT");
+		set => SetOrRemove ("ComposerSort", value);
+	}
+
+	// ═══════════════════════════════════════════════════════════════
+	// Pictures (Cover Art)
+	// ═══════════════════════════════════════════════════════════════
+
+	/// <inheritdoc/>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override IPicture[] Pictures {
+		get {
+			var pictures = new List<IPicture> ();
+
+			// Check standard cover art keys
+			if (_items.TryGetValue (Keys.CoverArtFront, out var front) && front.BinaryValue is not null)
+				pictures.Add (ApePicture.FromBinaryData (Keys.CoverArtFront, front.BinaryValue));
+
+			if (_items.TryGetValue (Keys.CoverArtBack, out var back) && back.BinaryValue is not null)
+				pictures.Add (ApePicture.FromBinaryData (Keys.CoverArtBack, back.BinaryValue));
+
+			// Check for other cover art keys
+			foreach (var kvp in _items) {
+				if (kvp.Key.StartsWith ("Cover Art", StringComparison.OrdinalIgnoreCase) &&
+					!string.Equals (kvp.Key, Keys.CoverArtFront, StringComparison.OrdinalIgnoreCase) &&
+					!string.Equals (kvp.Key, Keys.CoverArtBack, StringComparison.OrdinalIgnoreCase) &&
+					kvp.Value.BinaryValue is not null) {
+					pictures.Add (ApePicture.FromBinaryData (kvp.Key, kvp.Value.BinaryValue));
+				}
+			}
+
+			return [.. pictures];
+		}
+		set {
+			// Remove existing cover art
+			var keysToRemove = _items.Keys
+				.Where (k => k.StartsWith ("Cover Art", StringComparison.OrdinalIgnoreCase))
+				.ToList ();
+			foreach (var key in keysToRemove)
+				_items.Remove (key);
+
+			// Add new pictures
+			if (value is null || value.Length == 0)
+				return;
+
+			foreach (var pic in value) {
+				var apePic = ApePicture.FromPicture (pic);
+				var key = apePic.GetKey ();
+				var data = apePic.PictureData.ToArray ();
+				SetBinaryItem (key, apePic.Filename, data);
+			}
+		}
+	}
+#pragma warning restore CA1819
+
 	/// <summary>
 	/// Gets a text value by key (case-insensitive).
 	/// </summary>
