@@ -437,7 +437,7 @@ public sealed class MusepackFile : IDisposable
 		return data.Length - (int)totalTagSize;
 	}
 
-	#region File I/O
+	// ===== File I/O =====
 
 	/// <summary>
 	/// Read a Musepack file from disk.
@@ -524,8 +524,6 @@ public sealed class MusepackFile : IDisposable
 
 		return await SaveToFileAsync (_sourcePath!, fileSystem, cancellationToken).ConfigureAwait (false);
 	}
-
-	#endregion
 
 	/// <summary>
 	/// Releases resources held by this instance.

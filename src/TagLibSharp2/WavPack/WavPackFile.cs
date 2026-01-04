@@ -428,7 +428,7 @@ public sealed class WavPackFile : IDisposable
 		return data.Length - (int)totalTagSize;
 	}
 
-	#region File I/O
+	// ===== File I/O =====
 
 	/// <summary>
 	/// Read a WavPack file from disk.
@@ -515,8 +515,6 @@ public sealed class WavPackFile : IDisposable
 
 		return await SaveToFileAsync (_sourcePath!, fileSystem, cancellationToken).ConfigureAwait (false);
 	}
-
-	#endregion
 
 	/// <summary>
 	/// Releases resources held by this instance.

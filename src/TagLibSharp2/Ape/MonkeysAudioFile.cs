@@ -408,7 +408,7 @@ public sealed class MonkeysAudioFile : IDisposable
 		return data.Length - (int)totalTagSize;
 	}
 
-	#region File I/O
+	// ===== File I/O =====
 
 	/// <summary>
 	/// Read a Monkey's Audio file from disk.
@@ -495,8 +495,6 @@ public sealed class MonkeysAudioFile : IDisposable
 
 		return await SaveToFileAsync (_sourcePath!, fileSystem, cancellationToken).ConfigureAwait (false);
 	}
-
-	#endregion
 
 	/// <summary>
 	/// Releases resources held by this instance.

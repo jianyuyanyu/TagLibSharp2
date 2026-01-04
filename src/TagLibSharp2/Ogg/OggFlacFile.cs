@@ -513,7 +513,7 @@ public sealed class OggFlacFile : IDisposable
 			=> new (false, null, 0, 0, error);
 	}
 
-	#region File I/O
+	// ===== File I/O =====
 
 	/// <summary>
 	/// Read an Ogg FLAC file from disk.
@@ -600,8 +600,6 @@ public sealed class OggFlacFile : IDisposable
 
 		return await SaveToFileAsync (_sourcePath!, fileSystem, cancellationToken).ConfigureAwait (false);
 	}
-
-	#endregion
 
 	private readonly struct ExtractPacketResult
 	{
