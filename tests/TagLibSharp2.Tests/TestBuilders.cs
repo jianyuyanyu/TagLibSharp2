@@ -4056,9 +4056,9 @@ public static class TestBuilders
 			var diarChunkSize = artistBytes.Length > 0 ? 12 + 4 + artistBytes.Length : 0;
 			var dsdChunkSize = 12 + 4096;
 
-			// Add padding for alignment
-			ditiChunkSize = (ditiChunkSize + 7) & ~7;
-			diarChunkSize = (diarChunkSize + 7) & ~7;
+			// IFF uses 2-byte alignment for odd-sized chunks
+			if (ditiChunkSize % 2 != 0) ditiChunkSize++;
+			if (diarChunkSize % 2 != 0) diarChunkSize++;
 			var formSize = 4 + fverChunkSize + propChunkSize + ditiChunkSize + diarChunkSize + dsdChunkSize;
 
 			// FRM8 container
@@ -4087,8 +4087,8 @@ public static class TestBuilders
 			builder.AddUInt64BE ((ulong)cmprChunkDataSize);
 			builder.AddStringLatin1 ("DSD ");
 			builder.Add ((byte)0);
-			while (builder.Length % 8 != 0)
-				builder.Add ((byte)0);
+			// cmprChunkDataSize=5 is odd, add 1 padding byte per IFF 2-byte alignment
+			builder.Add ((byte)0);
 
 			// DITI chunk (title)
 			if (titleBytes.Length > 0) {
@@ -4096,7 +4096,8 @@ public static class TestBuilders
 				builder.AddUInt64BE ((ulong)(4 + titleBytes.Length));
 				builder.AddUInt32BE ((uint)titleBytes.Length);
 				builder.Add (titleBytes);
-				while (builder.Length % 8 != 0)
+				// IFF 2-byte alignment: add padding if chunk data size is odd
+				if ((4 + titleBytes.Length) % 2 != 0)
 					builder.Add ((byte)0);
 			}
 
@@ -4106,7 +4107,8 @@ public static class TestBuilders
 				builder.AddUInt64BE ((ulong)(4 + artistBytes.Length));
 				builder.AddUInt32BE ((uint)artistBytes.Length);
 				builder.Add (artistBytes);
-				while (builder.Length % 8 != 0)
+				// IFF 2-byte alignment: add padding if chunk data size is odd
+				if ((4 + artistBytes.Length) % 2 != 0)
 					builder.Add ((byte)0);
 			}
 
