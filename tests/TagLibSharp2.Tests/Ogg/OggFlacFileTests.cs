@@ -297,6 +297,122 @@ public class OggFlacFileTests
 
 	#endregion
 
+	#region Coverage Edge Cases
+
+	[TestMethod]
+	public void OggFlacFileParseResult_OperatorEquals_Works ()
+	{
+		var failure1 = OggFlacFileParseResult.Failure ("Error A");
+		var failure2 = OggFlacFileParseResult.Failure ("Error A");
+
+		Assert.IsTrue (failure1 == failure2);
+	}
+
+	[TestMethod]
+	public void OggFlacFileParseResult_OperatorNotEquals_Works ()
+	{
+		var failure1 = OggFlacFileParseResult.Failure ("Error A");
+		var failure2 = OggFlacFileParseResult.Failure ("Error B");
+
+		Assert.IsTrue (failure1 != failure2);
+	}
+
+	[TestMethod]
+	public void OggFlacFile_SaveToFile_NoSourcePath_Fails ()
+	{
+		var data = CreateMinimalOggFlacFile ();
+		var result = OggFlacFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		var mockFs = new MockFileSystem ();
+
+		var saveResult = result.File!.SaveToFile (mockFs);
+		Assert.IsFalse (saveResult.IsSuccess);
+		Assert.IsTrue (saveResult.Error!.Contains ("source") || saveResult.Error.Contains ("path"));
+	}
+
+	[TestMethod]
+	public async Task OggFlacFile_SaveToFileAsync_NoSourcePath_Fails ()
+	{
+		var data = CreateMinimalOggFlacFile ();
+		var result = OggFlacFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		var mockFs = new MockFileSystem ();
+
+		var saveResult = await result.File!.SaveToFileAsync (mockFs);
+		Assert.IsFalse (saveResult.IsSuccess);
+	}
+
+	[TestMethod]
+	public async Task OggFlacFile_SaveToFileAsync_WithPath_Works ()
+	{
+		var data = CreateMinimalOggFlacFile ();
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/test.oga", data);
+
+		var readResult = await OggFlacFile.ReadFromFileAsync ("/test.oga", mockFs);
+		Assert.IsTrue (readResult.IsSuccess);
+
+		readResult.File!.EnsureVorbisComment ().Title = "Test";
+
+		var saveResult = await readResult.File.SaveToFileAsync ("/output.oga", mockFs);
+		Assert.IsTrue (saveResult.IsSuccess);
+	}
+
+	[TestMethod]
+	public void OggFlacFile_Dispose_ClearsProperties ()
+	{
+		var data = CreateMinimalOggFlacFile ();
+		var result = OggFlacFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.File!.Properties);
+
+		result.File.Dispose ();
+
+		Assert.IsNull (result.File.Properties);
+		Assert.IsNull (result.File.VorbisComment);
+	}
+
+	[TestMethod]
+	public void OggFlacFile_Dispose_MultipleCalls_DoesNotThrow ()
+	{
+		var data = CreateMinimalOggFlacFile ();
+		var result = OggFlacFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		result.File!.Dispose ();
+		result.File.Dispose (); // Second call should not throw
+	}
+
+	[TestMethod]
+	public void OggFlacFile_Properties_ZeroSampleRate_ReturnsNull ()
+	{
+		var data = CreateMinimalOggFlacFile (sampleRate: 0);
+		var result = OggFlacFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNull (result.File!.Properties);
+	}
+
+	[TestMethod]
+	public void OggFlacFile_Properties_ZeroTotalSamples_ReturnsNull ()
+	{
+		var data = CreateMinimalOggFlacFile (totalSamples: 0);
+		var result = OggFlacFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNull (result.File!.Properties);
+	}
+
+	[TestMethod]
+	public void OggFlacFile_ReadFromFile_FileNotFound_Fails ()
+	{
+		var mockFs = new MockFileSystem ();
+		var result = OggFlacFile.ReadFromFile ("/nonexistent.oga", mockFs);
+		Assert.IsFalse (result.IsSuccess);
+	}
+
+	#endregion
+
 	#region Helper Methods
 
 	/// <summary>

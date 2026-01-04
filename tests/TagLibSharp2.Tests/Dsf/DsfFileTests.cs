@@ -516,6 +516,77 @@ public class DsfFileTests
 		Assert.IsFalse (result.IsSuccess);
 	}
 
+	[TestMethod]
+	public void DsfDataChunk_Create_SetsProperties ()
+	{
+		var chunk = DsfDataChunk.Create (1000);
+		Assert.AreEqual (1000UL, chunk.ChunkSize);
+		Assert.AreEqual ((ulong)(1000 - DsfDataChunk.HeaderSize), chunk.AudioDataSize);
+	}
+
+	[TestMethod]
+	public void DsfDataChunk_AudioDataSize_ChunkSizeLessThanHeader_ReturnsZero ()
+	{
+		var chunk = DsfDataChunk.Create (10); // Less than HeaderSize (12)
+		Assert.AreEqual (0UL, chunk.AudioDataSize);
+	}
+
+	[TestMethod]
+	public void DsfDataChunk_AudioDataSize_ExactlyHeaderSize_ReturnsZero ()
+	{
+		var chunk = DsfDataChunk.Create (DsfDataChunk.HeaderSize);
+		Assert.AreEqual (0UL, chunk.AudioDataSize);
+	}
+
+	[TestMethod]
+	public void DsfDataChunk_HeaderSizeValue_Returns12 ()
+	{
+		Assert.AreEqual (12, DsfDataChunk.HeaderSizeValue);
+	}
+
+	[TestMethod]
+	public void DsfDataChunk_RenderHeader_RoundTrips ()
+	{
+		var original = DsfDataChunk.Create (5000);
+		var rendered = original.RenderHeader ();
+		var reparsed = DsfDataChunk.Parse (rendered);
+
+		Assert.IsTrue (reparsed.IsSuccess);
+		Assert.AreEqual (original.ChunkSize, reparsed.Chunk!.ChunkSize);
+	}
+
+	[TestMethod]
+	public void DsfDataChunk_Parse_TooShort_Fails ()
+	{
+		var data = new byte[8]; // Less than HeaderSize (12)
+		data[0] = (byte)'d';
+		data[1] = (byte)'a';
+		data[2] = (byte)'t';
+		data[3] = (byte)'a';
+
+		var result = DsfDataChunk.Parse (data);
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsTrue (result.Error!.Contains ("short") || result.Error.Contains ("size"));
+	}
+
+	[TestMethod]
+	public void DsfDataChunkParseResult_OperatorEquals_Works ()
+	{
+		var failure1 = DsfDataChunkParseResult.Failure ("Error A");
+		var failure2 = DsfDataChunkParseResult.Failure ("Error A");
+
+		Assert.IsTrue (failure1 == failure2);
+	}
+
+	[TestMethod]
+	public void DsfDataChunkParseResult_OperatorNotEquals_Works ()
+	{
+		var failure1 = DsfDataChunkParseResult.Failure ("Error A");
+		var failure2 = DsfDataChunkParseResult.Failure ("Error B");
+
+		Assert.IsTrue (failure1 != failure2);
+	}
+
 	#endregion
 
 	#region Full DSF File Parsing Tests

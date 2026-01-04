@@ -721,6 +721,258 @@ public class ApeTagTests
 
 	#endregion
 
+	#region ApeTagItem Coverage Tests
+
+	[TestMethod]
+	public void ApeTagItem_CreateText_WithReadOnly_SetsFlag ()
+	{
+		var item = ApeTagItem.CreateText ("Title", "Test", isReadOnly: true);
+		Assert.IsTrue (item.IsReadOnly);
+		Assert.AreEqual (ApeItemType.Text, item.ItemType);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_CreateBinary_WithReadOnly_SetsFlag ()
+	{
+		var item = ApeTagItem.CreateBinary ("Cover", "cover.jpg", [0xFF, 0xD8], isReadOnly: true);
+		Assert.IsTrue (item.IsReadOnly);
+		Assert.AreEqual (ApeItemType.Binary, item.ItemType);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_CreateExternalLocator_WithReadOnly_SetsFlag ()
+	{
+		var item = ApeTagItem.CreateExternalLocator ("Link", "http://example.com", isReadOnly: true);
+		Assert.IsTrue (item.IsReadOnly);
+		Assert.AreEqual (ApeItemType.ExternalLocator, item.ItemType);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_Render_RoundTrips ()
+	{
+		var original = ApeTagItem.CreateText ("Title", "Test Value");
+		var rendered = original.Render ();
+		var reparsed = ApeTagItem.Parse (rendered);
+
+		Assert.IsTrue (reparsed.IsSuccess);
+		Assert.AreEqual ("Title", reparsed.Item!.Key);
+		Assert.AreEqual ("Test Value", reparsed.Item.ValueAsString);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_BinaryValue_NoFilename_ReturnsDataOnly ()
+	{
+		// Create binary item where the value has no null separator (no filename)
+		var keyBytes = "Cover"u8.ToArray ();
+		var binaryData = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 };
+		var itemData = new byte[8 + keyBytes.Length + 1 + binaryData.Length];
+
+		BitConverter.GetBytes ((uint)binaryData.Length).CopyTo (itemData, 0);
+		BitConverter.GetBytes (2u).CopyTo (itemData, 4); // Flags = 2 (binary type)
+		keyBytes.CopyTo (itemData, 8);
+		binaryData.CopyTo (itemData, 8 + keyBytes.Length + 1);
+
+		var result = ApeTagItem.Parse (itemData);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (ApeItemType.Binary, result.Item!.ItemType);
+		var bv = result.Item.BinaryValue;
+		Assert.IsNotNull (bv);
+		Assert.AreEqual ("", bv.Filename);
+		CollectionAssert.AreEqual (binaryData, bv.Data);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_ValueAsString_ForBinary_ReturnsNull ()
+	{
+		var item = ApeTagItem.CreateBinary ("Cover", "cover.jpg", [0x89, 0x50]);
+		Assert.IsNull (item.ValueAsString);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_BinaryValue_ForText_ReturnsNull ()
+	{
+		var item = ApeTagItem.CreateText ("Title", "Test");
+		Assert.IsNull (item.BinaryValue);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_Parse_SingleCharKey_Fails ()
+	{
+		var data = CreateTextItem ("X", "value");
+		var result = ApeTagItem.Parse (data);
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsTrue (result.Error!.Contains ("short"));
+	}
+
+	[TestMethod]
+	public void ApeTagItem_Parse_TwoCharKey_Succeeds ()
+	{
+		var data = CreateTextItem ("XY", "value");
+		var result = ApeTagItem.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual ("XY", result.Item!.Key);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_Parse_InvalidFlagsAreMasked ()
+	{
+		var keyBytes = "Title"u8.ToArray ();
+		var valueBytes = "Test"u8.ToArray ();
+		var data = new byte[8 + keyBytes.Length + 1 + valueBytes.Length];
+
+		BitConverter.GetBytes ((uint)valueBytes.Length).CopyTo (data, 0);
+		BitConverter.GetBytes (0xF8u).CopyTo (data, 4); // Invalid flag bits
+		keyBytes.CopyTo (data, 8);
+		valueBytes.CopyTo (data, 8 + keyBytes.Length + 1);
+
+		var result = ApeTagItem.Parse (data);
+
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (ApeItemType.Text, result.Item!.ItemType);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_Parse_ValueExtendsBeyondData_Fails ()
+	{
+		var keyBytes = "Title"u8.ToArray ();
+		var data = new byte[8 + keyBytes.Length + 1 + 5];
+
+		BitConverter.GetBytes (100u).CopyTo (data, 0); // Claim 100 bytes
+		keyBytes.CopyTo (data, 8);
+
+		var result = ApeTagItem.Parse (data);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsTrue (result.Error!.Contains ("extends") || result.Error.Contains ("beyond"));
+	}
+
+	[TestMethod]
+	public void ApeTagItem_CreateText_ShortKey_Throws ()
+	{
+		Assert.ThrowsExactly<ArgumentException> (() =>
+			ApeTagItem.CreateText ("X", "value"));
+	}
+
+	[TestMethod]
+	public void ApeTagItem_CreateText_LongKey_Throws ()
+	{
+		var longKey = new string ('K', 256);
+		Assert.ThrowsExactly<ArgumentException> (() =>
+			ApeTagItem.CreateText (longKey, "value"));
+	}
+
+	[TestMethod]
+	public void ApeTagItem_CreateText_ReservedKey_Throws ()
+	{
+		Assert.ThrowsExactly<ArgumentException> (() =>
+			ApeTagItem.CreateText ("ID3", "value"));
+		Assert.ThrowsExactly<ArgumentException> (() =>
+			ApeTagItem.CreateText ("TAG", "value"));
+		Assert.ThrowsExactly<ArgumentException> (() =>
+			ApeTagItem.CreateText ("OggS", "value"));
+		Assert.ThrowsExactly<ArgumentException> (() =>
+			ApeTagItem.CreateText ("MP+", "value"));
+	}
+
+	[TestMethod]
+	public void ApeTagItem_CreateText_ControlCharInKey_Throws ()
+	{
+		Assert.ThrowsExactly<ArgumentException> (() =>
+			ApeTagItem.CreateText ("Title\x01", "value"));
+	}
+
+	[TestMethod]
+	public void ApeTagItemParseResult_OperatorEquals_Works ()
+	{
+		var failure1 = ApeTagItemParseResult.Failure ("Error A");
+		var failure2 = ApeTagItemParseResult.Failure ("Error A");
+		var failure3 = ApeTagItemParseResult.Failure ("Error B");
+
+		Assert.IsTrue (failure1 == failure2);
+		Assert.IsFalse (failure1 == failure3);
+	}
+
+	[TestMethod]
+	public void ApeTagItemParseResult_OperatorNotEquals_Works ()
+	{
+		var failure1 = ApeTagItemParseResult.Failure ("Error A");
+		var failure2 = ApeTagItemParseResult.Failure ("Error B");
+
+		Assert.IsTrue (failure1 != failure2);
+	}
+
+	[TestMethod]
+	public void ApeTagItem_Parse_NoKeyTerminator_Fails ()
+	{
+		var data = new byte[20];
+		BitConverter.GetBytes (4u).CopyTo (data, 0);
+		for (int i = 8; i < data.Length; i++)
+			data[i] = (byte)'A';
+
+		var result = ApeTagItem.Parse (data);
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsTrue (result.Error!.Contains ("null"));
+	}
+
+	#endregion
+
+	#region ApeTagHeader Coverage Tests
+
+	[TestMethod]
+	public void ApeTagHeader_Create_ReadOnly_SetsFlag ()
+	{
+		var header = ApeTagHeader.Create (100, 5, isReadOnly: true);
+		Assert.IsTrue (header.IsReadOnly);
+		Assert.IsTrue (header.IsHeader);
+		Assert.IsTrue (header.HasHeader);
+	}
+
+	[TestMethod]
+	public void ApeTagHeader_Render_RoundTrips ()
+	{
+		var original = ApeTagHeader.Create (200, 10);
+		var rendered = original.Render ();
+		var reparsed = ApeTagHeader.Parse (rendered);
+
+		Assert.IsTrue (reparsed.IsSuccess);
+		Assert.AreEqual (original.TagSize, reparsed.Header!.TagSize);
+		Assert.AreEqual (original.ItemCount, reparsed.Header.ItemCount);
+		Assert.IsTrue (reparsed.Header.IsHeader);
+	}
+
+	[TestMethod]
+	public void ApeTagHeader_Parse_FooterData_Fails ()
+	{
+		var footer = ApeTagFooter.Create (100, 5, isHeader: false);
+		var data = footer.Render ();
+
+		var result = ApeTagHeader.Parse (data);
+
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsTrue (result.Error!.Contains ("header") || result.Error.Contains ("bit 29"));
+	}
+
+	[TestMethod]
+	public void ApeTagHeaderParseResult_OperatorEquals_Works ()
+	{
+		var failure1 = ApeTagHeaderParseResult.Failure ("Error A");
+		var failure2 = ApeTagHeaderParseResult.Failure ("Error A");
+
+		Assert.IsTrue (failure1 == failure2);
+	}
+
+	[TestMethod]
+	public void ApeTagHeaderParseResult_OperatorNotEquals_Works ()
+	{
+		var failure1 = ApeTagHeaderParseResult.Failure ("Error A");
+		var failure2 = ApeTagHeaderParseResult.Failure ("Error B");
+
+		Assert.IsTrue (failure1 != failure2);
+	}
+
+	#endregion
+
 	#region Result Type Equality Tests
 
 	[TestMethod]

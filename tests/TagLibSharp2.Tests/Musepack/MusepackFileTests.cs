@@ -458,6 +458,151 @@ public class MusepackFileTests
 		result.File.Dispose (); // Should not throw
 	}
 
+	[TestMethod]
+	public void MusepackFile_Dispose_ClearsProperties ()
+	{
+		var data = CreateMinimalMusepackSV7File ();
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		result.File!.Dispose ();
+
+		Assert.IsNull (result.File.Properties);
+		Assert.IsNull (result.File.ApeTag);
+	}
+
+	#endregion
+
+	#region Coverage Edge Cases
+
+	[TestMethod]
+	public void MusepackFile_Parse_SV7_Version4_Succeeds ()
+	{
+		var data = CreateMinimalMusepackSV7File (streamVersion: 4);
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (4, result.File!.StreamVersion);
+	}
+
+	[TestMethod]
+	public void MusepackFile_Parse_SV7_Version5_Succeeds ()
+	{
+		var data = CreateMinimalMusepackSV7File (streamVersion: 5);
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (5, result.File!.StreamVersion);
+	}
+
+	[TestMethod]
+	public void MusepackFile_Parse_SV7_Version6_Succeeds ()
+	{
+		var data = CreateMinimalMusepackSV7File (streamVersion: 6);
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (6, result.File!.StreamVersion);
+	}
+
+	[TestMethod]
+	public void MusepackFile_Parse_SV7_Version3_Fails ()
+	{
+		var data = CreateMinimalMusepackSV7File (streamVersion: 3);
+		var result = MusepackFile.Parse (data);
+		Assert.IsFalse (result.IsSuccess);
+	}
+
+	[TestMethod]
+	public void MusepackFile_Parse_SV7_Version8_Fails ()
+	{
+		var data = CreateMinimalMusepackSV7File (streamVersion: 8);
+		var result = MusepackFile.Parse (data);
+		Assert.IsFalse (result.IsSuccess);
+	}
+
+	[TestMethod]
+	public void MusepackFile_Parse_SV8_NoSHPacket_UsesDefaults ()
+	{
+		using var ms = new MemoryStream ();
+		ms.Write ("MPCK"u8);
+		ms.Write ("XX"u8); // Unknown packet key
+		ms.WriteByte (5); // Size
+		ms.Write (new byte[2]);
+		ms.Write (new byte[50]); // Audio data
+
+		var result = MusepackFile.Parse (ms.ToArray ());
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (44100, result.File!.SampleRate);
+		Assert.AreEqual (2, result.File.Channels);
+	}
+
+	[TestMethod]
+	public void MusepackFile_SaveToFile_NoSourcePath_Fails ()
+	{
+		var data = CreateMinimalMusepackSV7File ();
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		var mockFs = new MockFileSystem ();
+
+		var saveResult = result.File!.SaveToFile (mockFs);
+		Assert.IsFalse (saveResult.IsSuccess);
+		Assert.IsTrue (saveResult.Error!.Contains ("source") || saveResult.Error.Contains ("path"));
+	}
+
+	[TestMethod]
+	public async Task MusepackFile_SaveToFileAsync_NoSourcePath_Fails ()
+	{
+		var data = CreateMinimalMusepackSV7File ();
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+
+		var mockFs = new MockFileSystem ();
+
+		var saveResult = await result.File!.SaveToFileAsync (mockFs);
+		Assert.IsFalse (saveResult.IsSuccess);
+	}
+
+	[TestMethod]
+	public async Task MusepackFile_SaveToFileAsync_WithPath_Works ()
+	{
+		var data = CreateMinimalMusepackSV7File ();
+		var mockFs = new MockFileSystem ();
+		mockFs.AddFile ("/test.mpc", data);
+
+		var readResult = await MusepackFile.ReadFromFileAsync ("/test.mpc", mockFs);
+		Assert.IsTrue (readResult.IsSuccess);
+
+		readResult.File!.EnsureApeTag ().Title = "Test";
+
+		var saveResult = await readResult.File.SaveToFileAsync ("/output.mpc", mockFs);
+		Assert.IsTrue (saveResult.IsSuccess);
+	}
+
+	[TestMethod]
+	public void MusepackFile_SV7_SampleRateIndex_37800 ()
+	{
+		var data = CreateMinimalMusepackSV7File (sampleRateIndex: 2);
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (37800, result.File!.SampleRate);
+	}
+
+	[TestMethod]
+	public void MusepackFile_SV7_SampleRateIndex_32000 ()
+	{
+		var data = CreateMinimalMusepackSV7File (sampleRateIndex: 3);
+		var result = MusepackFile.Parse (data);
+		Assert.IsTrue (result.IsSuccess);
+		Assert.AreEqual (32000, result.File!.SampleRate);
+	}
+
+	[TestMethod]
+	public void MusepackFile_ReadFromFile_FileNotFound_Fails ()
+	{
+		var mockFs = new MockFileSystem ();
+		var result = MusepackFile.ReadFromFile ("/nonexistent.mpc", mockFs);
+		Assert.IsFalse (result.IsSuccess);
+	}
+
 	#endregion
 
 	#region Result Type Tests
