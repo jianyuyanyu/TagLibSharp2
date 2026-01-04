@@ -17,7 +17,7 @@ namespace TagLibSharp2.Tests.Core;
 [TestCategory ("Consistency")]
 public class DsdApiConsistencyTests
 {
-	#region Property Type Consistency Tests
+	// ===== Property Type Consistency Tests =====
 
 	[TestMethod]
 	public void DsfFile_SampleRate_IsInt ()
@@ -90,9 +90,7 @@ public class DsdApiConsistencyTests
 		Assert.AreEqual (1, bitsPerSample);
 	}
 
-	#endregion
-
-	#region SampleCount Consistency Tests
+	// ===== SampleCount Consistency Tests =====
 
 	[TestMethod]
 	public void DsfFile_SampleCount_IsPublic ()
@@ -117,9 +115,7 @@ public class DsdApiConsistencyTests
 		Assert.IsTrue (sampleCount > 0);
 	}
 
-	#endregion
-
-	#region SaveToFile API Consistency Tests
+	// ===== SaveToFile API Consistency Tests =====
 
 	[TestMethod]
 	public void DffFile_SaveToFile_WithPathAndFileSystem_Exists ()
@@ -210,9 +206,7 @@ public class DsdApiConsistencyTests
 		Assert.AreEqual ("Async Test", reparsed.File!.Id3v2Tag!.Title);
 	}
 
-	#endregion
-
-	#region AudioProperties Consistency Tests
+	// ===== AudioProperties Consistency Tests =====
 
 	[TestMethod]
 	public void DsfAudioProperties_Channels_MatchesFileChannels ()
@@ -236,9 +230,7 @@ public class DsdApiConsistencyTests
 		Assert.AreEqual (result.File!.Channels, result.File.Properties!.Channels);
 	}
 
-	#endregion
-
-	#region Helper Methods
+	// ===== Helper Methods =====
 
 	private static byte[] CreateMinimalDsfFile ()
 	{
@@ -380,6 +372,4 @@ public class DsdApiConsistencyTests
 		s.WriteByte ((byte)(v >> 8));
 		s.WriteByte ((byte)v);
 	}
-
-	#endregion
 }

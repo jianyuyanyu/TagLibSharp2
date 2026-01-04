@@ -14,7 +14,7 @@ namespace TagLibSharp2.Tests.Core;
 [TestCategory ("Dispose")]
 public class DisposeTests
 {
-	#region FlacFile Dispose Tests
+	// ===== FlacFile Dispose Tests =====
 
 	[TestMethod]
 	public void FlacFile_Dispose_ClearsReferences ()
@@ -45,9 +45,7 @@ public class DisposeTests
 		file.Dispose (); // Should not throw
 	}
 
-	#endregion
-
-	#region OggVorbisFile Dispose Tests
+	// ===== OggVorbisFile Dispose Tests =====
 
 	[TestMethod]
 	public void OggVorbisFile_Dispose_ClearsReferences ()
@@ -78,9 +76,7 @@ public class DisposeTests
 		file.Dispose ();
 	}
 
-	#endregion
-
-	#region OggOpusFile Dispose Tests
+	// ===== OggOpusFile Dispose Tests =====
 
 	[TestMethod]
 	public void OggOpusFile_Dispose_ClearsReferences ()
@@ -111,9 +107,7 @@ public class DisposeTests
 		file.Dispose ();
 	}
 
-	#endregion
-
-	#region Mp4File Dispose Tests
+	// ===== Mp4File Dispose Tests =====
 
 	[TestMethod]
 	public void Mp4File_Dispose_ClearsReferences ()
@@ -144,9 +138,7 @@ public class DisposeTests
 		file.Dispose ();
 	}
 
-	#endregion
-
-	#region WavFile Dispose Tests
+	// ===== WavFile Dispose Tests =====
 
 	[TestMethod]
 	public void WavFile_Dispose_ClearsReferences ()
@@ -177,9 +169,7 @@ public class DisposeTests
 		file.Dispose ();
 	}
 
-	#endregion
-
-	#region AiffFile Dispose Tests
+	// ===== AiffFile Dispose Tests =====
 
 	[TestMethod]
 	public void AiffFile_Dispose_ClearsReferences ()
@@ -210,6 +200,4 @@ public class DisposeTests
 		file.Dispose ();
 		file.Dispose ();
 	}
-
-	#endregion
 }

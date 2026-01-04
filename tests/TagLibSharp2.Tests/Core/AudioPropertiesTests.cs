@@ -164,7 +164,7 @@ public class AudioPropertiesTests
 		Assert.AreEqual (4608, props.Bitrate);
 	}
 
-	#region DSD Format Tests
+	// ===== DSD Format Tests =====
 
 	[TestMethod]
 	public void FromDsf_DSD64Stereo_CalculatesCorrectBitrate ()
@@ -255,6 +255,4 @@ public class AudioPropertiesTests
 		Assert.AreEqual (270950, props.Bitrate);
 		Assert.IsTrue (props.IsValid);
 	}
-
-	#endregion
 }

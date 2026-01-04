@@ -117,7 +117,7 @@ public class SaveToFileConvenienceTests
 		return builder.ToBinaryData ().ToArray ();
 	}
 
-	#region Mp3File Tests
+	// ===== Mp3File Tests =====
 
 	[TestMethod]
 	public void Mp3File_ReadFromFile_SetsSourcePath ()
@@ -193,9 +193,7 @@ public class SaveToFileConvenienceTests
 		Assert.IsTrue (saveResult.Error!.Contains ("source"));
 	}
 
-	#endregion
-
-	#region FlacFile Tests
+	// ===== FlacFile Tests =====
 
 	[TestMethod]
 	public void FlacFile_ReadFromFile_SetsSourcePath ()
@@ -270,9 +268,7 @@ public class SaveToFileConvenienceTests
 		Assert.IsTrue (saveResult.Error!.Contains ("source"));
 	}
 
-	#endregion
-
-	#region OggVorbisFile Tests
+	// ===== OggVorbisFile Tests =====
 
 	[TestMethod]
 	public void OggVorbisFile_ReadFromFile_SetsSourcePath ()
@@ -346,6 +342,4 @@ public class SaveToFileConvenienceTests
 		Assert.IsFalse (saveResult.IsSuccess);
 		Assert.IsTrue (saveResult.Error!.Contains ("source"));
 	}
-
-	#endregion
 }
