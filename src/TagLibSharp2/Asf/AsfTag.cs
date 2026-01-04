@@ -267,6 +267,90 @@ public sealed class AsfTag : Tag
 		set => SetString ("REPLAYGAIN_ALBUM_PEAK", value);
 	}
 
+	/// <inheritdoc/>
+	public override string? R128TrackGain {
+		get => GetString ("R128_TRACK_GAIN");
+		set => SetString ("R128_TRACK_GAIN", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? R128AlbumGain {
+		get => GetString ("R128_ALBUM_GAIN");
+		set => SetString ("R128_ALBUM_GAIN", value);
+	}
+
+	// ═══════════════════════════════════════════════════════════════
+	// Sort Order Fields (WM/*)
+	// ═══════════════════════════════════════════════════════════════
+
+	/// <inheritdoc/>
+	public override string? TitleSort {
+		get => GetString ("WM/TitleSortOrder");
+		set => SetString ("WM/TitleSortOrder", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ArtistSort {
+		get => GetString ("WM/ArtistSortOrder");
+		set => SetString ("WM/ArtistSortOrder", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AlbumSort {
+		get => GetString ("WM/AlbumSortOrder");
+		set => SetString ("WM/AlbumSortOrder", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? AlbumArtistSort {
+		get => GetString ("WM/AlbumArtistSortOrder");
+		set => SetString ("WM/AlbumArtistSortOrder", value);
+	}
+
+	/// <inheritdoc/>
+	public override string? ComposerSort {
+		get => GetString ("WM/ComposerSortOrder");
+		set => SetString ("WM/ComposerSortOrder", value);
+	}
+
+	// ═══════════════════════════════════════════════════════════════
+	// Pictures (WM/Picture)
+	// ═══════════════════════════════════════════════════════════════
+
+	/// <inheritdoc/>
+#pragma warning disable CA1819 // Properties should not return arrays - TagLib# API compatibility
+	public override IPicture[] Pictures {
+		get {
+			var pictures = new List<IPicture> ();
+			for (int i = 0; i < _descriptors.Count; i++) {
+				var desc = _descriptors[i];
+				if (string.Equals (desc.Name, AsfPicture.AttributeName, StringComparison.OrdinalIgnoreCase) &&
+					desc.Type == AsfAttributeType.Binary) {
+					var pic = AsfPicture.Parse (desc.RawValue.Span);
+					if (pic is not null)
+						pictures.Add (pic);
+				}
+			}
+			return [.. pictures];
+		}
+		set {
+			// Remove existing pictures
+			for (int i = _descriptors.Count - 1; i >= 0; i--) {
+				if (string.Equals (_descriptors[i].Name, AsfPicture.AttributeName, StringComparison.OrdinalIgnoreCase))
+					_descriptors.RemoveAt (i);
+			}
+
+			// Add new pictures
+			if (value is not null) {
+				foreach (var pic in value) {
+					var asfPic = AsfPicture.FromPicture (pic);
+					_descriptors.Add (AsfDescriptor.CreateBinary (AsfPicture.AttributeName, asfPic.Render ()));
+				}
+			}
+		}
+	}
+#pragma warning restore CA1819
+
 	// ═══════════════════════════════════════════════════════════════
 	// Tag Interface Implementation
 	// ═══════════════════════════════════════════════════════════════
