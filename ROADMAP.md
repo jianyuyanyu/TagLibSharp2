@@ -250,7 +250,7 @@ Based on the specification in `/Users/sshaw/code/roon-8/Docs/TagLibSharp2/` and 
 
 ## Implementation Priority Order
 
-### MVP (Must Have for Roon Replacement)
+### MVP (Core Formats)
 
 1. **WAV** - Studio/archival format, very common
    - RIFF parsing

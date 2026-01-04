@@ -328,7 +328,7 @@ Production readiness:
 - [ ] >95% test coverage
 - [ ] Zero known critical bugs
 - [ ] Real-world corpus tested (1,000+ files)
-- [ ] 4+ weeks production Roon usage
+- [ ] 4+ weeks production usage
 - [ ] Community adoption (3+ projects)
 
 ---

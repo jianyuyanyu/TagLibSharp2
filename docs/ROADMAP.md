@@ -181,14 +181,12 @@ Tracker formats (MOD, S3M, IT, XM) have limited tagging capabilities and are low
 
 ### 4.3 Missing Metadata Fields
 
-Per Roon requirements, verify these fields are properly mapped:
+Verify these extended fields are properly mapped:
 
 | Field | ID3v2 | Vorbis | MP4 | Status |
 |-------|-------|--------|-----|--------|
-| RoonId | TSID | ROONID | ©sid | Verify |
 | UserTags | TTAG | TAGS | ©tag | Verify |
 | Version | TVER | VERSION | ©ver | Verify |
-| RoonRadioBan | TXXX:ROONRADIOBAN | ROONRADIOBAN | - | Verify |
 | RecordingDate | - | PERFORMANCEDATE | - | Add |
 | Section | TXXX:SECTION | SECTION | - | Verify |
 
@@ -227,7 +225,7 @@ These items from the requirements are explicitly not planned:
 1. ✅ Add Musepack support (SV7 and SV8)
 2. Add Speex support
 3. Add TrueAudio support
-4. Verify all Roon-specific fields
+4. Verify all extended metadata fields
 
 ### Sprint 4: Tracker Formats (1 week effort)
 1. MOD format (read-only)
