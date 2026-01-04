@@ -93,4 +93,37 @@ public class AiffFileAsyncTests
 		Assert.AreEqual ("Test", verifyResult.File!.Tag?.Title);
 		Assert.AreEqual ("Artist", verifyResult.File.Tag?.Artist);
 	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_BackToSource_Succeeds ()
+	{
+		var mockFs = new MockFileSystem ();
+		var originalData = TestBuilders.Aiff.CreateMinimal ();
+		mockFs.AddFile ("/test.aiff", originalData);
+
+		var readResult = await AiffFile.ReadFromFileAsync ("/test.aiff", mockFs);
+		var file = readResult.File!;
+		file.Tag = new Id3v2Tag { Title = "Overwritten Title" };
+
+		var saveResult = await file.SaveToFileAsync (mockFs);
+
+		Assert.IsTrue (saveResult.IsSuccess);
+
+		var verifyResult = await AiffFile.ReadFromFileAsync ("/test.aiff", mockFs);
+		Assert.AreEqual ("Overwritten Title", verifyResult.File!.Tag?.Title);
+	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_NoSourcePath_ReturnsFailure ()
+	{
+		var data = TestBuilders.Aiff.CreateMinimal ();
+		var result = AiffFile.Read (data);
+		var file = result.File!;
+
+		var mockFs = new MockFileSystem ();
+		var saveResult = await file.SaveToFileAsync (mockFs);
+
+		Assert.IsFalse (saveResult.IsSuccess);
+		Assert.IsTrue (saveResult.Error!.Contains ("source path", StringComparison.OrdinalIgnoreCase));
+	}
 }

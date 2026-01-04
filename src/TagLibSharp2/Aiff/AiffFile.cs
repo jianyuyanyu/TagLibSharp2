@@ -388,6 +388,27 @@ public sealed class AiffFile : IMediaFile
 		var data = Render ();
 		return AtomicFileWriter.WriteAsync (path, data.Memory, fileSystem, cancellationToken);
 	}
+
+	/// <summary>
+	/// Saves the AIFF file back to its source path asynchronously.
+	/// </summary>
+	/// <remarks>
+	/// This convenience method saves the file back to the path it was read from.
+	/// Requires that the file was read using <see cref="ReadFromFile"/> or
+	/// <see cref="ReadFromFileAsync"/>.
+	/// </remarks>
+	/// <param name="fileSystem">Optional file system abstraction.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The write result.</returns>
+	public Task<FileWriteResult> SaveToFileAsync (
+		IFileSystem? fileSystem = null,
+		CancellationToken cancellationToken = default)
+	{
+		if (string.IsNullOrEmpty (SourcePath))
+			return Task.FromResult (FileWriteResult.Failure ("No source path available. File was not read from disk."));
+
+		return SaveToFileAsync (SourcePath!, fileSystem, cancellationToken);
+	}
 }
 
 /// <summary>

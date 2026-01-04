@@ -93,4 +93,37 @@ public class WavFileAsyncTests
 		Assert.AreEqual ("Test", verifyResult.File!.Id3v2Tag?.Title);
 		Assert.AreEqual ("Artist", verifyResult.File.Id3v2Tag?.Artist);
 	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_BackToSource_Succeeds ()
+	{
+		var mockFs = new MockFileSystem ();
+		var originalData = TestBuilders.Wav.CreateMinimal ();
+		mockFs.AddFile ("/test.wav", originalData);
+
+		var readResult = await WavFile.ReadFromFileAsync ("/test.wav", mockFs);
+		var file = readResult.File!;
+		file.Id3v2Tag = new Id3v2Tag { Title = "Overwritten Title" };
+
+		var saveResult = await file.SaveToFileAsync (mockFs);
+
+		Assert.IsTrue (saveResult.IsSuccess);
+
+		var verifyResult = await WavFile.ReadFromFileAsync ("/test.wav", mockFs);
+		Assert.AreEqual ("Overwritten Title", verifyResult.File!.Id3v2Tag?.Title);
+	}
+
+	[TestMethod]
+	public async Task SaveToFileAsync_NoSourcePath_ReturnsFailure ()
+	{
+		var data = TestBuilders.Wav.CreateMinimal ();
+		var result = WavFile.Read (data);
+		var file = result.File!;
+
+		var mockFs = new MockFileSystem ();
+		var saveResult = await file.SaveToFileAsync (mockFs);
+
+		Assert.IsFalse (saveResult.IsSuccess);
+		Assert.IsTrue (saveResult.Error!.Contains ("source path", StringComparison.OrdinalIgnoreCase));
+	}
 }
