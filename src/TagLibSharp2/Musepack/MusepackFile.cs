@@ -96,12 +96,11 @@ public sealed class MusepackFile : IMediaFile
 	private const int SamplesPerFrameSV7 = 1152;
 
 	private byte[] _originalData = [];
-	private string? _sourcePath;
 
 	/// <summary>
 	/// Gets the source file path if the file was read from disk.
 	/// </summary>
-	public string? SourcePath => _sourcePath;
+	public string? SourcePath { get; private set; }
 
 	private IFileSystem? _sourceFileSystem;
 
@@ -466,7 +465,7 @@ public sealed class MusepackFile : IMediaFile
 
 		var result = Read (readResult.Data!.Value.Span);
 		if (result.IsSuccess) {
-			result.File!._sourcePath = path;
+			result.File!.SourcePath = path;
 			result.File._sourceFileSystem = fs;
 		}
 		return result;
@@ -487,7 +486,7 @@ public sealed class MusepackFile : IMediaFile
 
 		var result = Read (readResult.Data!.Value.Span);
 		if (result.IsSuccess) {
-			result.File!._sourcePath = path;
+			result.File!.SourcePath = path;
 			result.File._sourceFileSystem = fs;
 		}
 		return result;
@@ -508,10 +507,10 @@ public sealed class MusepackFile : IMediaFile
 	/// </summary>
 	public FileWriteResult SaveToFile (IFileSystem? fileSystem = null)
 	{
-		if (string.IsNullOrEmpty (_sourcePath))
+		if (string.IsNullOrEmpty (SourcePath))
 			return FileWriteResult.Failure ("No source path available. Use SaveToFile(path) instead.");
 
-		return SaveToFile (_sourcePath!, fileSystem);
+		return SaveToFile (SourcePath!, fileSystem);
 	}
 
 	/// <summary>
@@ -534,10 +533,10 @@ public sealed class MusepackFile : IMediaFile
 		IFileSystem? fileSystem = null,
 		CancellationToken cancellationToken = default)
 	{
-		if (string.IsNullOrEmpty (_sourcePath))
+		if (string.IsNullOrEmpty (SourcePath))
 			return FileWriteResult.Failure ("No source path available. Use SaveToFileAsync(path) instead.");
 
-		return await SaveToFileAsync (_sourcePath!, fileSystem, cancellationToken).ConfigureAwait (false);
+		return await SaveToFileAsync (SourcePath!, fileSystem, cancellationToken).ConfigureAwait (false);
 	}
 
 	/// <summary>
@@ -551,7 +550,7 @@ public sealed class MusepackFile : IMediaFile
 		ApeTag = null;
 		Properties = null;
 		_originalData = [];
-		_sourcePath = null;
+		SourcePath = null;
 		_sourceFileSystem = null;
 		_disposed = true;
 	}
