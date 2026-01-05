@@ -531,3 +531,308 @@ Standard picture types from ID3v2 and FLAC specifications.
 | 0x12 | Illustration | Illustration |
 | 0x13 | BandLogo | Band/artist logotype |
 | 0x14 | PublisherLogo | Publisher/studio logotype |
+
+---
+
+## IMediaProperties Interface
+
+Interface for audio/video stream properties. Implemented by `AudioProperties` struct and format-specific classes.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Duration` | `TimeSpan` | Duration of the media |
+| `Bitrate` | `int` | Bitrate in kbps (0 if unknown) |
+| `SampleRate` | `int` | Sample rate in Hz (0 if unknown) |
+| `BitsPerSample` | `int` | Bit depth (0 for lossy formats) |
+| `Channels` | `int` | Number of audio channels |
+| `Codec` | `string?` | Codec name (e.g., "FLAC", "MP3") |
+
+### Usage
+
+```csharp
+// Access through IMediaFile interface
+IMediaFile file = MediaFile.Open("song.flac");
+IMediaProperties? props = file.AudioProperties;
+
+if (props is not null)
+{
+    Console.WriteLine($"Duration: {props.Duration}");
+    Console.WriteLine($"Sample Rate: {props.SampleRate} Hz");
+    Console.WriteLine($"Bitrate: {props.Bitrate} kbps");
+    Console.WriteLine($"Codec: {props.Codec}");
+}
+```
+
+---
+
+## AudioProperties Struct
+
+Immutable value type representing audio stream properties. Implements `IMediaProperties`.
+
+### Definition
+
+```csharp
+public readonly record struct AudioProperties(
+    TimeSpan Duration,
+    int Bitrate,
+    int SampleRate,
+    int BitsPerSample,
+    int Channels,
+    string? Codec = null) : IMediaProperties
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Duration` | `TimeSpan` | Audio duration |
+| `Bitrate` | `int` | Bitrate in kbps |
+| `SampleRate` | `int` | Sample rate in Hz |
+| `BitsPerSample` | `int` | Bit depth |
+| `Channels` | `int` | Channel count |
+| `Codec` | `string?` | Codec name |
+| `IsValid` | `bool` | True if Duration > 0 and SampleRate > 0 |
+
+### Static Members
+
+| Member | Description |
+|--------|-------------|
+| `Empty` | Returns a default (empty) instance |
+| `FromFlac(...)` | Creates from FLAC stream info |
+| `FromVorbis(...)` | Creates from Vorbis identification header |
+| `FromOpus(...)` | Creates from Opus identification header |
+| `FromDsf(...)` | Creates from DSF (DSD) file info |
+| `FromDff(...)` | Creates from DFF (DSDIFF) file info |
+
+### Usage
+
+```csharp
+// Create directly
+var props = new AudioProperties(
+    Duration: TimeSpan.FromMinutes(3.5),
+    Bitrate: 320,
+    SampleRate: 44100,
+    BitsPerSample: 16,
+    Channels: 2,
+    Codec: "MP3");
+
+// Check validity
+if (props.IsValid)
+    Console.WriteLine($"Duration: {props.Duration:mm\\:ss}");
+
+// Create for FLAC
+var flacProps = AudioProperties.FromFlac(
+    totalSamples: 10584000,
+    sampleRate: 44100,
+    bitsPerSample: 16,
+    channels: 2);
+```
+
+### Performance Note
+
+`AudioProperties` is a `readonly record struct`, meaning:
+- Zero heap allocations when stored as a field or local variable
+- Value semantics (copied on assignment)
+- Equality based on all property values
+
+---
+
+## VideoProperties Struct
+
+Immutable value type representing video stream properties.
+
+### Definition
+
+```csharp
+public readonly record struct VideoProperties(
+    TimeSpan Duration,
+    int Width,
+    int Height,
+    int Bitrate,
+    double FrameRate,
+    string? Codec = null)
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Duration` | `TimeSpan` | Video duration |
+| `Width` | `int` | Frame width in pixels |
+| `Height` | `int` | Frame height in pixels |
+| `Bitrate` | `int` | Bitrate in kbps |
+| `FrameRate` | `double` | Frames per second |
+| `Codec` | `string?` | Codec name (e.g., "H.264", "VP9") |
+| `IsValid` | `bool` | True if Width > 0 and Height > 0 |
+
+### Static Members
+
+| Member | Description |
+|--------|-------------|
+| `Empty` | Returns a default (empty) instance |
+
+### Usage
+
+```csharp
+var video = new VideoProperties(
+    Duration: TimeSpan.FromMinutes(90),
+    Width: 1920,
+    Height: 1080,
+    Bitrate: 5000,
+    FrameRate: 23.976,
+    Codec: "H.264");
+
+Console.WriteLine($"Resolution: {video.Width}x{video.Height}");
+Console.WriteLine($"Frame rate: {video.FrameRate:F2} fps");
+```
+
+---
+
+## ImageProperties Struct
+
+Immutable value type representing image properties.
+
+### Definition
+
+```csharp
+public readonly record struct ImageProperties(
+    int Width,
+    int Height,
+    int ColorDepth = 0,
+    string? Format = null)
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Width` | `int` | Image width in pixels |
+| `Height` | `int` | Image height in pixels |
+| `ColorDepth` | `int` | Bits per pixel (24 for RGB, 32 for RGBA) |
+| `Format` | `string?` | Image format (e.g., "JPEG", "PNG") |
+| `IsValid` | `bool` | True if Width > 0 and Height > 0 |
+
+### Static Members
+
+| Member | Description |
+|--------|-------------|
+| `Empty` | Returns a default (empty) instance |
+
+### Usage
+
+```csharp
+var image = new ImageProperties(
+    Width: 3000,
+    Height: 3000,
+    ColorDepth: 24,
+    Format: "JPEG");
+
+Console.WriteLine($"Size: {image.Width}x{image.Height}");
+Console.WriteLine($"Color depth: {image.ColorDepth} bpp");
+```
+
+---
+
+## MediaTypes Enum
+
+Flags enum indicating types of media content in a file.
+
+### Definition
+
+```csharp
+[Flags]
+public enum MediaTypes
+{
+    None = 0,
+    Audio = 1 << 0,   // 1
+    Video = 1 << 1,   // 2
+    Image = 1 << 2    // 4
+}
+```
+
+### Values
+
+| Value | Description |
+|-------|-------------|
+| `None` | No media content |
+| `Audio` | Contains audio stream(s) |
+| `Video` | Contains video stream(s) |
+| `Image` | Contains image content |
+
+### Usage
+
+```csharp
+MediaTypes types = file.MediaTypes;
+
+if (types.HasFlag(MediaTypes.Audio))
+    Console.WriteLine("Has audio");
+
+if (types.HasFlag(MediaTypes.Video))
+    Console.WriteLine("Has video");
+
+// Check for multiple types
+if (types == (MediaTypes.Audio | MediaTypes.Video))
+    Console.WriteLine("Audio+Video container");
+```
+
+---
+
+## IMediaFile Interface
+
+Interface for media file containers with tags and properties.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Tag` | `Tag?` | Primary metadata tag |
+| `AudioProperties` | `IMediaProperties?` | Audio stream properties |
+| `VideoProperties` | `VideoProperties?` | Video stream properties |
+| `ImageProperties` | `ImageProperties?` | Image properties |
+| `MediaTypes` | `MediaTypes` | Types of media in the file |
+| `SourcePath` | `string?` | File path if read from disk |
+| `Format` | `MediaFormat` | Detected file format |
+
+### Usage
+
+```csharp
+using IMediaFile file = MediaFile.Open("song.flac");
+
+// Access tag metadata
+if (file.Tag is not null)
+{
+    Console.WriteLine($"Title: {file.Tag.Title}");
+    Console.WriteLine($"Artist: {file.Tag.Artist}");
+}
+
+// Check media types
+if (file.MediaTypes.HasFlag(MediaTypes.Audio))
+{
+    var props = file.AudioProperties;
+    if (props is not null)
+        Console.WriteLine($"Duration: {props.Duration:mm\\:ss}");
+}
+
+// Format detection
+Console.WriteLine($"Format: {file.Format}");
+```
+
+### Supported Formats
+
+| Format | Audio | Video | Image |
+|--------|:-----:|:-----:|:-----:|
+| FLAC | ✓ | | |
+| MP3 | ✓ | | |
+| Ogg Vorbis | ✓ | | |
+| Ogg Opus | ✓ | | |
+| WAV | ✓ | | |
+| AIFF | ✓ | | |
+| MP4/M4A | ✓ | | |
+| ASF/WMA | ✓ | | |
+| DSF (DSD) | ✓ | | |
+| DFF (DSDIFF) | ✓ | | |
+| Monkey's Audio | ✓ | | |
+| WavPack | ✓ | | |
+| Musepack | ✓ | | |

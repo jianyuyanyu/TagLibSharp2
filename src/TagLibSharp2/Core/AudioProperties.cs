@@ -6,26 +6,31 @@ namespace TagLibSharp2.Core;
 /// <summary>
 /// Represents audio stream properties extracted from a media file.
 /// </summary>
-public sealed class AudioProperties : IMediaProperties
+/// <remarks>
+/// <para>
+/// This is an immutable value type for optimal performance in batch operations.
+/// Being a struct, it avoids heap allocations and provides excellent cache locality.
+/// </para>
+/// <para>
+/// Use <see cref="IsValid"/> to check if properties were successfully extracted.
+/// Use the factory methods (<see cref="FromFlac"/>, <see cref="FromVorbis"/>, etc.)
+/// for format-specific construction.
+/// </para>
+/// </remarks>
+/// <param name="Duration">The duration of the audio.</param>
+/// <param name="Bitrate">The bitrate in kilobits per second (kbps). 0 if unknown.</param>
+/// <param name="SampleRate">The sample rate in Hertz (Hz). 0 if unknown.</param>
+/// <param name="BitsPerSample">The bits per sample. 0 for lossy formats.</param>
+/// <param name="Channels">The number of audio channels. 0 if unknown.</param>
+/// <param name="Codec">The codec name (e.g., "FLAC", "Vorbis", "MP3").</param>
+public readonly record struct AudioProperties (
+	TimeSpan Duration,
+	int Bitrate,
+	int SampleRate,
+	int BitsPerSample,
+	int Channels,
+	string? Codec = null) : IMediaProperties
 {
-	/// <inheritdoc/>
-	public TimeSpan Duration { get; }
-
-	/// <inheritdoc/>
-	public int Bitrate { get; }
-
-	/// <inheritdoc/>
-	public int SampleRate { get; }
-
-	/// <inheritdoc/>
-	public int BitsPerSample { get; }
-
-	/// <inheritdoc/>
-	public int Channels { get; }
-
-	/// <inheritdoc/>
-	public string? Codec { get; }
-
 	/// <summary>
 	/// Gets a value indicating whether this instance contains valid audio properties.
 	/// </summary>
@@ -37,32 +42,7 @@ public sealed class AudioProperties : IMediaProperties
 	/// <summary>
 	/// Gets an empty instance with no audio properties.
 	/// </summary>
-	public static AudioProperties Empty { get; } = new (TimeSpan.Zero, 0, 0, 0, 0, null);
-
-	/// <summary>
-	/// Initializes a new instance of the <see cref="AudioProperties"/> class.
-	/// </summary>
-	/// <param name="duration">The duration of the audio.</param>
-	/// <param name="bitrate">The bitrate in kbps.</param>
-	/// <param name="sampleRate">The sample rate in Hz.</param>
-	/// <param name="bitsPerSample">The bits per sample (0 for lossy formats).</param>
-	/// <param name="channels">The number of audio channels.</param>
-	/// <param name="codec">The codec name.</param>
-	public AudioProperties (
-		TimeSpan duration,
-		int bitrate,
-		int sampleRate,
-		int bitsPerSample,
-		int channels,
-		string? codec)
-	{
-		Duration = duration;
-		Bitrate = bitrate;
-		SampleRate = sampleRate;
-		BitsPerSample = bitsPerSample;
-		Channels = channels;
-		Codec = codec;
-	}
+	public static AudioProperties Empty => default;
 
 	/// <summary>
 	/// Creates audio properties from FLAC stream info.

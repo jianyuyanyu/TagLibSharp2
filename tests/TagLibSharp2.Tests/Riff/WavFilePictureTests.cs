@@ -38,7 +38,7 @@ public class WavFilePictureTests
 	[TestMethod]
 	public void Pictures_ReturnsEmptyWhenNoId3Tag ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		var pictures = wav.Pictures;
@@ -50,7 +50,7 @@ public class WavFilePictureTests
 	[TestMethod]
 	public void Pictures_ReturnsId3Pictures ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.Id3v2Tag = new Id3v2Tag ();
@@ -68,7 +68,7 @@ public class WavFilePictureTests
 	[TestMethod]
 	public void Pictures_ReturnsMultipleId3Pictures ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.Id3v2Tag = new Id3v2Tag ();
@@ -86,7 +86,7 @@ public class WavFilePictureTests
 	[TestMethod]
 	public void HasPictures_ReturnsTrueWhenPicturesExist ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.Id3v2Tag = new Id3v2Tag ();
@@ -98,7 +98,7 @@ public class WavFilePictureTests
 	[TestMethod]
 	public void HasPictures_ReturnsFalseWhenNoPictures ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		Assert.IsFalse (wav.HasPictures);
@@ -107,7 +107,7 @@ public class WavFilePictureTests
 	[TestMethod]
 	public void CoverArt_ReturnsFirstFrontCover ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.Id3v2Tag = new Id3v2Tag ();
@@ -124,7 +124,7 @@ public class WavFilePictureTests
 	[TestMethod]
 	public void CoverArt_ReturnsNullWhenNoFrontCover ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.Id3v2Tag = new Id3v2Tag ();

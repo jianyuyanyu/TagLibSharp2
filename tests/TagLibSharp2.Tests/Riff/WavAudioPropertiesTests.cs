@@ -36,9 +36,9 @@ public class WavAudioPropertiesTests
 		var props = WavAudioPropertiesParser.Parse (CreateFmtChunk ());
 
 		Assert.IsNotNull (props);
-		Assert.AreEqual (44100, props.SampleRate);
-		Assert.AreEqual (2, props.Channels);
-		Assert.AreEqual (16, props.BitsPerSample);
+		Assert.AreEqual (44100, props.Value.SampleRate);
+		Assert.AreEqual (2, props.Value.Channels);
+		Assert.AreEqual (16, props.Value.BitsPerSample);
 	}
 
 	[TestMethod]
@@ -62,7 +62,7 @@ public class WavAudioPropertiesTests
 		var props = WavAudioPropertiesParser.Parse (fmtData, 176400); // 1 second
 
 		Assert.IsNotNull (props);
-		Assert.AreEqual (1.0, props.Duration.TotalSeconds, 0.001);
+		Assert.AreEqual (1.0, props.Value.Duration.TotalSeconds, 0.001);
 	}
 
 	[TestMethod]
@@ -71,7 +71,7 @@ public class WavAudioPropertiesTests
 		var props = WavAudioPropertiesParser.Parse (CreateFmtChunk ());
 
 		Assert.IsNotNull (props);
-		Assert.AreEqual (1411, props.Bitrate);
+		Assert.AreEqual (1411, props.Value.Bitrate);
 	}
 
 	[TestMethod]
@@ -80,7 +80,7 @@ public class WavAudioPropertiesTests
 		var props = WavAudioPropertiesParser.Parse (CreateFmtChunk (channels: 1));
 
 		Assert.IsNotNull (props);
-		Assert.AreEqual (1, props.Channels);
+		Assert.AreEqual (1, props.Value.Channels);
 	}
 
 	[TestMethod]
@@ -108,7 +108,7 @@ public class WavAudioPropertiesTests
 		var props = WavAudioPropertiesParser.Parse (CreateFmtChunk (formatCode: 3));
 
 		Assert.IsNotNull (props);
-		Assert.AreEqual ("IEEE Float", props.Codec);
+		Assert.AreEqual ("IEEE Float", props.Value.Codec);
 	}
 
 	[TestMethod]
@@ -118,7 +118,7 @@ public class WavAudioPropertiesTests
 		var props = WavAudioPropertiesParser.Parse (CreateFmtChunk (formatCode: 0xFFFE));
 
 		Assert.IsNotNull (props);
-		Assert.AreEqual ("Extensible", props.Codec);
+		Assert.AreEqual ("Extensible", props.Value.Codec);
 	}
 
 	[TestMethod]

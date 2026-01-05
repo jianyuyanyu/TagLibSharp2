@@ -117,6 +117,15 @@ public sealed class OggVorbisFile : IMediaFile
 	IMediaProperties? IMediaFile.AudioProperties => Properties;
 
 	/// <inheritdoc />
+	VideoProperties? IMediaFile.VideoProperties => null;
+
+	/// <inheritdoc />
+	ImageProperties? IMediaFile.ImageProperties => null;
+
+	/// <inheritdoc />
+	MediaTypes IMediaFile.MediaTypes => Properties.IsValid ? MediaTypes.Audio : MediaTypes.None;
+
+	/// <inheritdoc />
 	public MediaFormat Format => MediaFormat.OggVorbis;
 
 	OggVorbisFile (AudioProperties properties)
@@ -226,6 +235,30 @@ public sealed class OggVorbisFile : IMediaFile
 
 		return OggVorbisFileReadResult.Success (file, data.Length);
 	}
+
+	/// <summary>
+	/// Attempts to read an Ogg Vorbis file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <param name="validateCrc">Whether to validate CRC-32 checksums.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (ReadOnlySpan<byte> data, out OggVorbisFile? file, bool validateCrc = false)
+	{
+		var result = Read (data, validateCrc);
+		file = result.File;
+		return result.IsSuccess;
+	}
+
+	/// <summary>
+	/// Attempts to read an Ogg Vorbis file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <param name="validateCrc">Whether to validate CRC-32 checksums.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (BinaryData data, out OggVorbisFile? file, bool validateCrc = false) =>
+		TryRead (data.Span, out file, validateCrc);
 
 	static VorbisCommentReadResult TryParseCommentPacket (ReadOnlySpan<byte> packet)
 	{

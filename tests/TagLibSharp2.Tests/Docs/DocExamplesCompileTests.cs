@@ -165,7 +165,7 @@ public class DocExamplesCompileTests
 
 		// AIFF
 		Assert.IsNotNull (typeof (AiffFile).GetProperty ("Tag"));
-		Assert.IsNotNull (typeof (AiffFile).GetProperty ("AudioProperties"));
+		Assert.IsNotNull (typeof (AiffFile).GetProperty ("Properties"));
 		Assert.IsNotNull (typeof (AiffFile).GetMethod ("SaveToFile", new[] { typeof (string), typeof (IFileSystem) }));
 	}
 

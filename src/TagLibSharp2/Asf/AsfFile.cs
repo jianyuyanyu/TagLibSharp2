@@ -39,6 +39,15 @@ public sealed class AsfFile : IMediaFile
 	IMediaProperties? IMediaFile.AudioProperties => Properties;
 
 	/// <inheritdoc />
+	VideoProperties? IMediaFile.VideoProperties => null;
+
+	/// <inheritdoc />
+	ImageProperties? IMediaFile.ImageProperties => null;
+
+	/// <inheritdoc />
+	MediaTypes IMediaFile.MediaTypes => Properties.IsValid ? MediaTypes.Audio : MediaTypes.None;
+
+	/// <inheritdoc />
 	public MediaFormat Format => MediaFormat.Asf;
 
 	AsfFile (AsfTag tag, AudioProperties audioProperties)
@@ -179,6 +188,28 @@ public sealed class AsfFile : IMediaFile
 		file._originalData = data.ToArray ();
 		return AsfFileReadResult.Success (file);
 	}
+
+	/// <summary>
+	/// Attempts to read an ASF file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (ReadOnlySpan<byte> data, out AsfFile? file)
+	{
+		var result = Read (data);
+		file = result.File;
+		return result.IsSuccess;
+	}
+
+	/// <summary>
+	/// Attempts to read an ASF file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (BinaryData data, out AsfFile? file) =>
+		TryRead (data.Span, out file);
 
 	/// <summary>
 	/// Reads an ASF file from a file path.
@@ -419,17 +450,27 @@ public sealed class AsfFile : IMediaFile
 	// ═══════════════════════════════════════════════════════════════
 
 	/// <summary>
-	/// Saves the file to the specified path.
+	/// Saves the file to the specified path using the provided original data.
+	/// </summary>
+	/// <param name="path">The file path to save to.</param>
+	/// <param name="originalData">The original file data containing audio content.</param>
+	/// <param name="fileSystem">Optional file system abstraction.</param>
+	/// <returns>The result of the write operation.</returns>
+	public FileWriteResult SaveToFile (string path, ReadOnlySpan<byte> originalData, IFileSystem? fileSystem = null)
+	{
+		var fs = fileSystem ?? _sourceFileSystem ?? DefaultFileSystem.Instance;
+		var rendered = Render (originalData);
+		return AtomicFileWriter.Write (path, rendered, fs);
+	}
+
+	/// <summary>
+	/// Saves the file to the specified path using internally stored data.
 	/// </summary>
 	/// <param name="path">The file path to save to.</param>
 	/// <param name="fileSystem">Optional file system abstraction.</param>
 	/// <returns>The result of the write operation.</returns>
-	public FileWriteResult SaveToFile (string path, IFileSystem? fileSystem = null)
-	{
-		var fs = fileSystem ?? _sourceFileSystem ?? DefaultFileSystem.Instance;
-		var rendered = Render (_originalData);
-		return AtomicFileWriter.Write (path, rendered, fs);
-	}
+	public FileWriteResult SaveToFile (string path, IFileSystem? fileSystem = null) =>
+		SaveToFile (path, _originalData, fileSystem);
 
 	/// <summary>
 	/// Saves the file back to its source path.
@@ -445,21 +486,36 @@ public sealed class AsfFile : IMediaFile
 	}
 
 	/// <summary>
-	/// Saves the file to the specified path asynchronously.
+	/// Saves the file to the specified path asynchronously using the provided original data.
 	/// </summary>
 	/// <param name="path">The file path to save to.</param>
+	/// <param name="originalData">The original file data containing audio content.</param>
 	/// <param name="fileSystem">Optional file system abstraction.</param>
 	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <returns>The result of the write operation.</returns>
 	public async Task<FileWriteResult> SaveToFileAsync (
 		string path,
+		ReadOnlyMemory<byte> originalData,
 		IFileSystem? fileSystem = null,
 		CancellationToken cancellationToken = default)
 	{
 		var fs = fileSystem ?? _sourceFileSystem ?? DefaultFileSystem.Instance;
-		var rendered = Render (_originalData);
+		var rendered = Render (originalData.Span);
 		return await AtomicFileWriter.WriteAsync (path, rendered, fs, cancellationToken).ConfigureAwait (false);
 	}
+
+	/// <summary>
+	/// Saves the file to the specified path asynchronously using internally stored data.
+	/// </summary>
+	/// <param name="path">The file path to save to.</param>
+	/// <param name="fileSystem">Optional file system abstraction.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The result of the write operation.</returns>
+	public Task<FileWriteResult> SaveToFileAsync (
+		string path,
+		IFileSystem? fileSystem = null,
+		CancellationToken cancellationToken = default) =>
+		SaveToFileAsync (path, _originalData, fileSystem, cancellationToken);
 
 	/// <summary>
 	/// Saves the file back to its source path asynchronously.

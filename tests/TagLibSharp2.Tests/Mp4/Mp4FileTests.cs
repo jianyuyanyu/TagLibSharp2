@@ -340,7 +340,7 @@ public class Mp4FileTests
 
 		var result = Mp4File.Read (data);
 
-		Assert.IsNotNull (result.File?.Duration);
-		Assert.IsTrue (result.File.Duration.Value.TotalSeconds >= 179 && result.File.Duration.Value.TotalSeconds <= 181);
+		Assert.IsNotNull (result.File);
+		Assert.IsTrue (result.File.Duration.TotalSeconds >= 179 && result.File.Duration.TotalSeconds <= 181);
 	}
 }

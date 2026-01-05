@@ -210,6 +210,15 @@ public sealed class FlacFile : IMediaFile
 	IMediaProperties? IMediaFile.AudioProperties => Properties;
 
 	/// <inheritdoc />
+	VideoProperties? IMediaFile.VideoProperties => null;
+
+	/// <inheritdoc />
+	ImageProperties? IMediaFile.ImageProperties => null;
+
+	/// <inheritdoc />
+	MediaTypes IMediaFile.MediaTypes => Properties.IsValid ? MediaTypes.Audio : MediaTypes.None;
+
+	/// <inheritdoc />
 	public MediaFormat Format => MediaFormat.Flac;
 
 	FlacFile (BinaryData streamInfoData, AudioProperties properties)
@@ -392,6 +401,28 @@ public sealed class FlacFile : IMediaFile
 		file.MetadataSize = offset;
 		return FlacFileReadResult.Success (file, offset);
 	}
+
+	/// <summary>
+	/// Attempts to read a FLAC file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (ReadOnlySpan<byte> data, out FlacFile? file)
+	{
+		var result = Read (data);
+		file = result.File;
+		return result.IsSuccess;
+	}
+
+	/// <summary>
+	/// Attempts to read a FLAC file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (BinaryData data, out FlacFile? file) =>
+		TryRead (data.Span, out file);
 
 	VorbisComment EnsureVorbisComment ()
 	{

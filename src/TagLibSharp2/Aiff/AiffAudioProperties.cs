@@ -25,7 +25,7 @@ namespace TagLibSharp2.Aiff;
 /// <item>Bytes 22+:   Compression name (Pascal string)</item>
 /// </list>
 /// </remarks>
-public class AiffAudioProperties
+public class AiffAudioProperties : IMediaProperties
 {
 	/// <summary>
 	/// Minimum size of the COMM chunk data for AIFF.
@@ -94,6 +94,14 @@ public class AiffAudioProperties
 	/// </remarks>
 	public string? CompressionName { get; }
 
+	/// <summary>
+	/// Gets the codec name for this audio format.
+	/// </summary>
+	/// <remarks>
+	/// Returns "AIFF" for standard AIFF files, or the compression type for AIFC files.
+	/// </remarks>
+	public string? Codec { get; }
+
 	AiffAudioProperties (int channels, uint sampleFrames, int bitsPerSample, int sampleRate,
 		string? compressionType = null, string? compressionName = null)
 	{
@@ -103,6 +111,7 @@ public class AiffAudioProperties
 		SampleRate = sampleRate;
 		CompressionType = compressionType;
 		CompressionName = compressionName;
+		Codec = compressionType ?? "AIFF";
 
 		// Calculate duration
 		if (sampleRate > 0 && sampleFrames > 0)

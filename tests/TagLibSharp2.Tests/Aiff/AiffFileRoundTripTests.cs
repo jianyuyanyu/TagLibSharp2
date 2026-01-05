@@ -70,14 +70,14 @@ public class AiffFileRoundTripTests
 		var original = CreateMinimalAiff ();
 
 		// Act
-		Assert.IsTrue (AiffFile.TryParse (original, out var file1), "First parse failed");
+		Assert.IsTrue (AiffFile.TryRead (original, out var file1), "First parse failed");
 
 		file1!.Tag = new Id3v2Tag { Title = "Test Title", Artist = "Test Artist" };
 
 		var written = file1.Render ();
 		Assert.IsTrue (written.Length > 0, "Render produced empty output");
 
-		Assert.IsTrue (AiffFile.TryParse (written, out var file2), "Second parse failed");
+		Assert.IsTrue (AiffFile.TryRead (written, out var file2), "Second parse failed");
 
 		// Assert
 		Assert.AreEqual ("Test Title", file2!.Tag?.Title);
@@ -89,7 +89,7 @@ public class AiffFileRoundTripTests
 	{
 		// Arrange
 		var original = CreateMinimalAiff ();
-		Assert.IsTrue (AiffFile.TryParse (original, out var file));
+		Assert.IsTrue (AiffFile.TryRead (original, out var file));
 
 		// Set all standard metadata fields via Id3v2Tag
 		file!.Tag = new Id3v2Tag {
@@ -108,7 +108,7 @@ public class AiffFileRoundTripTests
 
 		// Act
 		var written = file.Render ();
-		Assert.IsTrue (AiffFile.TryParse (written, out var reloaded));
+		Assert.IsTrue (AiffFile.TryRead (written, out var reloaded));
 
 		// Assert
 		Assert.IsNotNull (reloaded?.Tag);
@@ -137,7 +137,7 @@ public class AiffFileRoundTripTests
 		};
 
 		var original = CreateMinimalAiff ();
-		Assert.IsTrue (AiffFile.TryParse (original, out var file));
+		Assert.IsTrue (AiffFile.TryRead (original, out var file));
 
 		// Add picture via Id3v2Tag
 		var tag = new Id3v2Tag { Title = "With Art" };
@@ -147,7 +147,7 @@ public class AiffFileRoundTripTests
 
 		// Act
 		var written = file.Render ();
-		Assert.IsTrue (AiffFile.TryParse (written, out var reloaded));
+		Assert.IsTrue (AiffFile.TryRead (written, out var reloaded));
 
 		// Assert
 		var pictures = reloaded!.Tag!.PictureFrames;
@@ -160,26 +160,26 @@ public class AiffFileRoundTripTests
 	{
 		// Arrange
 		var original = CreateMinimalAiff ();
-		Assert.IsTrue (AiffFile.TryParse (original, out var file));
-		Assert.IsNotNull (file?.AudioProperties);
+		Assert.IsTrue (AiffFile.TryRead (original, out var file));
+		Assert.IsNotNull (file?.Properties);
 
 		// Store original audio properties
-		var originalSampleRate = file.AudioProperties.SampleRate;
-		var originalChannels = file.AudioProperties.Channels;
-		var originalBitDepth = file.AudioProperties.BitsPerSample;
+		var originalSampleRate = file.Properties.SampleRate;
+		var originalChannels = file.Properties.Channels;
+		var originalBitDepth = file.Properties.BitsPerSample;
 
 		// Modify metadata
 		file.Tag = new Id3v2Tag { Title = "Modified Title" };
 
 		// Act
 		var written = file.Render ();
-		Assert.IsTrue (AiffFile.TryParse (written, out var reloaded));
-		Assert.IsNotNull (reloaded?.AudioProperties);
+		Assert.IsTrue (AiffFile.TryRead (written, out var reloaded));
+		Assert.IsNotNull (reloaded?.Properties);
 
 		// Assert: Audio properties unchanged
-		Assert.AreEqual (originalSampleRate, reloaded.AudioProperties.SampleRate);
-		Assert.AreEqual (originalChannels, reloaded.AudioProperties.Channels);
-		Assert.AreEqual (originalBitDepth, reloaded.AudioProperties.BitsPerSample);
+		Assert.AreEqual (originalSampleRate, reloaded.Properties.SampleRate);
+		Assert.AreEqual (originalChannels, reloaded.Properties.Channels);
+		Assert.AreEqual (originalBitDepth, reloaded.Properties.BitsPerSample);
 		Assert.AreEqual ("Modified Title", reloaded.Tag?.Title);
 	}
 
@@ -190,16 +190,16 @@ public class AiffFileRoundTripTests
 		var original = CreateMinimalAiff ();
 
 		// Act: Write multiple times
-		Assert.IsTrue (AiffFile.TryParse (original, out var file1));
+		Assert.IsTrue (AiffFile.TryRead (original, out var file1));
 		file1!.Tag = new Id3v2Tag { Title = "Title", Artist = "Artist" };
 		var written1 = file1.Render ();
 		var size1 = written1.Length;
 
-		Assert.IsTrue (AiffFile.TryParse (written1, out var file2));
+		Assert.IsTrue (AiffFile.TryRead (written1, out var file2));
 		var written2 = file2!.Render ();
 		var size2 = written2.Length;
 
-		Assert.IsTrue (AiffFile.TryParse (written2, out var file3));
+		Assert.IsTrue (AiffFile.TryRead (written2, out var file3));
 		var written3 = file3!.Render ();
 		var size3 = written3.Length;
 
@@ -218,7 +218,7 @@ public class AiffFileRoundTripTests
 	{
 		// Arrange
 		var original = CreateMinimalAiff ();
-		Assert.IsTrue (AiffFile.TryParse (original, out var file));
+		Assert.IsTrue (AiffFile.TryRead (original, out var file));
 
 		var mbTrackId = "12345678-1234-1234-1234-123456789012";
 		var mbReleaseId = "87654321-4321-4321-4321-210987654321";
@@ -231,7 +231,7 @@ public class AiffFileRoundTripTests
 
 		// Act
 		var written = file.Render ();
-		Assert.IsTrue (AiffFile.TryParse (written, out var reloaded));
+		Assert.IsTrue (AiffFile.TryRead (written, out var reloaded));
 
 		// Assert
 		Assert.AreEqual (mbTrackId, reloaded!.Tag!.MusicBrainzTrackId);
@@ -243,7 +243,7 @@ public class AiffFileRoundTripTests
 	{
 		// Arrange
 		var original = CreateMinimalAiff ();
-		Assert.IsTrue (AiffFile.TryParse (original, out var file));
+		Assert.IsTrue (AiffFile.TryRead (original, out var file));
 
 		file!.Tag = new Id3v2Tag {
 			Title = "With ReplayGain",
@@ -255,7 +255,7 @@ public class AiffFileRoundTripTests
 
 		// Act
 		var written = file.Render ();
-		Assert.IsTrue (AiffFile.TryParse (written, out var reloaded));
+		Assert.IsTrue (AiffFile.TryRead (written, out var reloaded));
 
 		// Assert
 		Assert.AreEqual ("-6.50 dB", reloaded!.Tag!.ReplayGainTrackGain);

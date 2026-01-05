@@ -183,9 +183,9 @@ public class DisposeTests
 		// Act
 		file.Dispose ();
 
-		// Assert - Tag and AudioProperties should be cleared
+		// Assert - Tag and Properties should be cleared
 		Assert.IsNull (file.Tag);
-		Assert.IsNull (file.AudioProperties);
+		Assert.IsNull (file.Properties);
 	}
 
 	[TestMethod]

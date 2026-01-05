@@ -20,7 +20,7 @@ public class AiffFileTests
 		// Minimal valid AIFF: FORM header + COMM chunk + SSND chunk
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
 
-		var result = AiffFile.TryParse (data, out var file);
+		var result = AiffFile.TryRead (data, out var file);
 
 		Assert.IsTrue (result);
 		Assert.IsNotNull (file);
@@ -37,7 +37,7 @@ public class AiffFileTests
 			0x41, 0x49, 0x46, 0x46, // "AIFF"
 		];
 
-		var result = AiffFile.TryParse (new BinaryData (data), out _);
+		var result = AiffFile.TryRead (new BinaryData (data), out _);
 
 		Assert.IsFalse (result);
 	}
@@ -47,7 +47,7 @@ public class AiffFileTests
 	{
 		byte[] data = [0x46, 0x4F, 0x52, 0x4D]; // Just "FORM"
 
-		var result = AiffFile.TryParse (new BinaryData (data), out _);
+		var result = AiffFile.TryRead (new BinaryData (data), out _);
 
 		Assert.IsFalse (result);
 	}
@@ -58,7 +58,7 @@ public class AiffFileTests
 		// AIFC is compressed AIFF
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000, isAifc: true);
 
-		var result = AiffFile.TryParse (data, out var file);
+		var result = AiffFile.TryRead (data, out var file);
 
 		Assert.IsTrue (result);
 		Assert.AreEqual ("AIFC", file!.FormType);
@@ -70,11 +70,11 @@ public class AiffFileTests
 		// AIFC with NONE (uncompressed) compression type
 		var data = CreateAifcFileWithCompression (44100, 16, 2, 1000, "NONE", "not compressed");
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
-		Assert.IsNotNull (file?.AudioProperties);
-		Assert.AreEqual ("NONE", file.AudioProperties.CompressionType);
-		Assert.AreEqual ("not compressed", file.AudioProperties.CompressionName);
+		Assert.IsNotNull (file?.Properties);
+		Assert.AreEqual ("NONE", file.Properties.CompressionType);
+		Assert.AreEqual ("not compressed", file.Properties.CompressionName);
 	}
 
 	[TestMethod]
@@ -83,10 +83,10 @@ public class AiffFileTests
 		// AIFC with sowt (little-endian PCM) compression
 		var data = CreateAifcFileWithCompression (44100, 16, 2, 1000, "sowt", "");
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
-		Assert.IsNotNull (file?.AudioProperties);
-		Assert.AreEqual ("sowt", file.AudioProperties.CompressionType);
+		Assert.IsNotNull (file?.Properties);
+		Assert.AreEqual ("sowt", file.Properties.CompressionType);
 	}
 
 	[TestMethod]
@@ -95,11 +95,11 @@ public class AiffFileTests
 		// Standard AIFF has no compression fields
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000, isAifc: false);
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
-		Assert.IsNotNull (file?.AudioProperties);
-		Assert.IsNull (file.AudioProperties.CompressionType);
-		Assert.IsNull (file.AudioProperties.CompressionName);
+		Assert.IsNotNull (file?.Properties);
+		Assert.IsNull (file.Properties.CompressionType);
+		Assert.IsNull (file.Properties.CompressionName);
 	}
 
 	[TestMethod]
@@ -111,13 +111,13 @@ public class AiffFileTests
 			channels: 2,
 			sampleFrames: 96000);
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
-		Assert.IsNotNull (file?.AudioProperties);
-		Assert.AreEqual (48000, file.AudioProperties.SampleRate);
-		Assert.AreEqual (24, file.AudioProperties.BitsPerSample);
-		Assert.AreEqual (2, file.AudioProperties.Channels);
-		Assert.AreEqual (96000u, file.AudioProperties.SampleFrames);
+		Assert.IsNotNull (file?.Properties);
+		Assert.AreEqual (48000, file.Properties.SampleRate);
+		Assert.AreEqual (24, file.Properties.BitsPerSample);
+		Assert.AreEqual (2, file.Properties.Channels);
+		Assert.AreEqual (96000u, file.Properties.SampleFrames);
 	}
 
 	[TestMethod]
@@ -130,9 +130,9 @@ public class AiffFileTests
 			channels: 2,
 			sampleFrames: 88200);
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
-		Assert.AreEqual (TimeSpan.FromSeconds (2), file!.AudioProperties!.Duration);
+		Assert.AreEqual (TimeSpan.FromSeconds (2), file!.Properties!.Duration);
 	}
 
 	[TestMethod]
@@ -141,9 +141,9 @@ public class AiffFileTests
 		// 44100 Hz, 16-bit, stereo = 1411.2 kbps
 		var data = CreateMinimalAiffFile (44100, 16, 2, 44100);
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
-		Assert.AreEqual (1411, file!.AudioProperties!.Bitrate);
+		Assert.AreEqual (1411, file!.Properties!.Bitrate);
 	}
 
 	[TestMethod]
@@ -151,7 +151,7 @@ public class AiffFileTests
 	{
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		var commChunk = file!.GetChunk ("COMM");
 		Assert.IsNotNull (commChunk);
@@ -163,7 +163,7 @@ public class AiffFileTests
 	{
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		var chunk = file!.GetChunk ("NONX");
 		Assert.IsNull (chunk);
@@ -174,7 +174,7 @@ public class AiffFileTests
 	{
 		var data = CreateAiffWithId3Tag ("Test Title", "Test Artist");
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		Assert.IsNotNull (file?.Tag);
 		Assert.AreEqual ("Test Title", file.Tag.Title);
@@ -186,7 +186,7 @@ public class AiffFileTests
 	{
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
 
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		Assert.IsTrue (file!.AllChunks.Count >= 2);  // At least COMM and SSND
 	}
@@ -197,7 +197,7 @@ public class AiffFileTests
 		// Create AIFF with odd-sized chunk to test padding
 		var data = CreateAiffWithOddChunk ();
 
-		var result = AiffFile.TryParse (data, out var file);
+		var result = AiffFile.TryRead (data, out var file);
 
 		Assert.IsTrue (result);
 		Assert.IsTrue (file!.AllChunks.Count >= 2);
@@ -438,7 +438,7 @@ public class AiffFileTests
 	public void Render_ProducesValidAiff ()
 	{
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		var rendered = file!.Render ();
 
@@ -456,27 +456,27 @@ public class AiffFileTests
 	public void Render_RoundTrip_PreservesAudioProperties ()
 	{
 		var data = CreateMinimalAiffFile (48000, 24, 2, 96000);
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		var rendered = file!.Render ();
-		AiffFile.TryParse (rendered, out var roundTripped);
+		AiffFile.TryRead (rendered, out var roundTripped);
 
-		Assert.IsNotNull (roundTripped?.AudioProperties);
-		Assert.AreEqual (48000, roundTripped.AudioProperties.SampleRate);
-		Assert.AreEqual (24, roundTripped.AudioProperties.BitsPerSample);
-		Assert.AreEqual (2, roundTripped.AudioProperties.Channels);
+		Assert.IsNotNull (roundTripped?.Properties);
+		Assert.AreEqual (48000, roundTripped.Properties.SampleRate);
+		Assert.AreEqual (24, roundTripped.Properties.BitsPerSample);
+		Assert.AreEqual (2, roundTripped.Properties.Channels);
 	}
 
 	[TestMethod]
 	public void Render_WithId3Tag_IncludesId3Chunk ()
 	{
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		file!.Tag = new TagLibSharp2.Id3.Id3v2.Id3v2Tag { Title = "Test Title" };
 
 		var rendered = file.Render ();
-		AiffFile.TryParse (rendered, out var roundTripped);
+		AiffFile.TryRead (rendered, out var roundTripped);
 
 		Assert.IsNotNull (roundTripped?.Tag);
 		Assert.AreEqual ("Test Title", roundTripped.Tag.Title);
@@ -486,7 +486,7 @@ public class AiffFileTests
 	public void Render_WithAnnoChunk_PreservesAnnoChunk ()
 	{
 		var data = CreateAiffWithOddChunk ();
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		var rendered = file!.Render ();
 
@@ -498,10 +498,10 @@ public class AiffFileTests
 	public void Render_AifcFile_PreservesFormType ()
 	{
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000, isAifc: true);
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		var rendered = file!.Render ();
-		AiffFile.TryParse (rendered, out var roundTripped);
+		AiffFile.TryRead (rendered, out var roundTripped);
 
 		Assert.AreEqual ("AIFC", roundTripped!.FormType);
 	}
@@ -510,7 +510,7 @@ public class AiffFileTests
 	public void SaveToFile_WithMockFileSystem_WritesData ()
 	{
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		var mockFs = new MockFileSystem ();
 		var result = file!.SaveToFile ("/test/output.aiff", mockFs);
@@ -523,7 +523,7 @@ public class AiffFileTests
 	public async Task SaveToFileAsync_WithMockFileSystem_WritesData ()
 	{
 		var data = CreateMinimalAiffFile (44100, 16, 2, 1000);
-		AiffFile.TryParse (data, out var file);
+		AiffFile.TryRead (data, out var file);
 
 		var mockFs = new MockFileSystem ();
 		var result = await file!.SaveToFileAsync ("/test/output.aiff", mockFs);

@@ -63,7 +63,7 @@ public sealed class AiffFile : IMediaFile
 	/// <summary>
 	/// Gets the audio properties from the COMM chunk.
 	/// </summary>
-	public AiffAudioProperties? AudioProperties { get; private set; }
+	public AiffAudioProperties? Properties { get; private set; }
 
 	/// <summary>
 	/// Gets or sets the ID3v2 tag.
@@ -109,9 +109,16 @@ public sealed class AiffFile : IMediaFile
 	Tag? IMediaFile.Tag => Tag;
 
 	/// <inheritdoc />
-	IMediaProperties? IMediaFile.AudioProperties => AudioProperties is null ? null : new AudioProperties (
-		AudioProperties.Duration, AudioProperties.Bitrate, AudioProperties.SampleRate,
-		AudioProperties.BitsPerSample, AudioProperties.Channels, "AIFF");
+	IMediaProperties? IMediaFile.AudioProperties => Properties;
+
+	/// <inheritdoc />
+	VideoProperties? IMediaFile.VideoProperties => null;
+
+	/// <inheritdoc />
+	ImageProperties? IMediaFile.ImageProperties => null;
+
+	/// <inheritdoc />
+	MediaTypes IMediaFile.MediaTypes => Properties is not null ? MediaTypes.Audio : MediaTypes.None;
 
 	/// <inheritdoc />
 	public MediaFormat Format => MediaFormat.Aiff;
@@ -128,7 +135,7 @@ public sealed class AiffFile : IMediaFile
 
 		_chunks.Clear ();
 		Tag = null;
-		AudioProperties = null;
+		Properties = null;
 		_disposed = true;
 	}
 
@@ -147,17 +154,36 @@ public sealed class AiffFile : IMediaFile
 	}
 
 	/// <summary>
+	/// Attempts to read an AIFF file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (ReadOnlySpan<byte> data, out AiffFile? file)
+	{
+		var result = Read (data);
+		file = result.File;
+		return result.IsSuccess;
+	}
+
+	/// <summary>
+	/// Attempts to read an AIFF file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (BinaryData data, out AiffFile? file) =>
+		TryRead (data.Span, out file);
+
+	/// <summary>
 	/// Attempts to parse an AIFF file from binary data.
 	/// </summary>
 	/// <param name="data">The file data.</param>
 	/// <param name="file">The parsed file, or null if parsing failed.</param>
 	/// <returns>True if parsing succeeded; otherwise, false.</returns>
-	public static bool TryParse (BinaryData data, out AiffFile? file)
-	{
-		var result = Read (data.Span);
-		file = result.File;
-		return result.IsSuccess;
-	}
+	[Obsolete ("Use TryRead instead.")]
+	public static bool TryParse (BinaryData data, out AiffFile? file) =>
+		TryRead (data.Span, out file);
 
 	/// <summary>
 	/// Reads an AIFF file from binary data with detailed error information.
@@ -291,7 +317,7 @@ public sealed class AiffFile : IMediaFile
 	void ParseCommChunk (AiffChunk chunk)
 	{
 		if (AiffAudioProperties.TryParse (chunk.Data, out var props))
-			AudioProperties = props;
+			Properties = props;
 	}
 
 	void ParseId3Chunk (AiffChunk chunk)

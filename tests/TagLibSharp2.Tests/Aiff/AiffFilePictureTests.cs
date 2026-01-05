@@ -42,7 +42,7 @@ public class AiffFilePictureTests
 	[TestMethod]
 	public void Pictures_ReturnsEmptyWhenNoId3Tag ()
 	{
-		AiffFile.TryParse (CreateMinimalAiff (), out var aiff);
+		AiffFile.TryRead (CreateMinimalAiff (), out var aiff);
 		Assert.IsNotNull (aiff);
 
 		var pictures = aiff.Pictures;
@@ -54,7 +54,7 @@ public class AiffFilePictureTests
 	[TestMethod]
 	public void Pictures_ReturnsId3Pictures ()
 	{
-		AiffFile.TryParse (CreateMinimalAiff (), out var aiff);
+		AiffFile.TryRead (CreateMinimalAiff (), out var aiff);
 		Assert.IsNotNull (aiff);
 
 		aiff.Tag = new Id3v2Tag ();
@@ -72,7 +72,7 @@ public class AiffFilePictureTests
 	[TestMethod]
 	public void Pictures_ReturnsMultipleId3Pictures ()
 	{
-		AiffFile.TryParse (CreateMinimalAiff (), out var aiff);
+		AiffFile.TryRead (CreateMinimalAiff (), out var aiff);
 		Assert.IsNotNull (aiff);
 
 		aiff.Tag = new Id3v2Tag ();
@@ -90,7 +90,7 @@ public class AiffFilePictureTests
 	[TestMethod]
 	public void HasPictures_ReturnsTrueWhenPicturesExist ()
 	{
-		AiffFile.TryParse (CreateMinimalAiff (), out var aiff);
+		AiffFile.TryRead (CreateMinimalAiff (), out var aiff);
 		Assert.IsNotNull (aiff);
 
 		aiff.Tag = new Id3v2Tag ();
@@ -102,7 +102,7 @@ public class AiffFilePictureTests
 	[TestMethod]
 	public void HasPictures_ReturnsFalseWhenNoPictures ()
 	{
-		AiffFile.TryParse (CreateMinimalAiff (), out var aiff);
+		AiffFile.TryRead (CreateMinimalAiff (), out var aiff);
 		Assert.IsNotNull (aiff);
 
 		Assert.IsFalse (aiff.HasPictures);
@@ -111,7 +111,7 @@ public class AiffFilePictureTests
 	[TestMethod]
 	public void CoverArt_ReturnsFirstFrontCover ()
 	{
-		AiffFile.TryParse (CreateMinimalAiff (), out var aiff);
+		AiffFile.TryRead (CreateMinimalAiff (), out var aiff);
 		Assert.IsNotNull (aiff);
 
 		aiff.Tag = new Id3v2Tag ();
@@ -128,7 +128,7 @@ public class AiffFilePictureTests
 	[TestMethod]
 	public void CoverArt_ReturnsNullWhenNoFrontCover ()
 	{
-		AiffFile.TryParse (CreateMinimalAiff (), out var aiff);
+		AiffFile.TryRead (CreateMinimalAiff (), out var aiff);
 		Assert.IsNotNull (aiff);
 
 		aiff.Tag = new Id3v2Tag ();

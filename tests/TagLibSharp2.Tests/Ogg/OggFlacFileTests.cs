@@ -366,11 +366,11 @@ public class OggFlacFileTests
 		var data = CreateMinimalOggFlacFile ();
 		var result = OggFlacFile.Read (data);
 		Assert.IsTrue (result.IsSuccess);
-		Assert.IsNotNull (result.File!.Properties);
+		Assert.IsTrue (result.File!.Properties.IsValid);
 
 		result.File.Dispose ();
 
-		Assert.IsNull (result.File.Properties);
+		Assert.IsFalse (result.File.Properties.IsValid);
 		Assert.IsNull (result.File.VorbisComment);
 	}
 
@@ -391,7 +391,7 @@ public class OggFlacFileTests
 		var data = CreateMinimalOggFlacFile (sampleRate: 0);
 		var result = OggFlacFile.Read (data);
 		Assert.IsTrue (result.IsSuccess);
-		Assert.IsNull (result.File!.Properties);
+		Assert.IsFalse (result.File!.Properties.IsValid);
 	}
 
 	[TestMethod]
@@ -400,7 +400,7 @@ public class OggFlacFileTests
 		var data = CreateMinimalOggFlacFile (totalSamples: 0);
 		var result = OggFlacFile.Read (data);
 		Assert.IsTrue (result.IsSuccess);
-		Assert.IsNull (result.File!.Properties);
+		Assert.IsFalse (result.File!.Properties.IsValid);
 	}
 
 	[TestMethod]

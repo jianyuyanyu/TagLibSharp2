@@ -95,12 +95,16 @@ public sealed class WavFile : IMediaFile
 	/// <summary>
 	/// Gets the audio properties.
 	/// </summary>
-	public AudioProperties? Properties { get; private set; }
+	public AudioProperties Properties { get; private set; }
 
 	/// <summary>
 	/// Gets whether this file was successfully parsed.
 	/// </summary>
-	public bool IsValid => _riff?.IsValid == true && Properties is not null;
+	/// <remarks>
+	/// A file is valid if the RIFF structure is valid and the fmt chunk was parsed.
+	/// This does not require audio data to be present (Duration may be zero).
+	/// </remarks>
+	public bool IsValid => _riff?.IsValid == true && Properties.SampleRate > 0;
 
 	/// <summary>
 	/// Gets the source file path (not tracked for WAV files parsed from data).
@@ -112,6 +116,15 @@ public sealed class WavFile : IMediaFile
 
 	/// <inheritdoc />
 	IMediaProperties? IMediaFile.AudioProperties => Properties;
+
+	/// <inheritdoc />
+	VideoProperties? IMediaFile.VideoProperties => null;
+
+	/// <inheritdoc />
+	ImageProperties? IMediaFile.ImageProperties => null;
+
+	/// <inheritdoc />
+	MediaTypes IMediaFile.MediaTypes => Properties is { IsValid: true } ? MediaTypes.Audio : MediaTypes.None;
 
 	/// <inheritdoc />
 	public MediaFormat Format => MediaFormat.Wav;
@@ -132,7 +145,7 @@ public sealed class WavFile : IMediaFile
 		InfoTag = null;
 		Id3v2Tag = null;
 		BextTag = null;
-		Properties = null;
+		Properties = default;
 		ExtendedProperties = null;
 		_riff = null!;
 		_disposed = true;
@@ -203,14 +216,6 @@ public sealed class WavFile : IMediaFile
 	public PictureFrame? CoverArt => Id3v2Tag?.CoverArt;
 
 	/// <summary>
-	/// Reads a WAV file from binary data.
-	/// </summary>
-	/// <param name="data">The file data.</param>
-	/// <returns>The parsed WAV file, or null if invalid.</returns>
-	public static WavFile? ReadFromData (BinaryData data) =>
-		Read (data.Span).File;
-
-	/// <summary>
 	/// Reads a WAV file from binary data with detailed error information.
 	/// </summary>
 	/// <param name="data">The file data.</param>
@@ -231,7 +236,7 @@ public sealed class WavFile : IMediaFile
 
 		if (fmtChunk.HasValue) {
 			var dataSize = dataChunk?.DataSize ?? 0;
-			wav.Properties = WavAudioPropertiesParser.Parse (fmtChunk.Value.Data, dataSize);
+			wav.Properties = WavAudioPropertiesParser.Parse (fmtChunk.Value.Data, dataSize) ?? default;
 
 			// Parse WAVEFORMATEXTENSIBLE if present
 			wav.ExtendedProperties = WavAudioPropertiesParser.ParseExtended (fmtChunk.Value.Data);
@@ -264,6 +269,28 @@ public sealed class WavFile : IMediaFile
 
 		return WavFileReadResult.Success (wav);
 	}
+
+	/// <summary>
+	/// Attempts to read a WAV file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (ReadOnlySpan<byte> data, out WavFile? file)
+	{
+		var result = Read (data);
+		file = result.File;
+		return result.IsSuccess;
+	}
+
+	/// <summary>
+	/// Attempts to read a WAV file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (BinaryData data, out WavFile? file) =>
+		TryRead (data.Span, out file);
 
 	/// <summary>
 	/// Reads a WAV file from a file path.

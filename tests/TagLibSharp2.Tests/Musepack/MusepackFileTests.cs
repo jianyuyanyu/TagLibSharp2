@@ -467,7 +467,7 @@ public class MusepackFileTests
 
 		result.File!.Dispose ();
 
-		Assert.IsNull (result.File.Properties);
+		Assert.IsFalse (result.File.Properties.IsValid);
 		Assert.IsNull (result.File.ApeTag);
 	}
 

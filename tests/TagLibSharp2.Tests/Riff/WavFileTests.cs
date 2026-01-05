@@ -36,25 +36,42 @@ public class WavFileTests
 	}
 
 	[TestMethod]
-	public void ReadFromData_ValidWav_ReturnsWavFile ()
+	public void Read_ValidWav_ReturnsWavFile ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var result = WavFile.Read (CreateMinimalWav ());
 
+		Assert.IsTrue (result.IsSuccess);
+		Assert.IsNotNull (result.File);
+		Assert.IsTrue (result.File.IsValid);
+	}
+
+	[TestMethod]
+	public void Read_InvalidData_ReturnsFailure ()
+	{
+		var result = WavFile.Read (new BinaryData ([1, 2, 3, 4, 5]));
+		Assert.IsFalse (result.IsSuccess);
+		Assert.IsNull (result.File);
+	}
+
+	[TestMethod]
+	public void TryRead_ValidWav_ReturnsTrueWithFile ()
+	{
+		Assert.IsTrue (WavFile.TryRead (CreateMinimalWav (), out var wav));
 		Assert.IsNotNull (wav);
 		Assert.IsTrue (wav.IsValid);
 	}
 
 	[TestMethod]
-	public void ReadFromData_InvalidData_ReturnsNull ()
+	public void TryRead_InvalidData_ReturnsFalse ()
 	{
-		var wav = WavFile.ReadFromData (new BinaryData ([1, 2, 3, 4, 5]));
+		Assert.IsFalse (WavFile.TryRead (new BinaryData ([1, 2, 3, 4, 5]), out var wav));
 		Assert.IsNull (wav);
 	}
 
 	[TestMethod]
-	public void ReadFromData_ParsesAudioProperties ()
+	public void Read_ParsesAudioProperties ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 
 		Assert.IsNotNull (wav?.Properties);
 		Assert.AreEqual (44100, wav.Properties.SampleRate);
@@ -65,7 +82,7 @@ public class WavFileTests
 	[TestMethod]
 	public void Title_PrefersId3v2OverInfo ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.InfoTag = new RiffInfoTag { Title = "Info Title" };
@@ -77,7 +94,7 @@ public class WavFileTests
 	[TestMethod]
 	public void Title_FallsBackToInfo ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.InfoTag = new RiffInfoTag { Title = "Info Title" };
@@ -88,7 +105,7 @@ public class WavFileTests
 	[TestMethod]
 	public void Render_ProducesValidWav ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		var rendered = wav.Render ();
@@ -100,13 +117,13 @@ public class WavFileTests
 	[TestMethod]
 	public void Render_WithInfoTag_IncludesListChunk ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.InfoTag = new RiffInfoTag { Title = "Test" };
 
 		var rendered = wav.Render ();
-		var roundTripped = WavFile.ReadFromData (rendered);
+		var roundTripped = WavFile.Read (rendered).File;
 
 		Assert.IsNotNull (roundTripped?.InfoTag);
 		Assert.AreEqual ("Test", roundTripped.InfoTag.Title);
@@ -115,13 +132,13 @@ public class WavFileTests
 	[TestMethod]
 	public void Render_WithId3v2Tag_IncludesId3Chunk ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.Id3v2Tag = new Id3v2Tag { Title = "ID3 Title" };
 
 		var rendered = wav.Render ();
-		var roundTripped = WavFile.ReadFromData (rendered);
+		var roundTripped = WavFile.Read (rendered).File;
 
 		Assert.IsNotNull (roundTripped?.Id3v2Tag);
 		Assert.AreEqual ("ID3 Title", roundTripped.Id3v2Tag.Title);
@@ -148,7 +165,7 @@ public class WavFileTests
 	[TestMethod]
 	public void SaveToFile_WithMockFileSystem_WritesData ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		var mockFs = new MockFileSystem ();
@@ -161,7 +178,7 @@ public class WavFileTests
 	[TestMethod]
 	public async Task SaveToFileAsync_WithMockFileSystem_WritesData ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		var mockFs = new MockFileSystem ();
@@ -174,14 +191,14 @@ public class WavFileTests
 	[TestMethod]
 	public void Render_WithFactChunk_PreservesFactChunk ()
 	{
-		var wav = WavFile.ReadFromData (CreateWavWithFactChunk ());
+		var wav = WavFile.Read (CreateWavWithFactChunk ()).File;
 		Assert.IsNotNull (wav);
 
 		// Modify a tag to force re-render
 		wav.InfoTag = new RiffInfoTag { Title = "Modified" };
 
 		var rendered = wav.Render ();
-		var roundTripped = WavFile.ReadFromData (rendered);
+		var roundTripped = WavFile.Read (rendered).File;
 
 		Assert.IsNotNull (roundTripped);
 		// Verify fact chunk was preserved
@@ -191,7 +208,7 @@ public class WavFileTests
 	[TestMethod]
 	public void Render_WithCueChunk_PreservesCueChunk ()
 	{
-		var wav = WavFile.ReadFromData (CreateWavWithCueChunk ());
+		var wav = WavFile.Read (CreateWavWithCueChunk ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.InfoTag = new RiffInfoTag { Title = "Modified" };
@@ -205,7 +222,7 @@ public class WavFileTests
 	[TestMethod]
 	public void Render_WithSmplChunk_PreservesSmplChunk ()
 	{
-		var wav = WavFile.ReadFromData (CreateWavWithSmplChunk ());
+		var wav = WavFile.Read (CreateWavWithSmplChunk ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.Id3v2Tag = new Id3v2Tag { Title = "Modified" };
@@ -219,7 +236,7 @@ public class WavFileTests
 	[TestMethod]
 	public void Render_WithMultipleUnknownChunks_PreservesAll ()
 	{
-		var wav = WavFile.ReadFromData (CreateWavWithMultipleUnknownChunks ());
+		var wav = WavFile.Read (CreateWavWithMultipleUnknownChunks ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.InfoTag = new RiffInfoTag { Artist = "New Artist" };
@@ -285,7 +302,7 @@ public class WavFileTests
 		builder.AddStringLatin1 ("cue ");
 		builder.AddUInt32LE (28);  // size: 4 (count) + 24 (one cue point)
 		builder.AddUInt32LE (1);   // 1 cue point
-								   // Cue point: ID(4) + Position(4) + ChunkID(4) + ChunkStart(4) + BlockStart(4) + SampleOffset(4)
+							   // Cue point: ID(4) + Position(4) + ChunkID(4) + ChunkStart(4) + BlockStart(4) + SampleOffset(4)
 		builder.AddUInt32LE (1);   // ID
 		builder.AddUInt32LE (0);   // Position
 		builder.AddStringLatin1 ("data"); // Chunk ID
@@ -375,9 +392,9 @@ public class WavFileTests
 
 	[TestMethod]
 	[TestCategory ("BWF")]
-	public void ReadFromData_WithBextChunk_ParsesBextTag ()
+	public void Read_WithBextChunk_ParsesBextTag ()
 	{
-		var wav = WavFile.ReadFromData (CreateWavWithBextChunk ());
+		var wav = WavFile.Read (CreateWavWithBextChunk ()).File;
 
 		Assert.IsNotNull (wav);
 		Assert.IsNotNull (wav.BextTag);
@@ -389,7 +406,7 @@ public class WavFileTests
 	[TestCategory ("BWF")]
 	public void Render_WithBextTag_RoundTrips ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 		Assert.IsNotNull (wav);
 
 		wav.BextTag = new BextTag {
@@ -401,7 +418,7 @@ public class WavFileTests
 		};
 
 		var rendered = wav.Render ();
-		var roundTripped = WavFile.ReadFromData (rendered);
+		var roundTripped = WavFile.Read (rendered).File;
 
 		Assert.IsNotNull (roundTripped?.BextTag);
 		Assert.AreEqual ("Broadcast Description", roundTripped.BextTag.Description);
@@ -412,9 +429,9 @@ public class WavFileTests
 
 	[TestMethod]
 	[TestCategory ("WAVEFORMATEXTENSIBLE")]
-	public void ReadFromData_WithExtensibleFormat_ParsesExtendedProperties ()
+	public void Read_WithExtensibleFormat_ParsesExtendedProperties ()
 	{
-		var wav = WavFile.ReadFromData (CreateWavWithExtensibleFormat ());
+		var wav = WavFile.Read (CreateWavWithExtensibleFormat ()).File;
 
 		Assert.IsNotNull (wav);
 		Assert.IsNotNull (wav.ExtendedProperties);
@@ -425,9 +442,9 @@ public class WavFileTests
 
 	[TestMethod]
 	[TestCategory ("WAVEFORMATEXTENSIBLE")]
-	public void ReadFromData_StandardFormat_NoExtendedProperties ()
+	public void Read_StandardFormat_NoExtendedProperties ()
 	{
-		var wav = WavFile.ReadFromData (CreateMinimalWav ());
+		var wav = WavFile.Read (CreateMinimalWav ()).File;
 
 		Assert.IsNotNull (wav);
 		Assert.IsNull (wav.ExtendedProperties);
@@ -494,7 +511,7 @@ public class WavFileTests
 		builder.AddUInt16LE (22);     // cbSize
 		builder.AddUInt16LE (16);     // Valid bits per sample
 		builder.AddUInt32LE (0x3F);   // Channel mask (5.1: FL|FR|FC|LFE|BL|BR)
-									  // SubFormat GUID for PCM
+								  // SubFormat GUID for PCM
 		byte[] subFormat = [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
 			0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71];
 		builder.Add (subFormat);

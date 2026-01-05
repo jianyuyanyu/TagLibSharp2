@@ -70,12 +70,12 @@ public sealed class Mp3File : IMediaFile
 	/// For CBR files, duration is estimated from file size.
 	/// May be null if audio properties could not be determined.
 	/// </remarks>
-	public MpegAudioProperties? AudioProperties { get; private set; }
+	public MpegAudioProperties? Properties { get; private set; }
 
 	/// <summary>
-	/// Gets the duration of the audio. Convenience property that delegates to AudioProperties.
+	/// Gets the duration of the audio. Convenience property that delegates to Properties.
 	/// </summary>
-	public TimeSpan? Duration => AudioProperties?.Duration;
+	public TimeSpan? Duration => Properties?.Duration;
 
 	/// <summary>
 	/// Gets a value indicating whether this file has an ID3v1 tag.
@@ -91,7 +91,16 @@ public sealed class Mp3File : IMediaFile
 	public Tag? Tag => (Tag?)Id3v2Tag ?? Id3v1Tag;
 
 	/// <inheritdoc />
-	IMediaProperties? IMediaFile.AudioProperties => AudioProperties;
+	IMediaProperties? IMediaFile.AudioProperties => Properties;
+
+	/// <inheritdoc />
+	VideoProperties? IMediaFile.VideoProperties => null;
+
+	/// <inheritdoc />
+	ImageProperties? IMediaFile.ImageProperties => null;
+
+	/// <inheritdoc />
+	MediaTypes IMediaFile.MediaTypes => Properties is not null ? MediaTypes.Audio : MediaTypes.None;
 
 	/// <inheritdoc />
 	public MediaFormat Format => MediaFormat.Mp3;
@@ -336,10 +345,32 @@ public sealed class Mp3File : IMediaFile
 		// Parse audio properties (duration, bitrate, etc.)
 		// Audio starts after ID3v2 tag
 		if (MpegAudioProperties.TryParse (binaryData, file.Id3v2Size, out var audioProps))
-			file.AudioProperties = audioProps;
+			file.Properties = audioProps;
 
 		return Mp3FileReadResult.Success (file);
 	}
+
+	/// <summary>
+	/// Attempts to read an MP3 file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (ReadOnlySpan<byte> data, out Mp3File? file)
+	{
+		var result = Read (data);
+		file = result.File;
+		return result.IsSuccess;
+	}
+
+	/// <summary>
+	/// Attempts to read an MP3 file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (BinaryData data, out Mp3File? file) =>
+		TryRead (data.Span, out file);
 
 	Id3v2Tag EnsureId3v2Tag ()
 	{

@@ -25,7 +25,7 @@ namespace TagLibSharp2.Dsf;
 /// <summary>
 /// Audio properties specific to DSF (DSD) files.
 /// </summary>
-public sealed class DsfAudioProperties
+public sealed class DsfAudioProperties : Core.IMediaProperties
 {
 	/// <summary>Gets the audio duration.</summary>
 	public TimeSpan Duration { get; }
@@ -38,6 +38,16 @@ public sealed class DsfAudioProperties
 
 	/// <summary>Gets the bits per sample (always 1 for DSD).</summary>
 	public int BitsPerSample { get; }
+
+	/// <summary>Gets the bitrate in kbps.</summary>
+	/// <remarks>
+	/// For DSD, bitrate is calculated as: sampleRate * channels / 1000.
+	/// Returns 0 as DSD bitrate calculation differs from PCM formats.
+	/// </remarks>
+	public int Bitrate { get; }
+
+	/// <summary>Gets the codec name.</summary>
+	public string? Codec => "DSD";
 
 	/// <summary>Gets the DSD rate classification.</summary>
 	public DsfSampleRate DsdRate { get; }
@@ -62,6 +72,9 @@ public sealed class DsfAudioProperties
 		DsdRate = fmtChunk.DsdRate;
 		ChannelType = fmtChunk.ChannelType;
 		BlockSizePerChannel = (int)fmtChunk.BlockSizePerChannel;
+
+		// Calculate bitrate: sampleRate * channels / 1000 (1 bit per sample for DSD)
+		Bitrate = SampleRate > 0 ? (int)((long)SampleRate * Channels / 1000) : 0;
 	}
 }
 
@@ -207,8 +220,16 @@ public sealed class DsfFile : IMediaFile
 	public Tag? Tag => Id3v2Tag;
 
 	/// <inheritdoc />
-	IMediaProperties? IMediaFile.AudioProperties => Properties is null ? null : new AudioProperties (
-		Properties.Duration, 0, Properties.SampleRate, Properties.BitsPerSample, Properties.Channels, "DSD");
+	IMediaProperties? IMediaFile.AudioProperties => Properties;
+
+	/// <inheritdoc />
+	VideoProperties? IMediaFile.VideoProperties => null;
+
+	/// <inheritdoc />
+	ImageProperties? IMediaFile.ImageProperties => null;
+
+	/// <inheritdoc />
+	MediaTypes IMediaFile.MediaTypes => Properties is not null ? MediaTypes.Audio : MediaTypes.None;
 
 	/// <inheritdoc />
 	public MediaFormat Format => MediaFormat.Dsf;
@@ -311,6 +332,28 @@ public sealed class DsfFile : IMediaFile
 		file.Properties = new DsfAudioProperties (fmtChunk);
 		return DsfFileReadResult.Success (file);
 	}
+
+	/// <summary>
+	/// Attempts to read a DSF file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (ReadOnlySpan<byte> data, out DsfFile? file)
+	{
+		var result = Read (data);
+		file = result.File;
+		return result.IsSuccess;
+	}
+
+	/// <summary>
+	/// Attempts to read a DSF file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (BinaryData data, out DsfFile? file) =>
+		TryRead (data.Span, out file);
 
 	/// <summary>
 	/// Reads a DSF file from the specified path.

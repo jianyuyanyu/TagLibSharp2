@@ -44,14 +44,14 @@ public class WavFileRoundTripTests
 		var original = CreateMinimalWav ();
 
 		// Act
-		var file1 = WavFile.ReadFromData (original);
+		WavFile.TryRead (original, out var file1);
 		Assert.IsNotNull (file1, "First parse failed");
 		file1.Id3v2Tag = new Id3v2Tag { Title = "Test Title", Artist = "Test Artist" };
 
 		var written = file1.Render ();
 		Assert.IsTrue (written.Length > 0, "Render produced empty output");
 
-		var file2 = WavFile.ReadFromData (written);
+		WavFile.TryRead (written, out var file2);
 		Assert.IsNotNull (file2, "Second parse failed");
 
 		// Assert
@@ -64,7 +64,7 @@ public class WavFileRoundTripTests
 	{
 		// Arrange
 		var original = CreateMinimalWav ();
-		var file = WavFile.ReadFromData (original);
+		WavFile.TryRead (original, out var file);
 		Assert.IsNotNull (file);
 
 		// Set all standard metadata fields via Id3v2Tag
@@ -84,7 +84,7 @@ public class WavFileRoundTripTests
 
 		// Act
 		var written = file.Render ();
-		var reloaded = WavFile.ReadFromData (written);
+		WavFile.TryRead (written, out var reloaded);
 		Assert.IsNotNull (reloaded?.Id3v2Tag);
 
 		// Assert
@@ -106,7 +106,7 @@ public class WavFileRoundTripTests
 	{
 		// Arrange
 		var original = CreateMinimalWav ();
-		var file = WavFile.ReadFromData (original);
+		WavFile.TryRead (original, out var file);
 		Assert.IsNotNull (file);
 
 		file.InfoTag = new RiffInfoTag {
@@ -120,7 +120,7 @@ public class WavFileRoundTripTests
 
 		// Act
 		var written = file.Render ();
-		var reloaded = WavFile.ReadFromData (written);
+		WavFile.TryRead (written, out var reloaded);
 		Assert.IsNotNull (reloaded?.InfoTag);
 
 		// Assert
@@ -144,7 +144,7 @@ public class WavFileRoundTripTests
 		};
 
 		var original = CreateMinimalWav ();
-		var file = WavFile.ReadFromData (original);
+		WavFile.TryRead (original, out var file);
 		Assert.IsNotNull (file);
 
 		// Add picture via Id3v2Tag
@@ -154,7 +154,7 @@ public class WavFileRoundTripTests
 
 		// Act
 		var written = file.Render ();
-		var reloaded = WavFile.ReadFromData (written);
+		WavFile.TryRead (written, out var reloaded);
 		Assert.IsNotNull (reloaded?.Id3v2Tag);
 
 		// Assert
@@ -168,7 +168,7 @@ public class WavFileRoundTripTests
 	{
 		// Arrange
 		var original = CreateMinimalWav ();
-		var file = WavFile.ReadFromData (original);
+		WavFile.TryRead (original, out var file);
 		Assert.IsNotNull (file?.Properties);
 
 		// Store original audio properties
@@ -181,7 +181,7 @@ public class WavFileRoundTripTests
 
 		// Act
 		var written = file.Render ();
-		var reloaded = WavFile.ReadFromData (written);
+		WavFile.TryRead (written, out var reloaded);
 		Assert.IsNotNull (reloaded?.Properties);
 
 		// Assert: Audio properties unchanged
@@ -198,18 +198,18 @@ public class WavFileRoundTripTests
 		var original = CreateMinimalWav ();
 
 		// Act: Write multiple times
-		var file1 = WavFile.ReadFromData (original);
+		WavFile.TryRead (original, out var file1);
 		Assert.IsNotNull (file1);
 		file1.Id3v2Tag = new Id3v2Tag { Title = "Title", Artist = "Artist" };
 		var written1 = file1.Render ();
 		var size1 = written1.Length;
 
-		var file2 = WavFile.ReadFromData (written1);
+		WavFile.TryRead (written1, out var file2);
 		Assert.IsNotNull (file2);
 		var written2 = file2.Render ();
 		var size2 = written2.Length;
 
-		var file3 = WavFile.ReadFromData (written2);
+		WavFile.TryRead (written2, out var file3);
 		Assert.IsNotNull (file3);
 		var written3 = file3.Render ();
 		var size3 = written3.Length;
@@ -229,7 +229,7 @@ public class WavFileRoundTripTests
 	{
 		// Arrange: Set both InfoTag and Id3v2Tag
 		var original = CreateMinimalWav ();
-		var file = WavFile.ReadFromData (original);
+		WavFile.TryRead (original, out var file);
 		Assert.IsNotNull (file);
 
 		file.InfoTag = new RiffInfoTag { Title = "Info Title" };
@@ -237,7 +237,7 @@ public class WavFileRoundTripTests
 
 		// Act
 		var written = file.Render ();
-		var reloaded = WavFile.ReadFromData (written);
+		WavFile.TryRead (written, out var reloaded);
 		Assert.IsNotNull (reloaded);
 
 		// Assert: Id3v2 takes precedence, but both preserved

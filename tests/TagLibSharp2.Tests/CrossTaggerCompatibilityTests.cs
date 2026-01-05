@@ -913,7 +913,7 @@ public sealed class CrossTaggerCompatibilityTests
 	{
 		// Create minimal WAV file
 		var data = TestBuilders.Wav.CreateMinimal ();
-		var wavFile = WavFile.ReadFromData (new BinaryData (data));
+		var wavFile = WavFile.Read (new BinaryData (data)).File;
 
 		Assert.IsNotNull (wavFile);
 
@@ -926,7 +926,7 @@ public sealed class CrossTaggerCompatibilityTests
 
 		// Render and re-read to verify round-trip
 		var rendered = wavFile.Render ();
-		var reparsed = WavFile.ReadFromData (rendered);
+		var reparsed = WavFile.Read (rendered).File;
 
 		Assert.IsNotNull (reparsed?.InfoTag);
 

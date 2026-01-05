@@ -361,22 +361,20 @@ public static class MediaFile
 
 	static MediaFileResult OpenWav (ReadOnlyMemory<byte> data)
 	{
-		var binaryData = new BinaryData (data.Span);
-		var file = WavFile.ReadFromData (binaryData);
-		if (file is null)
-			return MediaFileResult.Failure ("Failed to parse WAV file");
+		var result = WavFile.Read (data.Span);
+		if (!result.IsSuccess || result.File is null)
+			return MediaFileResult.Failure (result.Error ?? "Failed to parse WAV file");
 
 		// Prefer ID3v2 tag, fall back to RIFF INFO tag
-		Tag? tag = file.Id3v2Tag is not null
-			? file.Id3v2Tag
-			: file.InfoTag;
-		return MediaFileResult.Success (file, tag, MediaFormat.Wav);
+		Tag? tag = result.File.Id3v2Tag is not null
+			? result.File.Id3v2Tag
+			: result.File.InfoTag;
+		return MediaFileResult.Success (result.File, tag, MediaFormat.Wav);
 	}
 
 	static MediaFileResult OpenAiff (ReadOnlyMemory<byte> data)
 	{
-		var binaryData = new BinaryData (data.Span);
-		if (!AiffFile.TryParse (binaryData, out var file) || file is null)
+		if (!AiffFile.TryRead (data.Span, out var file) || file is null)
 			return MediaFileResult.Failure ("Failed to parse AIFF file");
 
 		return MediaFileResult.Success (file, file.Tag, MediaFormat.Aiff);

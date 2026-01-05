@@ -240,10 +240,10 @@ public sealed class Mp3FileTests
 
 		var result = Mp3File.Read (fullData);
 
-		Assert.IsNotNull (result.File?.AudioProperties);
-		Assert.AreEqual (44100, result.File.AudioProperties.SampleRate);
-		Assert.AreEqual (2, result.File.AudioProperties.Channels);
-		Assert.IsTrue (result.File.AudioProperties.IsVbr);
+		Assert.IsNotNull (result.File?.Properties);
+		Assert.AreEqual (44100, result.File.Properties.SampleRate);
+		Assert.AreEqual (2, result.File.Properties.Channels);
+		Assert.IsTrue (result.File.Properties.IsVbr);
 		Assert.IsTrue (result.File.Duration?.TotalSeconds > 100);
 	}
 
@@ -267,10 +267,10 @@ public sealed class Mp3FileTests
 
 		var result = Mp3File.Read (frameData.ToArray ());
 
-		Assert.IsNotNull (result.File?.AudioProperties);
-		Assert.AreEqual (44100, result.File.AudioProperties.SampleRate);
-		Assert.AreEqual (128, result.File.AudioProperties.Bitrate);
-		Assert.IsFalse (result.File.AudioProperties.IsVbr);
+		Assert.IsNotNull (result.File?.Properties);
+		Assert.AreEqual (44100, result.File.Properties.SampleRate);
+		Assert.AreEqual (128, result.File.Properties.Bitrate);
+		Assert.IsFalse (result.File.Properties.IsVbr);
 	}
 
 	[TestMethod]
@@ -286,7 +286,7 @@ public sealed class Mp3FileTests
 		var result = Mp3File.Read (frameData.ToArray ());
 
 		Assert.IsNotNull (result.File?.Duration);
-		Assert.AreEqual (result.File.AudioProperties!.Duration, result.File.Duration);
+		Assert.AreEqual (result.File.Properties!.Duration, result.File.Duration);
 	}
 
 

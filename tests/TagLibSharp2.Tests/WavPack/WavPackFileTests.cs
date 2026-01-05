@@ -721,7 +721,7 @@ public class WavPackFileTests
 		var result = WavPackFile.Read (data);
 
 		Assert.IsTrue (result.IsSuccess);
-		Assert.IsNull (result.File!.Properties); // No properties when totalSamples is 0
+		Assert.IsFalse (result.File!.Properties.IsValid); // No valid properties when totalSamples is 0
 	}
 
 	#endregion

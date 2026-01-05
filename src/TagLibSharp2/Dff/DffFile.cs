@@ -67,7 +67,7 @@ public readonly struct DffFileReadResult : IEquatable<DffFileReadResult>
 /// <summary>
 /// Audio properties for DFF files.
 /// </summary>
-public sealed class DffAudioProperties
+public sealed class DffAudioProperties : Core.IMediaProperties
 {
 	/// <summary>Gets the audio duration.</summary>
 	public TimeSpan Duration { get; }
@@ -80,6 +80,18 @@ public sealed class DffAudioProperties
 
 	/// <summary>Gets the bits per sample (always 1 for DSD).</summary>
 	public int BitsPerSample => 1;
+
+	/// <summary>Gets the bitrate in kbps.</summary>
+	/// <remarks>
+	/// For DSD, bitrate is calculated as: sampleRate * channels / 1000.
+	/// </remarks>
+	public int Bitrate { get; }
+
+	/// <summary>Gets the codec name.</summary>
+	/// <remarks>
+	/// Returns "DSD" for uncompressed or "DST" for DST-compressed files.
+	/// </remarks>
+	public string? Codec { get; }
 
 	/// <summary>Gets the DSD rate classification.</summary>
 	public DsfSampleRate DsdRate { get; }
@@ -96,6 +108,10 @@ public sealed class DffAudioProperties
 		SampleRate = (int)sampleRate;
 		Channels = (int)channelCount;
 		CompressionType = compressionType;
+		Codec = compressionType == DffCompressionType.Dst ? "DST" : "DSD";
+
+		// Calculate bitrate: sampleRate * channels / 1000 (1 bit per sample for DSD)
+		Bitrate = sampleRate > 0 ? (int)((long)sampleRate * channelCount / 1000) : 0;
 
 		// Calculate duration
 		if (sampleRate > 0 && sampleCount > 0) {
@@ -175,8 +191,16 @@ public sealed class DffFile : IMediaFile
 	public Tag? Tag => Id3v2Tag;
 
 	/// <inheritdoc />
-	IMediaProperties? IMediaFile.AudioProperties => Properties is null ? null : new AudioProperties (
-		Properties.Duration, 0, Properties.SampleRate, Properties.BitsPerSample, Properties.Channels, "DSD");
+	IMediaProperties? IMediaFile.AudioProperties => Properties;
+
+	/// <inheritdoc />
+	VideoProperties? IMediaFile.VideoProperties => null;
+
+	/// <inheritdoc />
+	ImageProperties? IMediaFile.ImageProperties => null;
+
+	/// <inheritdoc />
+	MediaTypes IMediaFile.MediaTypes => Properties is not null ? MediaTypes.Audio : MediaTypes.None;
 
 	/// <inheritdoc />
 	public MediaFormat Format => MediaFormat.Dff;
@@ -354,6 +378,28 @@ public sealed class DffFile : IMediaFile
 
 		return DffFileReadResult.Success (file);
 	}
+
+	/// <summary>
+	/// Attempts to read a DFF file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (ReadOnlySpan<byte> data, out DffFile? file)
+	{
+		var result = Read (data);
+		file = result.File;
+		return result.IsSuccess;
+	}
+
+	/// <summary>
+	/// Attempts to read a DFF file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (BinaryData data, out DffFile? file) =>
+		TryRead (data.Span, out file);
 
 	private static void ParsePropChunk (ReadOnlySpan<byte> data, DffFile file, ref bool foundFs, ref bool foundChnl, ref bool foundCmpr)
 	{

@@ -122,7 +122,7 @@ public sealed class MusepackFile : IMediaFile
 	public ulong TotalSamples { get; private set; }
 
 	/// <summary>Audio properties</summary>
-	public AudioProperties? Properties { get; private set; }
+	public AudioProperties Properties { get; private set; }
 
 	/// <summary>APEv2 tag (null if not present)</summary>
 	public ApeTag? ApeTag { get; private set; }
@@ -132,6 +132,15 @@ public sealed class MusepackFile : IMediaFile
 
 	/// <inheritdoc />
 	IMediaProperties? IMediaFile.AudioProperties => Properties;
+
+	/// <inheritdoc />
+	VideoProperties? IMediaFile.VideoProperties => null;
+
+	/// <inheritdoc />
+	ImageProperties? IMediaFile.ImageProperties => null;
+
+	/// <inheritdoc />
+	MediaTypes IMediaFile.MediaTypes => Properties is { IsValid: true } ? MediaTypes.Audio : MediaTypes.None;
 
 	/// <inheritdoc />
 	public MediaFormat Format => MediaFormat.Musepack;
@@ -275,6 +284,28 @@ public sealed class MusepackFile : IMediaFile
 	}
 
 	/// <summary>
+	/// Attempts to read a Musepack file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (ReadOnlySpan<byte> data, out MusepackFile? file)
+	{
+		var result = Read (data);
+		file = result.File;
+		return result.IsSuccess;
+	}
+
+	/// <summary>
+	/// Attempts to read a Musepack file from binary data.
+	/// </summary>
+	/// <param name="data">The file data.</param>
+	/// <param name="file">When successful, contains the parsed file.</param>
+	/// <returns>True if parsing succeeded; otherwise, false.</returns>
+	public static bool TryRead (BinaryData data, out MusepackFile? file) =>
+		TryRead (data.Span, out file);
+
+	/// <summary>
 	/// Parse SV8 Stream Header (SH) packet payload.
 	/// </summary>
 	private static void ParseSV8StreamHeader (ReadOnlySpan<byte> payload, MusepackFile file)
@@ -357,7 +388,7 @@ public sealed class MusepackFile : IMediaFile
 	private void CalculateProperties ()
 	{
 		if (SampleRate <= 0 || TotalSamples == 0) {
-			Properties = null;
+			Properties = default;
 			return;
 		}
 
@@ -495,14 +526,24 @@ public sealed class MusepackFile : IMediaFile
 	}
 
 	/// <summary>
-	/// Save the file to a new path.
+	/// Save the file to a new path using the provided original data.
 	/// </summary>
-	public FileWriteResult SaveToFile (string path, IFileSystem? fileSystem = null)
+	/// <param name="path">The file path to save to.</param>
+	/// <param name="originalData">The original file data containing audio content.</param>
+	/// <param name="fileSystem">Optional file system abstraction.</param>
+	/// <returns>The result of the write operation.</returns>
+	public FileWriteResult SaveToFile (string path, ReadOnlySpan<byte> originalData, IFileSystem? fileSystem = null)
 	{
 		var fs = fileSystem ?? _sourceFileSystem ?? DefaultFileSystem.Instance;
-		var rendered = Render (_originalData);
+		var rendered = Render (originalData);
 		return AtomicFileWriter.Write (path, rendered, fs);
 	}
+
+	/// <summary>
+	/// Save the file to a new path using internally stored data.
+	/// </summary>
+	public FileWriteResult SaveToFile (string path, IFileSystem? fileSystem = null) =>
+		SaveToFile (path, _originalData, fileSystem);
 
 	/// <summary>
 	/// Save the file back to its source path.
@@ -516,17 +557,32 @@ public sealed class MusepackFile : IMediaFile
 	}
 
 	/// <summary>
-	/// Save the file asynchronously.
+	/// Save the file asynchronously using the provided original data.
 	/// </summary>
+	/// <param name="path">The file path to save to.</param>
+	/// <param name="originalData">The original file data containing audio content.</param>
+	/// <param name="fileSystem">Optional file system abstraction.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The result of the write operation.</returns>
 	public async Task<FileWriteResult> SaveToFileAsync (
 		string path,
+		ReadOnlyMemory<byte> originalData,
 		IFileSystem? fileSystem = null,
 		CancellationToken cancellationToken = default)
 	{
 		var fs = fileSystem ?? _sourceFileSystem ?? DefaultFileSystem.Instance;
-		var rendered = Render (_originalData);
+		var rendered = Render (originalData.Span);
 		return await AtomicFileWriter.WriteAsync (path, rendered, fs, cancellationToken).ConfigureAwait (false);
 	}
+
+	/// <summary>
+	/// Save the file asynchronously using internally stored data.
+	/// </summary>
+	public Task<FileWriteResult> SaveToFileAsync (
+		string path,
+		IFileSystem? fileSystem = null,
+		CancellationToken cancellationToken = default) =>
+		SaveToFileAsync (path, _originalData, fileSystem, cancellationToken);
 
 	/// <summary>
 	/// Save the file back to its source path asynchronously.
@@ -550,7 +606,7 @@ public sealed class MusepackFile : IMediaFile
 			return;
 
 		ApeTag = null;
-		Properties = null;
+		Properties = default;
 		_originalData = [];
 		SourcePath = null;
 		_sourceFileSystem = null;
