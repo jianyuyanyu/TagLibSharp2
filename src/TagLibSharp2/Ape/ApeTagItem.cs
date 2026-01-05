@@ -1,5 +1,5 @@
-// APE Tag Item parsing and rendering
-// Item structure: valueSize(4) + flags(4) + key + null + value
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers.Binary;

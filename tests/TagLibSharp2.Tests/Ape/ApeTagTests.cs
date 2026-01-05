@@ -1,11 +1,5 @@
-// APE Tag v2 Tests - TDD approach
-// Experts consulted: SDET, C# expert, APE Tag expert, QA Manager
-//
-// Test strategy:
-// 1. Unit tests for parsing individual components (header, footer, items)
-// 2. Integration tests for full tag parsing
-// 3. Round-trip tests for read → modify → write → read
-// 4. Edge cases: empty tags, binary items, large items, malformed data
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TagLibSharp2.Ape;

@@ -1,5 +1,5 @@
-// FileOperations Example
-// Demonstrates file I/O patterns with TagLibSharp2
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using TagLibSharp2.Core;
 using TagLibSharp2.Id3.Id3v2;

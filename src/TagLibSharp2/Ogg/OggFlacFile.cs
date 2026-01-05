@@ -1,6 +1,5 @@
-// Ogg FLAC (.oga/.ogg) file support
-// Ogg encapsulation of FLAC audio with Vorbis Comment metadata
-// Spec: https://xiph.org/flac/ogg_mapping.html
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers.Binary;

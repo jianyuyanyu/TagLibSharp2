@@ -1,5 +1,5 @@
-// APE Tag Footer/Header parsing
-// APEv2 specification: 32-byte structure at end of tag (footer) or start (header)
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers.Binary;

@@ -1,11 +1,5 @@
-// DFF (DSDIFF) format tests - TDD approach
-// Based on DSDIFF 1.5 specification
-// https://www.sonicstudio.com/pdf/dsd/DSDIFF_1.5_Spec.pdf
-//
-// Key differences from DSF:
-// - Big-endian byte order (DSF is little-endian)
-// - IFF-based chunk structure (FRM8 container)
-// - No native metadata (ID3v2 is unofficial extension)
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System.Buffers.Binary;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

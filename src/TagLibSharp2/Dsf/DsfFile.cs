@@ -1,16 +1,5 @@
-// DSF (DSD Stream File) implementation
-// Container for DSD audio with ID3v2 metadata at the end
-//
-// File structure:
-// - DSD Chunk (28 bytes): Magic + file size + metadata offset
-// - fmt Chunk (52 bytes): Audio format parameters
-// - data Chunk: Audio data
-// - Optional ID3v2 tag at end (pointed to by metadata offset)
-//
-// Expert input:
-// - DSF Expert: Little-endian throughout, ID3v2 at end (unlike FLAC)
-// - Audiophile: Preserve full DSD resolution, support DSD64/128/256/512
-// - C# Expert: Use Span<T> for parsing, avoid copying audio data
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Threading;

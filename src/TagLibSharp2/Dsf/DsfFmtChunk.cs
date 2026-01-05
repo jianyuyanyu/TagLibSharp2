@@ -1,5 +1,5 @@
-// DSF Format Chunk parsing
-// Second chunk: "fmt " + chunk_size(8) + format fields
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers.Binary;

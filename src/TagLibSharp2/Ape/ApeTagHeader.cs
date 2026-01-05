@@ -1,5 +1,5 @@
-// APE Tag Header parsing
-// Header has identical structure to footer, only differs in flag bits
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 

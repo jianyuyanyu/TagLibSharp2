@@ -1,12 +1,5 @@
-// DSF (DSD Stream File) format tests
-// Following TDD - tests written first, implementation to follow
-// Based on DSF specification for DSD audio files
-//
-// Expert input:
-// - DSF Expert: Focus on little-endian parsing, chunk structure (DSD/fmt/data/metadata)
-// - Audiophile: DSD64/128/256 sample rates (2.8/5.6/11.2 MHz), preserve full resolution
-// - SDET: Edge cases for malformed files, boundary conditions, security tests
-// - C# Expert: Use Span<T>, avoid allocations in hot paths
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System.Buffers.Binary;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

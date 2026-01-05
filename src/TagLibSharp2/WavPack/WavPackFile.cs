@@ -1,5 +1,5 @@
-// WavPack (.wv) file support
-// Implemented from format specification at www.wavpack.com/file_format.txt
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers.Binary;

@@ -1,5 +1,5 @@
-// DSF DSD Chunk parsing
-// First chunk in DSF file: "DSD " + chunk_size(8) + file_size(8) + metadata_offset(8)
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers.Binary;

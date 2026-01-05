@@ -1,12 +1,5 @@
-// DFF (DSDIFF) file format implementation
-// Based on DSDIFF 1.5 specification
-// https://www.sonicstudio.com/pdf/dsd/DSDIFF_1.5_Spec.pdf
-//
-// Key characteristics:
-// - IFF-based container format (FRM8)
-// - Big-endian byte order
-// - Chunks: FVER (version), PROP (properties), DSD/DST (audio)
-// - Optional ID3v2 chunk for metadata (unofficial extension)
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers.Binary;

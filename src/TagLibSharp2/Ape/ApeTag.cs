@@ -1,11 +1,5 @@
-// APE Tag v2 implementation
-// Implements the abstract Tag class for APE format metadata
-//
-// Expert input:
-// - C# Expert: Use Dictionary<string, ApeTagItem> for O(1) lookups with case-insensitive keys
-// - Audio Expert: Support standard keys (Artist, Title, Album) plus extended (ReplayGain, MusicBrainz)
-// - Audiophile: Preserve binary cover art with proper filename handling
-// - QA Manager: Full round-trip capability, preserve unknown items
+// Copyright (c) 2025-2026 Stephen Shaw and contributors
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
